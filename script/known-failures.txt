@@ -1,0 +1,2 @@
+examples/libc/ctest/templates/test.rs
+examples/libc/ctest/tests/input/invalid_syntax.rs
