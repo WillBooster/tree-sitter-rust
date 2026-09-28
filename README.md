@@ -41,7 +41,7 @@ tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "1" }
 
 ```rust
 let mut parser = tree_sitter::Parser::new();
-parser.set_language(&tree_sitter_kotlin::LANGUAGE.into())?;
+parser.set_language(&tree_sitter_rust::LANGUAGE.into())?;
 ```
 
 ## Development
