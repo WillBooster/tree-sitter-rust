@@ -158,6 +158,51 @@ ok! {
       (block_comment))))
 
 ================================================================================
+Macro invocation named like a primitive type
+================================================================================
+
+fn f() {
+  let e = str![[r#"x"#]];
+  let x: u8![] = u8!(1);
+  let y = u8::MAX;
+}
+
+bool! {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (token_tree
+              (raw_string_literal
+                (string_content))))))
+      (let_declaration
+        (identifier)
+        (macro_invocation
+          (identifier)
+          (token_tree))
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (integer_literal))))
+      (let_declaration
+        (identifier)
+        (scoped_identifier
+          (identifier)
+          (identifier)))))
+  (macro_invocation
+    (identifier)
+    (token_tree)))
+
+================================================================================
 Macro definition
 ================================================================================
 
