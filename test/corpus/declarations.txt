@@ -2545,6 +2545,9 @@ unsafe extern "C" {
 Safe as an identifier
 ================================================================================
 
+const safe: i32 = 1;
+type Alias = safe;
+
 fn f() {
   let safe = true;
   safe = false;
@@ -2559,6 +2562,13 @@ fn f() {
 --------------------------------------------------------------------------------
 
 (source_file
+  (const_item
+    (identifier)
+    (primitive_type)
+    (integer_literal))
+  (type_item
+    (type_identifier)
+    (type_identifier))
   (function_item
     (identifier)
     (parameters)
@@ -2587,7 +2597,7 @@ fn f() {
         (call_expression
           (scoped_identifier
             (generic_type
-              (identifier)
+              (type_identifier)
               (type_arguments
                 (type_identifier)))
             (identifier))
