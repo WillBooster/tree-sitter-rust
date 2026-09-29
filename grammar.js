@@ -392,7 +392,7 @@ module.exports = grammar({
     static_item: ($) =>
       seq(
         optional($.visibility_modifier),
-        // Only items in `extern` blocks take a safety qualifier.
+        // Rust allows this qualifier only in `extern` blocks, which the grammar does not check.
         optional(choice('safe', 'unsafe')),
         'static',
 
