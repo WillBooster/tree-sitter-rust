@@ -2126,6 +2126,27 @@
           ]
         },
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "safe"
+                },
+                {
+                  "type": "STRING",
+                  "value": "unsafe"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
           "type": "STRING",
           "value": "static"
         },
@@ -2539,6 +2560,10 @@
           {
             "type": "STRING",
             "value": "const"
+          },
+          {
+            "type": "STRING",
+            "value": "safe"
           },
           {
             "type": "STRING",
@@ -9594,6 +9619,10 @@
           {
             "type": "STRING",
             "value": "raw"
+          },
+          {
+            "type": "STRING",
+            "value": "safe"
           }
         ]
       },

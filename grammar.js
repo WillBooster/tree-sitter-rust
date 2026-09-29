@@ -392,6 +392,8 @@ module.exports = grammar({
     static_item: ($) =>
       seq(
         optional($.visibility_modifier),
+        // Only items in `extern` blocks take a safety qualifier.
+        optional(choice('safe', 'unsafe')),
         'static',
 
         // Not actual rust syntax, but made popular by the lazy_static crate.
@@ -444,7 +446,7 @@ module.exports = grammar({
         ';'
       ),
 
-    function_modifiers: ($) => repeat1(choice('async', 'default', 'const', 'unsafe', $.extern_modifier)),
+    function_modifiers: ($) => repeat1(choice('async', 'default', 'const', 'safe', 'unsafe', $.extern_modifier)),
 
     where_clause: ($) => prec.right(seq('where', optional(seq(sepBy1(',', $.where_predicate), optional(','))))),
 
@@ -1298,7 +1300,7 @@ module.exports = grammar({
     // oxlint-disable-next-line no-useless-escape -- tree-sitter's regex parser rejects an unescaped `[` in a character class.
     shebang: () => /#![\r\f\t\v ]*([^\[\n].*)?\n/,
 
-    _reserved_identifier: ($) => alias(choice('default', 'union', 'gen', 'raw'), $.identifier),
+    _reserved_identifier: ($) => alias(choice('default', 'union', 'gen', 'raw', 'safe'), $.identifier),
 
     _type_identifier: ($) => alias($.identifier, $.type_identifier),
     _field_identifier: ($) => alias($.identifier, $.field_identifier),

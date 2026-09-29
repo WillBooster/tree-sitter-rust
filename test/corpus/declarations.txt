@@ -2496,6 +2496,82 @@ unsafe extern "C" {}
     (declaration_list)))
 
 ================================================================================
+Safety qualifiers in external blocks
+================================================================================
+
+unsafe extern "C" {
+  safe fn abs(input: i32) -> i32;
+  pub unsafe fn strlen(p: *const u8) -> usize;
+  safe static X: i32;
+  pub unsafe static mut Y: i32;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (foreign_mod_item
+    (extern_modifier
+      (string_literal
+        (string_content)))
+    (declaration_list
+      (function_signature_item
+        (function_modifiers)
+        (identifier)
+        (parameters
+          (parameter
+            (identifier)
+            (primitive_type)))
+        (primitive_type))
+      (function_signature_item
+        (visibility_modifier)
+        (function_modifiers)
+        (identifier)
+        (parameters
+          (parameter
+            (identifier)
+            (pointer_type
+              (primitive_type))))
+        (primitive_type))
+      (static_item
+        (identifier)
+        (primitive_type))
+      (static_item
+        (visibility_modifier)
+        (mutable_specifier)
+        (identifier)
+        (primitive_type)))))
+
+================================================================================
+Safe as an identifier
+================================================================================
+
+fn f() {
+  let safe = true;
+  safe = false;
+  safe!(safe);
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (boolean_literal))
+      (expression_statement
+        (assignment_expression
+          (identifier)
+          (boolean_literal)))
+      (expression_statement
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (identifier)))))))
+
+================================================================================
 Crate visibility
 ================================================================================
 
