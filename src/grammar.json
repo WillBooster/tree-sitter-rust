@@ -1416,11 +1416,8 @@
         {
           "type": "ALIAS",
           "content": {
-            "type": "REPEAT1",
-            "content": {
-              "type": "STRING",
-              "value": "safe"
-            }
+            "type": "SYMBOL",
+            "name": "_safe_modifier"
           },
           "named": true,
           "value": "function_modifiers"
@@ -1430,6 +1427,10 @@
           "name": "_function_signature"
         }
       ]
+    },
+    "_safe_modifier": {
+      "type": "STRING",
+      "value": "safe"
     },
     "_qualified_static_item": {
       "type": "SEQ",
