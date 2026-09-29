@@ -307,9 +307,40 @@ module.exports = grammar({
         choice(';', field('body', $.declaration_list))
       ),
 
-    foreign_mod_item: ($) => seq(optional('unsafe'), $.extern_modifier, choice(';', field('body', $.declaration_list))),
+    foreign_mod_item: ($) =>
+      seq(
+        optional('unsafe'),
+        $.extern_modifier,
+        choice(';', field('body', alias($._foreign_declaration_list, $.declaration_list)))
+      ),
 
     declaration_list: ($) => seq('{', repeat($._declaration_statement), '}'),
+
+    // Items in `extern` blocks may be `safe` functions and `safe` or `unsafe` statics. `safe` is a keyword only where
+    // such an item starts: accepting it on every item would make it one wherever an item can start, breaking its uses as
+    // an identifier (`let safe = …; safe = …;`).
+    _foreign_declaration_list: ($) =>
+      seq(
+        '{',
+        repeat(
+          choice(
+            $._declaration_statement,
+            alias($._safe_function_signature_item, $.function_signature_item),
+            alias($._qualified_static_item, $.static_item)
+          )
+        ),
+        '}'
+      ),
+
+    _safe_function_signature_item: ($) =>
+      seq(optional($.visibility_modifier), alias($._safe_modifier, $.function_modifiers), $._function_signature),
+
+    // Aliasing the bare token instead would make `function_modifiers` a leaf without the `safe` child that other
+    // modifiers have.
+    _safe_modifier: () => 'safe',
+
+    _qualified_static_item: ($) =>
+      seq(optional($.visibility_modifier), choice('safe', 'unsafe'), $._static_declaration),
 
     struct_item: ($) =>
       seq(
@@ -389,9 +420,10 @@ module.exports = grammar({
         ';'
       ),
 
-    static_item: ($) =>
+    static_item: ($) => seq(optional($.visibility_modifier), $._static_declaration),
+
+    _static_declaration: ($) =>
       seq(
-        optional($.visibility_modifier),
         'static',
 
         // Not actual rust syntax, but made popular by the lazy_static crate.
@@ -432,9 +464,10 @@ module.exports = grammar({
       ),
 
     function_signature_item: ($) =>
+      seq(optional($.visibility_modifier), optional($.function_modifiers), $._function_signature),
+
+    _function_signature: ($) =>
       seq(
-        optional($.visibility_modifier),
-        optional($.function_modifiers),
         'fn',
         field('name', choice($.identifier, $.metavariable)),
         field('type_parameters', optional($.type_parameters)),
