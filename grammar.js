@@ -657,7 +657,7 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('function', choice($.identifier, $.scoped_identifier, $.field_expression)),
+          field('function', choice($.identifier, $._reserved_identifier, $.scoped_identifier, $.field_expression)),
           '::',
           field('type_arguments', $.type_arguments)
         )
@@ -674,7 +674,7 @@ module.exports = grammar({
 
     generic_type_with_turbofish: ($) =>
       seq(
-        field('type', choice($._type_identifier, $.scoped_identifier)),
+        field('type', choice($._type_identifier, $._reserved_identifier, $.scoped_identifier)),
         '::',
         field('type_arguments', $.type_arguments)
       ),
@@ -1123,7 +1123,11 @@ module.exports = grammar({
       ),
 
     generic_pattern: ($) =>
-      seq(choice($.identifier, $.scoped_identifier), '::', field('type_arguments', $.type_arguments)),
+      seq(
+        choice($.identifier, $._reserved_identifier, $.scoped_identifier),
+        '::',
+        field('type_arguments', $.type_arguments)
+      ),
 
     tuple_pattern: ($) => seq('(', sepBy(',', choice($._pattern, $.closure_expression)), optional(','), ')'),
 
@@ -1131,7 +1135,15 @@ module.exports = grammar({
 
     tuple_struct_pattern: ($) =>
       seq(
-        field('type', choice($.identifier, $.scoped_identifier, alias($.generic_type_with_turbofish, $.generic_type))),
+        field(
+          'type',
+          choice(
+            $.identifier,
+            $._reserved_identifier,
+            $.scoped_identifier,
+            alias($.generic_type_with_turbofish, $.generic_type)
+          )
+        ),
         '(',
         sepBy(',', $._pattern),
         optional(','),
@@ -1172,7 +1184,7 @@ module.exports = grammar({
 
     ref_pattern: ($) => seq('ref', $._pattern),
 
-    captured_pattern: ($) => seq($.identifier, '@', $._pattern),
+    captured_pattern: ($) => seq(choice($.identifier, $._reserved_identifier), '@', $._pattern),
 
     reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
 

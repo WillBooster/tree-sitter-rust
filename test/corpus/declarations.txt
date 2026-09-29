@@ -2549,6 +2549,11 @@ fn f() {
   let safe = true;
   safe = false;
   safe!(safe);
+  safe::<T>(x);
+  safe::<T>::new();
+  match x {
+    safe @ Some(_) => {}
+  }
 }
 
 --------------------------------------------------------------------------------
@@ -2569,7 +2574,35 @@ fn f() {
         (macro_invocation
           (identifier)
           (token_tree
-            (identifier)))))))
+            (identifier))))
+      (expression_statement
+        (call_expression
+          (generic_function
+            (identifier)
+            (type_arguments
+              (type_identifier)))
+          (arguments
+            (identifier))))
+      (expression_statement
+        (call_expression
+          (scoped_identifier
+            (generic_type
+              (identifier)
+              (type_arguments
+                (type_identifier)))
+            (identifier))
+          (arguments)))
+      (expression_statement
+        (match_expression
+          (identifier)
+          (match_block
+            (match_arm
+              (match_pattern
+                (captured_pattern
+                  (identifier)
+                  (tuple_struct_pattern
+                    (identifier))))
+              (block))))))))
 
 ================================================================================
 Crate visibility
