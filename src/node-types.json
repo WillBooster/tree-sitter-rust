@@ -2166,10 +2166,6 @@
         {
           "type": "extern_modifier",
           "named": true
-        },
-        {
-          "type": "string_literal",
-          "named": true
         }
       ]
     }

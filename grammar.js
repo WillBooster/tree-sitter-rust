@@ -335,7 +335,9 @@ module.exports = grammar({
     _safe_function_signature_item: ($) =>
       seq(
         optional($.visibility_modifier),
-        alias(seq('safe', optional($.extern_modifier)), $.function_modifiers),
+        // Aliasing the bare token would make `function_modifiers` a leaf without the `safe` child that other
+        // modifiers have.
+        alias(repeat1('safe'), $.function_modifiers),
         $._function_signature
       ),
 
