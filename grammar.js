@@ -316,8 +316,9 @@ module.exports = grammar({
 
     declaration_list: ($) => seq('{', repeat($._declaration_statement), '}'),
 
-    // Only items in `extern` blocks take a safety qualifier. Accepting `safe` elsewhere would make it a keyword
-    // wherever an item can start, breaking its uses as an identifier (`let safe = …; safe = …;`).
+    // Items in `extern` blocks may be `safe` functions and `safe` or `unsafe` statics. `safe` is a keyword only where
+    // such an item starts: accepting it on every item would make it one wherever an item can start, breaking its uses as
+    // an identifier (`let safe = …; safe = …;`).
     _foreign_declaration_list: ($) =>
       seq(
         '{',
