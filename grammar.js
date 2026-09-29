@@ -833,7 +833,15 @@ module.exports = grammar({
 
     macro_invocation: ($) =>
       seq(
-        field('macro', choice($.scoped_identifier, $.identifier, $._reserved_identifier)),
+        field(
+          'macro',
+          choice(
+            $.scoped_identifier,
+            $.identifier,
+            alias(choice(...primitiveTypes), $.identifier),
+            $._reserved_identifier
+          )
+        ),
         '!',
         alias($.delim_token_tree, $.token_tree)
       ),
