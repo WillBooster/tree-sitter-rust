@@ -24,15 +24,24 @@ test('uses a Wasm build built from the current parser', () => {
   ).toBe(false);
 });
 
-// Consumers parse files being edited, so recovering from many errors must stay linear. Linear recovery
-// takes about 0.2 s here.
-test('recovers from an error on each of 10,000 lines in linear time', () => {
-  const start = performance.now();
-  const tree = parser.parse('$ a\n'.repeat(10_000));
-  const elapsed = performance.now() - start;
-  if (!tree) throw new Error('The parser returned no tree');
-  const { hasError } = tree.rootNode;
-  tree.delete();
-  expect(hasError).toBe(true);
-  expect(elapsed).toBeLessThan(3000);
+// Consumers parse files being edited, so recovering from many errors must stay linear: ten times the lines take
+// about ten times as long, against a hundred times for quadratic recovery. The ratio, unlike an absolute limit,
+// holds on slow CI runners, and each size keeps its fastest run to filter out pauses caused by the tests running
+// alongside.
+test('recovers from an error on each line in linear time', { timeout: 60_000 }, () => {
+  expect(fastestParseTime(10_000) / fastestParseTime(1000)).toBeLessThan(30);
 });
+
+function fastestParseTime(lines: number): number {
+  let fastest = Infinity;
+  for (let run = 0; run < 3; run++) {
+    const start = performance.now();
+    const tree = parser.parse('$ a\n'.repeat(lines));
+    fastest = Math.min(fastest, performance.now() - start);
+    if (!tree) throw new Error('The parser returned no tree');
+    const { hasError } = tree.rootNode;
+    tree.delete();
+    expect(hasError).toBe(true);
+  }
+  return fastest;
+}

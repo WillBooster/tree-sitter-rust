@@ -93,7 +93,7 @@ cargo test
   fail to parse exactly as listed in `script/known-failures.txt`. The first run clones the repositories. The example repositories are pinned to commits in
   `script/parse-examples`. After a grammar change or a moved pin alters that list, `script/parse-examples` rewrites
   it; review its diff before committing;
-- a performance check (`test/unit/performance.test.ts`) that recovering from an error on each of 10,000 lines takes
+- a performance check (`test/unit/performance.test.ts`) that recovering from an error on each line takes
   linear time, since consumers parse files while they are being edited. It loads the Wasm build through
   @willbooster/web-tree-sitter, which `bun run build/ci` rebuilds after regenerating the parser;
 - checks that the Wasm build parses in Chromium (`test/unit/browser/`) and in Cloudflare Workers with and without
