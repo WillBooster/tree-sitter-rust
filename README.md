@@ -59,7 +59,10 @@ parser.setLanguage(await Language.load(rust));
 
 The package also ships the node types in `src/node-types.json`.
 
-In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust):
+In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
+[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
+fuzzed with (the grammar also loads in the upstream `tree-sitter` crate 0.27, whose error recovery never ends on some
+malformed input):
 
 ```toml
 [dependencies]
