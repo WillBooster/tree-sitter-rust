@@ -26,9 +26,9 @@ test('uses a Wasm build built from the current parser', () => {
 
 // Consumers parse files being edited, so recovering from many errors must stay linear: ten times the lines take
 // about ten times as long, against a hundred times for quadratic recovery. The ratio, unlike an absolute limit,
-// holds on slow CI runners. The parses are timed in CPU time, not wall-clock time, which the test files running
-// alongside inflate unevenly; this relies on each test file running in its own process (Vitest's default `forks`
-// pool). Each size keeps its fastest run to filter out the remaining noise, such as garbage collection.
+// holds on slow CI runners. The parses are timed in the CPU time of this test file's process (see `pool` in
+// vitest.config.mts), not in wall-clock time, which the test files running alongside inflate unevenly. Each size
+// keeps its fastest run to filter out the remaining noise, such as garbage collection.
 test('recovers from an error on each line in linear time', { timeout: 60_000 }, () => {
   expect(fastestParseCpuTime(10_000) / fastestParseCpuTime(1000)).toBeLessThan(30);
 });
