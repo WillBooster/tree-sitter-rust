@@ -6,9 +6,6 @@
  * @license MIT
  */
 
-/// <reference types="tree-sitter-cli/dsl" />
-// @ts-check
-
 // https://doc.rust-lang.org/reference/expressions.html#expression-precedence
 const PREC = {
   call: 15,
@@ -117,7 +114,7 @@ module.exports = grammar({
     $._error_sentinel,
   ],
 
-  supertypes: ($) => [$._expression, $._type, $._literal, $._literal_pattern, $._declaration_statement, $._pattern],
+  supertypes: ($) => [$._expression, $._type, $._literal, $._literal_pattern, $._pattern],
 
   inline: ($) => [
     $._path,

@@ -9,6 +9,7 @@ export default defineConfig({
       {
         test: {
           name: 'node',
+          globalSetup: 'test/helpers/installCli.ts',
           include: ['test/unit/*.test.ts'],
         },
       },

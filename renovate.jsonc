@@ -3,9 +3,10 @@
   "extends": ["github>WillBooster/willbooster-configs:renovate.jsonc"],
   "packageRules": [
     {
-      // The Wasm build that tree-sitter-cli emits must load in @willbooster/web-tree-sitter, and the Rust tests and
-      // the fuzz job run on willbooster-tree-sitter, the same runtime, so they are updated together.
-      "matchPackageNames": ["tree-sitter-cli", "@willbooster/web-tree-sitter", "willbooster-tree-sitter"],
+      // The Wasm tests run on @willbooster/web-tree-sitter, and the Rust tests, the fuzz job, and script/tree-sitter,
+      // which generates, builds, and tests the parser, on the version of willbooster-tree-sitter that Cargo.lock locks.
+      // Both are the same runtime, so they are updated together.
+      "matchPackageNames": ["@willbooster/web-tree-sitter", "willbooster-tree-sitter"],
       "groupName": "tree-sitter",
     },
     {

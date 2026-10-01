@@ -1,0 +1,2 @@
+# The NUL characters that null-characters.txt tests make git treat it as binary, which would hide its diffs.
+null-characters.txt diff
