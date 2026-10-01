@@ -38,6 +38,9 @@ clone() {
 }
 
 cd "$(dirname "$0")/.."
+# The CLI caches compiled parsers by language name in a directory shared by every checkout and reuses one that is newer
+# than the sources, so this checkout's parser is compiled into a cache of its own.
+export TREE_SITTER_LIBDIR=$PWD/.tmp/tree-sitter-lib
 
 clone bitflags https://github.com/rust-lang-nursery/bitflags 8df4d4ebb26fc35d49515972ede9dc77e5b43599
 clone libc https://github.com/rust-lang/libc f9bac8dfd5a908d46519ba8d9a6c020f5b690282
