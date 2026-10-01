@@ -89,9 +89,11 @@ cargo test
 `bun run test` runs:
 
 - the corpus in `test/corpus`, with the native build and with the Wasm build (the first run downloads the WASI SDK);
-- an incremental-parsing check (`test/unit/incremental.test.ts`): `tree-sitter fuzz` edits each corpus case at random,
-  reparses it, undoes the edits, and reparses again. `TREE_SITTER_SEED`, `TREE_SITTER_ITERATIONS`, and
-  `TREE_SITTER_EDITS` run other or more edits;
+- an incremental-parsing check (`test/unit/incremental.test.ts`): `script/fuzz-corpus` runs `tree-sitter fuzz`, which
+  edits each corpus case at random, reparses it, undoes the edits, and reparses again, on the WillBooster/tree-sitter
+  runtime version locked in `Cargo.lock` (the first run downloads that CLI from its GitHub Release, or builds it with
+  `cargo` when the download fails or the release has no binary that runs here). `TREE_SITTER_SEED`,
+  `TREE_SITTER_ITERATIONS`, and `TREE_SITTER_EDITS` run other or more edits;
 - a check that the real-world Rust files in `examples/`, the checked-in ones and those of the cloned repositories,
   fail to parse exactly as listed in `script/known-failures.txt`. The first run clones the repositories. The example
   repositories are pinned to commits in `script/parse-examples`. After a grammar change or a moved pin alters that list,
@@ -105,7 +107,7 @@ cargo test
   Node.js compatibility (`test/unit/workerd.test.ts`). Run `bun run test/ci-setup` once to install Chromium.
 
 The tests and `script/parse-examples` compile the parser into `.tmp/tree-sitter-lib` rather than the CLI's cache shared
-by every checkout.
+by every checkout; `script/fuzz-corpus` builds a per-run parser in `.tmp/fuzz` and deletes it afterwards.
 
 CI also runs these tests on Linux arm64 and macOS, where the Rust binding compiles the parser natively, and fuzzes the
 parser with libFuzzer and sanitizers (`.github/workflows/robustness.yml`).
