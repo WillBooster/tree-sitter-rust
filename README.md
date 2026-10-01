@@ -89,7 +89,7 @@ cargo test
 The scripts and tests generate, build, test, and parse with `script/tree-sitter`, the tree-sitter CLI of the
 WillBooster/tree-sitter runtime version locked in `Cargo.lock`, since the generator and the runtime of upstream's CLI are
 not the ones this package ships with. Its first run downloads that CLI from the runtime's GitHub Release, or builds it
-with `cargo` (which needs CMake) when the download fails or the release has no binary that runs here. Run other CLI
+with `cargo` (whose build runs the CMake that `mise.toml` pins) when the download fails or the release has no binary that runs here. Run other CLI
 commands through it as well (e.g. `script/tree-sitter parse file.rs`).
 
 `bun run test` runs:

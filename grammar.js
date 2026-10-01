@@ -6,6 +6,9 @@
  * @license MIT
  */
 
+/// <reference types="tree-sitter-cli/dsl" />
+// @ts-check
+
 // https://doc.rust-lang.org/reference/expressions.html#expression-precedence
 const PREC = {
   call: 15,
