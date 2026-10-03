@@ -318,3 +318,52 @@ macro_rules! empty [
     (macro_rule
       left: (token_tree_pattern)
       right: (token_tree))))
+
+================================================================================
+Tilde macro tokens
+================================================================================
+
+macro_rules! consume {
+    (~ $value:tt) => {};
+    ({~ [$($rest:tt)*]}) => {};
+}
+fn main() {
+    consume!(~ 1);
+    consume!({~ [~]});
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (macro_definition
+    (identifier)
+    (macro_rule
+      (token_tree_pattern
+        (token_binding_pattern
+          (metavariable)
+          (fragment_specifier)))
+      (token_tree))
+    (macro_rule
+      (token_tree_pattern
+        (token_tree_pattern
+          (token_tree_pattern
+            (token_repetition_pattern
+              (token_binding_pattern
+                (metavariable)
+                (fragment_specifier))))))
+      (token_tree)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (integer_literal))))
+      (expression_statement
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (token_tree
+              (token_tree))))))))
