@@ -14,6 +14,7 @@ enum TokenType {
     BLOCK_INNER_DOC_MARKER,
     BLOCK_COMMENT_CONTENT,
     LINE_DOC_CONTENT,
+    RANGE_UNARY_ENDPOINT_START,
     ERROR_SENTINEL
 };
 
@@ -45,6 +46,8 @@ static inline bool is_num_char(int32_t c) { return c == '_' || iswdigit(c); }
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 
 static inline void skip(TSLexer *lexer) { lexer->advance(lexer, true); }
+
+static inline bool scan_range_unary_endpoint_start(TSLexer *lexer);
 
 static inline bool process_string(TSLexer *lexer) {
     bool has_content = false;
@@ -134,7 +137,6 @@ static inline bool process_float_literal(TSLexer *lexer) {
         has_fraction = true;
         advance(lexer);
         if (iswalpha(lexer->lookahead)) {
-            // The dot is followed by a letter: 1.max(2) => not a float but an integer
             return false;
         }
 
@@ -192,7 +194,6 @@ static inline bool process_line_doc_content(TSLexer *lexer) {
             return true;
         }
         if (lexer->lookahead == '\n') {
-            // Include the newline in the doc content node.
             // Line endings are useful for markdown injection.
             advance(lexer);
             return true;
@@ -255,12 +256,9 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
     if (valid_symbols[BLOCK_OUTER_DOC_MARKER] && first == '*') {
         advance(lexer);
         lexer->mark_end(lexer);
-        // If the next token is a / that means that it's an empty block comment.
         if (lexer->lookahead == '/') {
             return false;
         }
-        // If the next token is a * that means that this isn't a BLOCK_OUTER_DOC_MARKER
-        // as BLOCK_OUTER_DOC_MARKER's only have 2 * not 3 or more.
         if (lexer->lookahead != '*') {
             lexer->result_symbol = BLOCK_OUTER_DOC_MARKER;
             return true;
@@ -271,13 +269,10 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
 
     if (valid_symbols[BLOCK_COMMENT_CONTENT]) {
         BlockCommentProcessing processing = {Continuing, 1};
-        // Manually set the current state based on the first character
         switch (first) {
             case '*':
                 processing.state = LeftAsterisk;
                 if (lexer->lookahead == '/') {
-                    // This case can happen in an empty doc block comment
-                    // like /*!*/. The comment has no contents, so bail.
                     return false;
                 }
                 break;
@@ -289,12 +284,7 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
                 break;
         }
 
-        // For the purposes of actually parsing rust code, this
-        // is incorrect as it considers an unterminated block comment
-        // to be an error. However, for the purposes of syntax highlighting
-        // this should be considered successful as otherwise you are not able
-        // to syntax highlight a block of code prior to closing the
-        // block comment
+        // Accept unterminated content so highlighting remains available while the closing delimiter is being typed.
         while (!lexer->eof(lexer) && processing.nestingDepth != 0) {
             first = lexer->lookahead;
             switch (processing.state) {
@@ -324,23 +314,7 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
 }
 
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-    // The documentation states that if the lexical analysis fails for some reason
-    // they will mark every state as valid and pass it to the external scanner
-    // However, we can't do anything to help them recover in that case so we
-    // should just fail.
-    /*
-      link: https://tree-sitter.github.io/tree-sitter/creating-parsers#external-scanners
-      If a syntax error is encountered during regular parsing, Tree-sitter’s
-      first action during error recovery will be to call the external scanner’s
-      scan function with all tokens marked valid. The scanner should detect this
-      case and handle it appropriately. One simple method of detection is to add
-      an unused token to the end of the externals array, for example
-
-      externals: $ => [$.token1, $.token2, $.error_sentinel],
-
-      then check whether that token is marked valid to determine whether
-      Tree-sitter is in error correction mode.
-    */
+    // Tree-sitter enables every external token during recovery; the unused sentinel suppresses normal scans.
     if (valid_symbols[ERROR_SENTINEL]) {
         return false;
     }
@@ -354,8 +328,6 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
 
     if (valid_symbols[STRING_CONTENT] && !valid_symbols[FLOAT_LITERAL]) {
         if (process_string(lexer)) return true;
-        // process_string returns false when the next char is '"' or '\' (no
-        // content to emit). Fall through so STRING_CLOSE can consume the '"'.
     }
 
     if (valid_symbols[STRING_CLOSE] && lexer->lookahead == '"') {
@@ -371,6 +343,12 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
 
     while (iswspace(lexer->lookahead)) {
         skip(lexer);
+    }
+
+    if (valid_symbols[RANGE_UNARY_ENDPOINT_START] &&
+        (lexer->lookahead == '*' || lexer->lookahead == '-' || lexer->lookahead == '!' || lexer->lookahead == '&' ||
+         lexer->lookahead == '/')) {
+        return scan_range_unary_endpoint_start(lexer);
     }
 
     if (valid_symbols[RAW_STRING_LITERAL_START] &&
@@ -391,4 +369,47 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     }
 
     return false;
+}
+
+static inline bool scan_range_unary_endpoint_start(TSLexer *lexer) {
+    lexer->mark_end(lexer);
+    for (;;) {
+        while (iswspace(lexer->lookahead)) {
+            advance(lexer);
+        }
+        if (lexer->lookahead != '/') {
+            break;
+        }
+        advance(lexer);
+        if (lexer->lookahead == '/') {
+            while (!lexer->eof(lexer) && lexer->lookahead != '\n') {
+                advance(lexer);
+            }
+        } else if (lexer->lookahead == '*') {
+            advance(lexer);
+            unsigned depth = 1;
+            while (depth && !lexer->eof(lexer)) {
+                int32_t previous = lexer->lookahead;
+                advance(lexer);
+                if (previous == '/' && lexer->lookahead == '*') {
+                    depth++;
+                    advance(lexer);
+                } else if (previous == '*' && lexer->lookahead == '/') {
+                    depth--;
+                    advance(lexer);
+                }
+            }
+            if (depth) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    if (lexer->lookahead != '*' && lexer->lookahead != '-' && lexer->lookahead != '!' && lexer->lookahead != '&') {
+        return false;
+    }
+    advance(lexer);
+    lexer->result_symbol = RANGE_UNARY_ENDPOINT_START;
+    return true;
 }

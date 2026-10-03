@@ -1700,3 +1700,137 @@ fn ranges(written: &usize, flag: bool, values: &[usize]) {
           (index_expression
             (identifier)
             (integer_literal)))))))
+
+================================================================================
+Full ranges before control-flow bodies
+================================================================================
+
+fn boundaries() {
+    let x = ..;
+    match .. { _ => {} }
+    if x == .. {} {}
+    while x == .. { break; } {}
+    if let _ = .. {} {}
+    for i in 1.. { let _ = i; break; }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (range_expression))
+      (expression_statement
+        (match_expression
+          (range_expression)
+          (match_block
+            (match_arm
+              (match_pattern)
+              (block)))))
+      (expression_statement
+        (if_expression
+          (binary_expression
+            (identifier)
+            (range_expression))
+          (block)))
+      (expression_statement
+        (block))
+      (expression_statement
+        (while_expression
+          (binary_expression
+            (identifier)
+            (range_expression))
+          (block
+            (expression_statement
+              (break_expression)))))
+      (expression_statement
+        (block))
+      (expression_statement
+        (if_expression
+          (let_condition
+            (range_expression))
+          (block)))
+      (expression_statement
+        (block))
+      (expression_statement
+        (for_expression
+          (identifier)
+          (range_expression
+            (integer_literal))
+          (block
+            (let_declaration
+              (identifier))
+            (expression_statement
+              (break_expression))))))))
+
+================================================================================
+Unary range endpoints after comments
+================================================================================
+
+fn ranges(written: &usize, signed: i32, flag: bool) {
+    let _ = .. /* endpoint */ *written;
+    let _ = .. // endpoint
+        -signed;
+    let _ = .. /* outer /* nested */ comment */ &signed;
+    let _ = ..= /* inclusive */ !flag;
+    let _ = ..&&signed;
+    let _ = ..&raw const signed;
+    let _ = ..**&written;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (reference_type
+          (primitive_type)))
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (block
+      (let_declaration
+        (range_expression
+          (block_comment)
+          (unary_expression
+            (identifier))))
+      (let_declaration
+        (range_expression
+          (line_comment)
+          (unary_expression
+            (identifier))))
+      (let_declaration
+        (range_expression
+          (block_comment)
+          (reference_expression
+            (identifier))))
+      (let_declaration
+        (range_expression
+          (block_comment)
+          (unary_expression
+            (identifier))))
+      (let_declaration
+        (range_expression
+          (reference_expression
+            (reference_expression
+              (identifier)))))
+      (let_declaration
+        (range_expression
+          (reference_expression
+            (identifier))))
+      (let_declaration
+        (range_expression
+          (unary_expression
+            (unary_expression
+              (reference_expression
+                (identifier)))))))))
