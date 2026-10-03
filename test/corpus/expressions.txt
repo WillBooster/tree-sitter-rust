@@ -1408,3 +1408,107 @@ let a = &raw const b;
     (identifier)
     (reference_expression
       (identifier))))
+
+================================================================================
+Comparisons after type casts
+================================================================================
+
+type Number = f64;
+mod lua { pub type Number = f64; }
+fn comparisons(i: u8, f: f64) -> bool {
+    i as Number <= f && i as lua::Number <= f && i as f64 <= f &&
+    (i as Number) < f && i as Number >= f
+}
+fn main() {
+    let values: Vec<Vec<u8>> = Vec::new();
+    let _ = values;
+    let _ = 4u8 >> 1;
+    let _ = comparisons(1, 2.0);
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_item
+    (type_identifier)
+    (primitive_type))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (type_item
+        (visibility_modifier)
+        (type_identifier)
+        (primitive_type))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (binary_expression
+        (binary_expression
+          (binary_expression
+            (binary_expression
+              (binary_expression
+                (type_cast_expression
+                  (identifier)
+                  (type_identifier))
+                (identifier))
+              (binary_expression
+                (type_cast_expression
+                  (identifier)
+                  (scoped_type_identifier
+                    (identifier)
+                    (type_identifier)))
+                (identifier)))
+            (binary_expression
+              (type_cast_expression
+                (identifier)
+                (primitive_type))
+              (identifier)))
+          (binary_expression
+            (parenthesized_expression
+              (type_cast_expression
+                (identifier)
+                (type_identifier)))
+            (identifier)))
+        (binary_expression
+          (type_cast_expression
+            (identifier)
+            (type_identifier))
+          (identifier)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (generic_type
+              (type_identifier)
+              (type_arguments
+                (primitive_type)))))
+        (call_expression
+          (scoped_identifier
+            (identifier)
+            (identifier))
+          (arguments)))
+      (let_declaration
+        (identifier))
+      (let_declaration
+        (binary_expression
+          (integer_literal)
+          (integer_literal)))
+      (let_declaration
+        (call_expression
+          (identifier)
+          (arguments
+            (integer_literal)
+            (float_literal)))))))
