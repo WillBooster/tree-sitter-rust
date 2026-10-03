@@ -30,6 +30,9 @@ const PREC = {
   closure: -1,
 };
 
+const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]][_\p{XID_Continue}]*`, 'v');
+const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
+
 const numericTypes = [
   'u8',
   'i8',
@@ -1244,9 +1247,12 @@ module.exports = grammar({
 
     integer_literal: () =>
       token(
-        seq(
-          choice(/[0-9][0-9_]*/, /0x[0-9a-fA-F_]+/, /0b[01_]+/, /0o[0-7_]+/),
-          optional(/[_\p{XID_Start}][_\p{XID_Continue}]*/u)
+        choice(
+          seq(
+            choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0x[0-9a-fA-F_]+/, /0b[01_]+/, /0o[0-7_]+/),
+            optional(numericSuffixWithoutExponent)
+          ),
+          seq('0', optional(zeroNumericSuffix))
         )
       ),
 
@@ -1256,12 +1262,14 @@ module.exports = grammar({
         token(
           prec(
             1,
-            seq(
-              choice(
-                seq(/[0-9][0-9_]*/, '.', /[0-9][0-9_]*/, optional(/[eE][+-]?_*[0-9][0-9_]*/)),
-                seq(/[0-9][0-9_]*/, /[eE][+-]?_*[0-9][0-9_]*/)
+            choice(
+              seq(
+                /[0-9][0-9_]*/,
+                optional(seq('.', /[0-9][0-9_]*/)),
+                /[eE][+-]?_*[0-9][0-9_]*/,
+                optional(/[_\p{XID_Start}][_\p{XID_Continue}]*/u)
               ),
-              optional(/[_\p{XID_Start}][_\p{XID_Continue}]*/u)
+              seq(/[0-9][0-9_]*/, '.', /[0-9][0-9_]*/, optional(numericSuffixWithoutExponent))
             )
           )
         )

@@ -48,10 +48,45 @@ test('preserves numeric suffixes and following string boundaries in macro tokens
       ['raw_string_literal', 'cr"c"'],
       ['float_literal', '4.0'],
       ['raw_string_literal', 'r#"raw"#'],
+      ['float_literal', '1e3efoo'],
+      ['float_literal', '1e3Efoo'],
+      ['float_literal', '1.0e3efoo'],
+      ['float_literal', '1.0E3Efoo'],
+      ['integer_literal', '0x1efoo'],
+      ['integer_literal', '0_unit'],
+      ['integer_literal', '0_foo'],
+      ['integer_literal', '00bfoo'],
     ]);
   } finally {
     query.delete();
     tree?.delete();
+    parser.delete();
+  }
+});
+
+test('keeps incomplete exponent spellings out of numeric literals', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  const query = new Query(language, '(_literal) @literal');
+  try {
+    for (const literal of ['1efoo', '1Efoo', '1.0efoo', '1.0Efoo', '1_efoo', '1.0_efoo', '0b1efoo', '0o7Efoo']) {
+      const expression = parser.parse(`fn main() { let _ = ${literal}; }`)!;
+      const macro = parser.parse(`swallow!(${literal});`)!;
+      try {
+        expect(expression.rootNode.hasError, literal).toBe(true);
+        expect(
+          query.captures(macro.rootNode).map(({ node }) => node.text),
+          literal
+        ).not.toContain(literal);
+      } finally {
+        expression.delete();
+        macro.delete();
+      }
+    }
+  } finally {
+    query.delete();
     parser.delete();
   }
 });

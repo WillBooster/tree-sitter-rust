@@ -9227,39 +9227,70 @@
     "integer_literal": {
       "type": "TOKEN",
       "content": {
-        "type": "SEQ",
+        "type": "CHOICE",
         "members": [
           {
-            "type": "CHOICE",
+            "type": "SEQ",
             "members": [
               {
-                "type": "PATTERN",
-                "value": "[0-9][0-9_]*"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "PATTERN",
+                    "value": "[1-9][0-9_]*"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "0[0-9_]+"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "0x[0-9a-fA-F_]+"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "0b[01_]+"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "0o[0-7_]+"
+                  }
+                ]
               },
               {
-                "type": "PATTERN",
-                "value": "0x[0-9a-fA-F_]+"
-              },
-              {
-                "type": "PATTERN",
-                "value": "0b[01_]+"
-              },
-              {
-                "type": "PATTERN",
-                "value": "0o[0-7_]+"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "PATTERN",
+                    "value": "[\\p{XID_Start}--[eE]][_\\p{XID_Continue}]*",
+                    "flags": "v"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
               }
             ]
           },
           {
-            "type": "CHOICE",
+            "type": "SEQ",
             "members": [
               {
-                "type": "PATTERN",
-                "value": "[_\\p{XID_Start}][_\\p{XID_Continue}]*",
-                "flags": "u"
+                "type": "STRING",
+                "value": "0"
               },
               {
-                "type": "BLANK"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "PATTERN",
+                    "value": "[\\p{XID_Start}--[eEbox]][_\\p{XID_Continue}]*",
+                    "flags": "v"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
               }
             ]
           }
@@ -9279,65 +9310,82 @@
             "type": "PREC",
             "value": 1,
             "content": {
-              "type": "SEQ",
+              "type": "CHOICE",
               "members": [
                 {
-                  "type": "CHOICE",
+                  "type": "SEQ",
                   "members": [
                     {
-                      "type": "SEQ",
+                      "type": "PATTERN",
+                      "value": "[0-9][0-9_]*"
+                    },
+                    {
+                      "type": "CHOICE",
                       "members": [
                         {
-                          "type": "PATTERN",
-                          "value": "[0-9][0-9_]*"
-                        },
-                        {
-                          "type": "STRING",
-                          "value": "."
-                        },
-                        {
-                          "type": "PATTERN",
-                          "value": "[0-9][0-9_]*"
-                        },
-                        {
-                          "type": "CHOICE",
+                          "type": "SEQ",
                           "members": [
                             {
-                              "type": "PATTERN",
-                              "value": "[eE][+-]?_*[0-9][0-9_]*"
+                              "type": "STRING",
+                              "value": "."
                             },
                             {
-                              "type": "BLANK"
+                              "type": "PATTERN",
+                              "value": "[0-9][0-9_]*"
                             }
                           ]
+                        },
+                        {
+                          "type": "BLANK"
                         }
                       ]
                     },
                     {
-                      "type": "SEQ",
+                      "type": "PATTERN",
+                      "value": "[eE][+-]?_*[0-9][0-9_]*"
+                    },
+                    {
+                      "type": "CHOICE",
                       "members": [
                         {
                           "type": "PATTERN",
-                          "value": "[0-9][0-9_]*"
+                          "value": "[_\\p{XID_Start}][_\\p{XID_Continue}]*",
+                          "flags": "u"
                         },
                         {
-                          "type": "PATTERN",
-                          "value": "[eE][+-]?_*[0-9][0-9_]*"
+                          "type": "BLANK"
                         }
                       ]
                     }
                   ]
                 },
                 {
-                  "type": "CHOICE",
+                  "type": "SEQ",
                   "members": [
                     {
                       "type": "PATTERN",
-                      "value": "[_\\p{XID_Start}][_\\p{XID_Continue}]*",
-                      "flags": "u"
+                      "value": "[0-9][0-9_]*"
                     },
                     {
-                      "type": "BLANK"
+                      "type": "STRING",
+                      "value": "."
+                    },
+                    {
+                      "type": "PATTERN",
+                      "value": "[0-9][0-9_]*"
+                    },
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "PATTERN",
+                          "value": "[\\p{XID_Start}--[eE]][_\\p{XID_Continue}]*",
+                          "flags": "v"
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
                     }
                   ]
                 }
