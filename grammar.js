@@ -924,7 +924,7 @@ module.exports = grammar({
         [PREC.bitand, '&'],
         [PREC.bitor, '|'],
         [PREC.bitxor, '^'],
-        [PREC.comparative, choice('==', '!=', '<', '<=', '>', '>=')],
+        [PREC.comparative, choice('==', '!=', '<', token(prec(2, '<=')), '>', '>=')],
         [PREC.shift, choice('<<', '>>')],
         [PREC.additive, choice('+', '-')],
         [PREC.multiplicative, choice('*', '/', '%')],
