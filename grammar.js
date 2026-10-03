@@ -892,14 +892,11 @@ module.exports = grammar({
       ),
 
     range_expression: ($) =>
-      prec.left(
-        PREC.range,
-        choice(
-          seq($._expression, choice('..', '...', '..='), $._expression),
-          seq($._expression, '..'),
-          seq('..', $._expression),
-          '..'
-        )
+      choice(
+        prec.left(PREC.range, seq($._expression, choice('..', '...', '..='), $._expression)),
+        prec.left(PREC.range, seq($._expression, '..')),
+        prec.right(PREC.range + 1, seq(choice('..', '..='), $._expression)),
+        prec.left(PREC.range, '..')
       ),
 
     unary_expression: ($) => prec(PREC.unary, seq(choice('-', '*', '!'), $._expression)),
