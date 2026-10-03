@@ -212,14 +212,14 @@ typedef struct {
     unsigned nestingDepth;
 } BlockCommentProcessing;
 
-static inline void process_left_forward_slash(BlockCommentProcessing *processing, char current) {
+static inline void process_left_forward_slash(BlockCommentProcessing *processing, int32_t current) {
     if (current == '*') {
         processing->nestingDepth += 1;
     }
     processing->state = Continuing;
 };
 
-static inline void process_left_asterisk(BlockCommentProcessing *processing, char current, TSLexer *lexer) {
+static inline void process_left_asterisk(BlockCommentProcessing *processing, int32_t current, TSLexer *lexer) {
     if (current == '*') {
         lexer->mark_end(lexer);
         processing->state = LeftAsterisk;
@@ -233,7 +233,7 @@ static inline void process_left_asterisk(BlockCommentProcessing *processing, cha
     processing->state = Continuing;
 }
 
-static inline void process_continuing(BlockCommentProcessing *processing, char current) {
+static inline void process_continuing(BlockCommentProcessing *processing, int32_t current) {
     switch (current) {
         case '/':
             processing->state = LeftForwardSlash;
@@ -245,13 +245,8 @@ static inline void process_continuing(BlockCommentProcessing *processing, char c
 }
 
 static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbols) {
-    char first = (char)lexer->lookahead;
-    // The first character is stored so we can safely advance inside
-    // these if blocks. However, because we only store one, we can only
-    // safely advance 1 time. Since there's a chance that an advance could
-    // happen in one state, we must advance in all states to ensure that
-    // the program ends up in a sane state prior to processing the block
-    // comment if need be.
+    int32_t first = lexer->lookahead;
+    // Paths reaching the comment-state initializer must advance exactly once, so first is the character just consumed.
     if (valid_symbols[BLOCK_INNER_DOC_MARKER] && first == '!') {
         lexer->result_symbol = BLOCK_INNER_DOC_MARKER;
         advance(lexer);
@@ -301,11 +296,7 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
         // to syntax highlight a block of code prior to closing the
         // block comment
         while (!lexer->eof(lexer) && processing.nestingDepth != 0) {
-            // Set first to the current lookahead as that is the second character
-            // as we force an advance in the above code when we are checking if we
-            // need to handle a block comment inner or outer doc comment signifier
-            // node
-            first = (char)lexer->lookahead;
+            first = lexer->lookahead;
             switch (processing.state) {
                 case LeftForwardSlash:
                     process_left_forward_slash(&processing, first);
