@@ -265,3 +265,29 @@ fn main() {}
     (identifier)
     (parameters)
     (block)))
+
+================================================================================
+Unicode characters in block comments
+================================================================================
+
+/*是*/
+/* Īį /* nested */ */
+/** Īį 是 */
+/*! Īį 是 */
+fn after_comments() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (block_comment)
+  (block_comment)
+  (block_comment
+    (outer_doc_comment_marker)
+    (doc_comment))
+  (block_comment
+    (inner_doc_comment_marker)
+    (doc_comment))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
