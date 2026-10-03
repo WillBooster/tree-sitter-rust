@@ -93,6 +93,7 @@ const TOKEN_TREE_NON_SPECIAL_PUNCTUATION = [
   '=>',
   '#',
   '?',
+  '~',
 ];
 
 const primitiveTypes = [...numericTypes, 'bool', 'str', 'char'];
