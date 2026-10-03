@@ -246,6 +246,7 @@ static inline void process_continuing(BlockCommentProcessing *processing, int32_
 
 static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbols) {
     int32_t first = lexer->lookahead;
+    // Paths reaching the comment-state initializer must advance exactly once, so first is the character just consumed.
     if (valid_symbols[BLOCK_INNER_DOC_MARKER] && first == '!') {
         lexer->result_symbol = BLOCK_INNER_DOC_MARKER;
         advance(lexer);
