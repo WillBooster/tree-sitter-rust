@@ -9,7 +9,7 @@ enum TokenType {
     RAW_STRING_LITERAL_START,
     RAW_STRING_LITERAL_CONTENT,
     RAW_STRING_LITERAL_END,
-    FLOAT_LITERAL,
+    TRAILING_DOT_FLOAT_LITERAL,
     BLOCK_OUTER_DOC_MARKER,
     BLOCK_INNER_DOC_MARKER,
     BLOCK_COMMENT_CONTENT,
@@ -123,66 +123,19 @@ static inline bool scan_raw_string_end(Scanner *scanner, TSLexer *lexer) {
     return true;
 }
 
-static inline bool process_float_literal(TSLexer *lexer) {
-    lexer->result_symbol = FLOAT_LITERAL;
-
+static inline bool process_trailing_dot_float_literal(TSLexer *lexer) {
+    lexer->result_symbol = TRAILING_DOT_FLOAT_LITERAL;
     advance(lexer);
     while (is_num_char(lexer->lookahead)) {
         advance(lexer);
     }
-
-    bool has_fraction = false, has_exponent = false;
-
-    if (lexer->lookahead == '.') {
-        has_fraction = true;
-        advance(lexer);
-        if (iswalpha(lexer->lookahead)) {
-            return false;
-        }
-
-        if (lexer->lookahead == '.') {
-            return false;
-        }
-        while (is_num_char(lexer->lookahead)) {
-            advance(lexer);
-        }
-    }
-
-    lexer->mark_end(lexer);
-
-    if (lexer->lookahead == 'e' || lexer->lookahead == 'E') {
-        has_exponent = true;
-        advance(lexer);
-        if (lexer->lookahead == '+' || lexer->lookahead == '-') {
-            advance(lexer);
-        }
-        if (!is_num_char(lexer->lookahead)) {
-            return true;
-        }
-        advance(lexer);
-        while (is_num_char(lexer->lookahead)) {
-            advance(lexer);
-        }
-
-        lexer->mark_end(lexer);
-    }
-
-    if (!has_exponent && !has_fraction) {
+    if (lexer->lookahead != '.') {
         return false;
     }
-
-    if (lexer->lookahead != 'u' && lexer->lookahead != 'i' && lexer->lookahead != 'f') {
-        return true;
-    }
     advance(lexer);
-    if (!iswdigit(lexer->lookahead)) {
-        return true;
+    if (iswalpha(lexer->lookahead) || is_num_char(lexer->lookahead) || lexer->lookahead == '.') {
+        return false;
     }
-
-    while (iswdigit(lexer->lookahead)) {
-        advance(lexer);
-    }
-
     lexer->mark_end(lexer);
     return true;
 }
@@ -326,7 +279,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return process_block_comment(lexer, valid_symbols);
     }
 
-    if (valid_symbols[STRING_CONTENT] && !valid_symbols[FLOAT_LITERAL]) {
+    if (valid_symbols[STRING_CONTENT] && !valid_symbols[TRAILING_DOT_FLOAT_LITERAL]) {
         if (process_string(lexer)) return true;
     }
 
@@ -364,8 +317,8 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_raw_string_end(scanner, lexer);
     }
 
-    if (valid_symbols[FLOAT_LITERAL] && iswdigit(lexer->lookahead)) {
-        return process_float_literal(lexer);
+    if (valid_symbols[TRAILING_DOT_FLOAT_LITERAL] && iswdigit(lexer->lookahead)) {
+        return process_trailing_dot_float_literal(lexer);
     }
 
     return false;

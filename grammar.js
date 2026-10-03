@@ -110,7 +110,7 @@ module.exports = grammar({
     $._raw_string_literal_start,
     $.raw_string_literal_content,
     $._raw_string_literal_end,
-    $.float_literal,
+    $._trailing_dot_float_literal,
     $._outer_block_doc_comment_marker,
     $._inner_block_doc_comment_marker,
     $._block_comment_content,
@@ -1243,7 +1243,29 @@ module.exports = grammar({
     negative_literal: ($) => seq('-', choice($.integer_literal, $.float_literal)),
 
     integer_literal: () =>
-      token(seq(choice(/[0-9][0-9_]*/, /0x[0-9a-fA-F_]+/, /0b[01_]+/, /0o[0-7_]+/), optional(choice(...numericTypes)))),
+      token(
+        seq(
+          choice(/[0-9][0-9_]*/, /0x[0-9a-fA-F_]+/, /0b[01_]+/, /0o[0-7_]+/),
+          optional(/[_\p{XID_Start}][_\p{XID_Continue}]*/u)
+        )
+      ),
+
+    float_literal: ($) =>
+      choice(
+        $._trailing_dot_float_literal,
+        token(
+          prec(
+            1,
+            seq(
+              choice(
+                seq(/[0-9][0-9_]*/, '.', /[0-9][0-9_]*/, optional(/[eE][+-]?_*[0-9][0-9_]*/)),
+                seq(/[0-9][0-9_]*/, /[eE][+-]?_*[0-9][0-9_]*/)
+              ),
+              optional(/[_\p{XID_Start}][_\p{XID_Continue}]*/u)
+            )
+          )
+        )
+      ),
 
     string_literal: ($) =>
       seq(alias(/[bc]?"/, '"'), repeat(choice($.escape_sequence, $.string_content)), alias($.string_close, '"')),
