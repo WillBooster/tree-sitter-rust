@@ -115,6 +115,7 @@ module.exports = grammar({
     $._inner_block_doc_comment_marker,
     $._block_comment_content,
     $._line_doc_content,
+    $._range_unary_endpoint_start,
     $._error_sentinel,
   ],
 
@@ -892,14 +893,12 @@ module.exports = grammar({
       ),
 
     range_expression: ($) =>
-      prec.left(
-        PREC.range,
-        choice(
-          seq($._expression, choice('..', '...', '..='), $._expression),
-          seq($._expression, '..'),
-          seq('..', $._expression),
-          '..'
-        )
+      choice(
+        prec.left(PREC.range, seq($._expression, choice('..', '...', '..='), $._expression)),
+        prec.left(PREC.range, seq($._expression, '..')),
+        prec.left(PREC.range, seq(choice('..', '..='), $._expression)),
+        prec.right(PREC.range + 1, seq(choice('..', '..='), $._range_unary_endpoint_start, $._expression)),
+        prec.left(PREC.range, '..')
       ),
 
     unary_expression: ($) => prec(PREC.unary, seq(choice('-', '*', '!'), $._expression)),
