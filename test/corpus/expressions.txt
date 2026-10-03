@@ -1834,3 +1834,87 @@ fn ranges(written: &usize, signed: i32, flag: bool) {
             (unary_expression
               (reference_expression
                 (identifier)))))))))
+
+================================================================================
+Closure parameters with trailing commas
+================================================================================
+
+fn main() {
+    let identity = |value: i32,| value;
+    let pair = |left, right,| left + right;
+    let tuple = move |(left, right): (i32, i32), /* tail */| -> i32 { left + right };
+    let inferred = |value,| value;
+    assert_eq!(identity(1), pair(0, 1));
+    assert_eq!(tuple((2, 3)), inferred(5));
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    body: (block
+      (let_declaration
+        pattern: (identifier)
+        value: (closure_expression
+          parameters: (closure_parameters
+            (parameter
+              pattern: (identifier)
+              type: (primitive_type)))
+          body: (identifier)))
+      (let_declaration
+        pattern: (identifier)
+        value: (closure_expression
+          parameters: (closure_parameters
+            (identifier)
+            (identifier))
+          body: (binary_expression
+            left: (identifier)
+            right: (identifier))))
+      (let_declaration
+        pattern: (identifier)
+        value: (closure_expression
+          parameters: (closure_parameters
+            (parameter
+              pattern: (tuple_pattern
+                (identifier)
+                (identifier))
+              type: (tuple_type
+                (primitive_type)
+                (primitive_type)))
+            (block_comment))
+          return_type: (primitive_type)
+          body: (block
+            (binary_expression
+              left: (identifier)
+              right: (identifier)))))
+      (let_declaration
+        pattern: (identifier)
+        value: (closure_expression
+          parameters: (closure_parameters
+            (identifier))
+          body: (identifier)))
+      (expression_statement
+        (macro_invocation
+          macro: (identifier)
+          (token_tree
+            (identifier)
+            (token_tree
+              (integer_literal))
+            (identifier)
+            (token_tree
+              (integer_literal)
+              (integer_literal)))))
+      (expression_statement
+        (macro_invocation
+          macro: (identifier)
+          (token_tree
+            (identifier)
+            (token_tree
+              (token_tree
+                (integer_literal)
+                (integer_literal)))
+            (identifier)
+            (token_tree
+              (integer_literal))))))))
