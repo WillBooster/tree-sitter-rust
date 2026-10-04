@@ -1986,6 +1986,11 @@
     }
   },
   {
+    "type": "float_literal",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "for_expression",
     "named": true,
     "fields": {
@@ -5465,10 +5470,6 @@
   },
   {
     "type": "field_identifier",
-    "named": true
-  },
-  {
-    "type": "float_literal",
     "named": true
   },
   {
