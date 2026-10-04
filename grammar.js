@@ -275,6 +275,7 @@ module.exports = grammar({
         'as',
         'async',
         'await',
+        'become',
         'break',
         'const',
         'continue',
@@ -819,6 +820,7 @@ module.exports = grammar({
         $.type_cast_expression,
         $.call_expression,
         $.return_expression,
+        $.become_expression,
         $.yield_expression,
         $._literal,
         prec.left($.identifier),
@@ -981,6 +983,8 @@ module.exports = grammar({
     type_cast_expression: ($) => prec.left(PREC.cast, seq(field('value', $._expression), 'as', field('type', $._type))),
 
     return_expression: ($) => choice(prec.left(seq('return', $._expression)), prec(-1, 'return')),
+
+    become_expression: ($) => prec.left(seq('become', $._expression)),
 
     yield_expression: ($) => choice(prec.left(seq('yield', $._expression)), prec(-1, 'yield')),
 

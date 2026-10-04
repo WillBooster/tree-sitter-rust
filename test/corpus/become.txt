@@ -1,0 +1,155 @@
+================================================================================
+Explicit tail calls
+================================================================================
+
+#![feature(explicit_tail_calls)]
+#![allow(incomplete_features, dead_code)]
+fn identity(value: u32) -> u32 { value }
+fn recurse(value: u32) -> u32 {
+    if value == 0 { 0 } else { become recurse(value - 1) }
+}
+fn through_pointer(value: u32) -> u32 {
+    let target: fn(u32) -> u32 = identity;
+    become target(value);
+}
+fn through_table(value: u32) -> u32 {
+    let index = 0;
+    let table: [fn(u32) -> u32; 1] = [identity];
+    become table[index](value)
+}
+macro_rules! tail { ($call:expr) => { become $call }; }
+fn through_macro(value: u32) -> u32 { tail!(identity(value)) }
+fn r#become() {}
+fn raw_name() { r#become(); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (identifier)))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (expression_statement
+        (if_expression
+          (binary_expression
+            (identifier)
+            (integer_literal))
+          (block
+            (integer_literal))
+          (else_clause
+            (block
+              (become_expression
+                (call_expression
+                  (identifier)
+                  (arguments
+                    (binary_expression
+                      (identifier)
+                      (integer_literal)))))))))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (let_declaration
+        (identifier)
+        (function_type
+          (parameters
+            (primitive_type))
+          (primitive_type))
+        (identifier))
+      (expression_statement
+        (become_expression
+          (call_expression
+            (identifier)
+            (arguments
+              (identifier)))))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (let_declaration
+        (identifier)
+        (integer_literal))
+      (let_declaration
+        (identifier)
+        (array_type
+          (function_type
+            (parameters
+              (primitive_type))
+            (primitive_type))
+          (integer_literal))
+        (array_expression
+          (identifier)))
+      (become_expression
+        (call_expression
+          (index_expression
+            (identifier)
+            (identifier))
+          (arguments
+            (identifier))))))
+  (macro_definition
+    (identifier)
+    (macro_rule
+      (token_tree_pattern
+        (token_binding_pattern
+          (metavariable)
+          (fragment_specifier)))
+      (token_tree
+        (metavariable))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (macro_invocation
+        (identifier)
+        (token_tree
+          (identifier)
+          (token_tree
+            (identifier))))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments))))))
