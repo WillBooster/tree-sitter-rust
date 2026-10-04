@@ -1,14 +1,18 @@
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('highlights auto trait modifiers while retaining ordinary macro identifiers', async () => {
   await Parser.init();
-  const language = await Language.load('tree-sitter-rust.wasm');
+  const language = await Language.load(path.join(import.meta.dirname, '../../tree-sitter-rust.wasm'));
   const parser = new Parser();
   parser.setLanguage(language);
-  const query = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
+  const query = new Query(
+    language,
+    readFileSync(path.join(import.meta.dirname, '../../queries/highlights.scm'), 'utf8')
+  );
   const source =
     'auto trait Top {}\nmacro_rules! m { () => { auto trait Inside {} }; }\ndeclare! { unsafe auto trait Generated {} }\nident!(auto);\nkinds! { auto, trait, impl }\nkinds! { auto; trait }';
   const tree = parser.parse(source)!;
