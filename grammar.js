@@ -34,6 +34,8 @@ const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]]
 const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
 const hexadecimalSuffix = new RegExp(String.raw`[\p{XID_Start}--[a-fA-F]][_\p{XID_Continue}]*`, 'v');
 
+const extendedFloatTypes = ['f16', 'f128'];
+
 const numericTypes = [
   'u8',
   'i8',
@@ -47,10 +49,9 @@ const numericTypes = [
   'i128',
   'isize',
   'usize',
-  'f16',
   'f32',
   'f64',
-  'f128',
+  ...extendedFloatTypes,
 ];
 
 // https://doc.rust-lang.org/reference/tokens.html#punctuation
@@ -130,7 +131,6 @@ module.exports = grammar({
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
 
   inline: ($) => [
-    $._non_primitive_type,
     $._path,
     $._type_identifier,
     $._tokens,
@@ -141,9 +141,6 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
-    [$.bounded_type],
-    [$._type, $._parenthesized_primitive_trait, $._pattern],
-    [$._type, $._parenthesized_primitive_trait],
     [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
@@ -277,7 +274,8 @@ module.exports = grammar({
         $.self,
         $.super,
         $.crate,
-        alias(choice(...primitiveTypes), $.primitive_type),
+        alias(choice(...primitiveTypes.filter((type) => !extendedFloatTypes.includes(type))), $.primitive_type),
+        alias(choice(...extendedFloatTypes), $.identifier),
         prec.right(repeat1(choice(...TOKEN_TREE_NON_SPECIAL_PUNCTUATION))),
         "'",
         'as',
@@ -576,7 +574,7 @@ module.exports = grammar({
       ),
 
     trait_alias_bounds: ($) =>
-      seq(sepBy1('+', choice($._trait_type, $.lifetime, $.higher_ranked_trait_bound)), optional('+')),
+      seq(sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound)), optional('+')),
 
     associated_type: ($) =>
       seq(
@@ -589,21 +587,11 @@ module.exports = grammar({
         ';'
       ),
 
-    trait_bounds: ($) => seq(':', sepBy1('+', choice($._trait_type, $.lifetime, $.higher_ranked_trait_bound))),
+    trait_bounds: ($) => seq(':', sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound))),
 
-    higher_ranked_trait_bound: ($) =>
-      seq('for', field('type_parameters', $.type_parameters), field('type', $._trait_type)),
+    higher_ranked_trait_bound: ($) => seq('for', field('type_parameters', $.type_parameters), field('type', $._type)),
 
-    removed_trait_bound: ($) => seq('?', $._trait_type),
-
-    _trait_type: ($) =>
-      choice(
-        prec(1, alias(choice(...primitiveTypes), $.type_identifier)),
-        prec(1, alias($._parenthesized_trait_type, $.tuple_type)),
-        prec(1, $._type)
-      ),
-
-    _parenthesized_trait_type: ($) => seq('(', $._trait_type, ')'),
+    removed_trait_bound: ($) => seq('?', $._type),
 
     modified_trait_bound: ($) =>
       prec.dynamic(
@@ -696,9 +684,7 @@ module.exports = grammar({
     visibility_modifier: ($) =>
       choice($.crate, seq('pub', optional(seq('(', choice($.self, $.super, $.crate, seq('in', $._path)), ')')))),
 
-    _type: ($) => choice($._non_primitive_type, alias(choice(...primitiveTypes), $.primitive_type)),
-
-    _non_primitive_type: ($) =>
+    _type: ($) =>
       choice(
         $.abstract_type,
         $.reference_type,
@@ -714,14 +700,15 @@ module.exports = grammar({
         $.macro_invocation,
         $.never_type,
         $.dynamic_type,
-        $.removed_trait_bound,
         $.bounded_type,
-        $.modified_trait_bound
+        $.removed_trait_bound,
+        $.modified_trait_bound,
+        alias(choice(...primitiveTypes), $.primitive_type)
       ),
 
     bracketed_type: ($) => seq('<', choice($._type, $.qualified_type), '>'),
 
-    qualified_type: ($) => seq(field('type', $._type), 'as', field('alias', $._trait_type)),
+    qualified_type: ($) => seq(field('type', $._type), 'as', field('alias', $._type)),
 
     lifetime: ($) => prec(1, seq("'", $.identifier)),
 
@@ -802,50 +789,7 @@ module.exports = grammar({
       ),
 
     bounded_type: ($) =>
-      prec.left(
-        -1,
-        choice(
-          prec.dynamic(
-            0,
-            seq(
-              choice($.function_type, $.dynamic_type, $.abstract_type, $.bounded_type),
-              '+',
-              choice($.lifetime, $._trait_type, $.use_bounds)
-            )
-          ),
-          prec.dynamic(
-            -2,
-            seq(
-              choice(
-                $.lifetime,
-                $._non_primitive_type,
-                alias(choice(...primitiveTypes), $.type_identifier),
-                $.use_bounds
-              ),
-              '+',
-              choice($.lifetime, $._trait_type, $.use_bounds)
-            )
-          ),
-          prec.dynamic(
-            -1,
-            seq(
-              alias($._parenthesized_primitive_trait, $.tuple_type),
-              '+',
-              choice($.lifetime, $._trait_type, $.use_bounds)
-            )
-          )
-        )
-      ),
-
-    _parenthesized_primitive_trait: ($) =>
-      seq(
-        '(',
-        choice(
-          alias(choice(...primitiveTypes), $.type_identifier),
-          alias($._parenthesized_primitive_trait, $.tuple_type)
-        ),
-        ')'
-      ),
+      prec.left(-1, seq(choice($.lifetime, $._type, $.use_bounds), '+', choice($.lifetime, $._type, $.use_bounds))),
 
     use_bounds: ($) =>
       seq('use', token(prec(1, '<')), sepBy(',', choice($.lifetime, $._type_identifier)), optional(','), '>'),
@@ -894,7 +838,7 @@ module.exports = grammar({
               $.modified_trait_bound,
               $.generic_type,
               $.function_type,
-              alias($._parenthesized_trait_type, $.tuple_type),
+              $.tuple_type,
               $.bounded_type
             )
           )
@@ -914,7 +858,7 @@ module.exports = grammar({
             $.scoped_type_identifier,
             $.generic_type,
             $.function_type,
-            alias($._parenthesized_trait_type, $.tuple_type)
+            $.tuple_type
           )
         )
       ),

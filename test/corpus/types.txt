@@ -849,13 +849,13 @@ mod trait_bound_names {
       (trait_item
         (type_identifier)
         (trait_bounds
-          (type_identifier))
+          (primitive_type))
         (declaration_list))
       (trait_alias
         (type_identifier)
         (trait_alias_bounds
-          (type_identifier)
-          (type_identifier)))
+          (primitive_type)
+          (primitive_type)))
       (struct_item
         (type_identifier))
       (impl_item
@@ -873,19 +873,19 @@ mod trait_bound_names {
             (reference_type
               (dynamic_type
                 (tuple_type
-                  (type_identifier)))))
+                  (primitive_type)))))
           (parameter
             (reference_type
               (dynamic_type
                 (tuple_type
-                  (type_identifier))))))
+                  (primitive_type))))))
         (block))
       (function_item
         (identifier)
         (parameters)
         (abstract_type
           (tuple_type
-            (type_identifier)))
+            (primitive_type)))
         (block
           (identifier)))
       (function_item
@@ -893,7 +893,7 @@ mod trait_bound_names {
         (parameters)
         (abstract_type
           (tuple_type
-            (type_identifier)))
+            (primitive_type)))
         (block
           (identifier)))
       (function_item
@@ -902,7 +902,7 @@ mod trait_bound_names {
         (bounded_type
           (abstract_type
             (type_identifier))
-          (type_identifier))
+          (primitive_type))
         (block
           (identifier)))
       (mod_item
@@ -949,7 +949,7 @@ mod trait_bound_names {
             (bounded_type
               (dynamic_type
                 (type_identifier))
-              (type_identifier)))
+              (primitive_type)))
           (type_item
             (type_identifier)
             (generic_type
@@ -958,7 +958,7 @@ mod trait_bound_names {
                 (bounded_type
                   (dynamic_type
                     (type_identifier))
-                  (type_identifier)))))))
+                  (primitive_type)))))))
       (mod_item
         (identifier)
         (declaration_list
@@ -986,7 +986,7 @@ mod trait_bound_names {
               (bracketed_type
                 (qualified_type
                   (type_identifier)
-                  (type_identifier)))
+                  (primitive_type)))
               (type_identifier)))
           (function_item
             (identifier)
@@ -998,7 +998,7 @@ mod trait_bound_names {
                     (bracketed_type
                       (qualified_type
                         (type_identifier)
-                        (type_identifier)))
+                        (primitive_type)))
                     (identifier))
                   (arguments)))))))
       (function_item
@@ -1007,7 +1007,7 @@ mod trait_bound_names {
           (type_parameter
             (type_identifier)
             (trait_bounds
-              (type_identifier))))
+              (primitive_type))))
         (parameters)
         (block))
       (function_item
@@ -1020,7 +1020,7 @@ mod trait_bound_names {
           (where_predicate
             (type_identifier)
             (trait_bounds
-              (type_identifier))))
+              (primitive_type))))
         (block))
       (function_item
         (identifier)
@@ -1029,7 +1029,7 @@ mod trait_bound_names {
             (type_identifier)
             (trait_bounds
               (tuple_type
-                (type_identifier)))))
+                (primitive_type)))))
         (parameters)
         (block))
       (mod_item
@@ -1078,7 +1078,7 @@ mod trait_bound_names {
                 (type_identifier)
                 (trait_bounds
                   (removed_trait_bound
-                    (type_identifier)))))
+                    (primitive_type)))))
             (parameters)
             (block)))))))
 
@@ -1101,13 +1101,13 @@ fn arithmetic(x: i32, y: i32) -> i32 { x as ((i32)) + y }
   (type_item
     (type_identifier)
     (bounded_type
-      (type_identifier)
+      (primitive_type)
       (type_identifier)))
   (type_item
     (type_identifier)
     (bounded_type
       (tuple_type
-        (type_identifier))
+        (primitive_type))
       (type_identifier)))
   (type_item
     (type_identifier)
@@ -1120,7 +1120,7 @@ fn arithmetic(x: i32, y: i32) -> i32 { x as ((i32)) + y }
         (identifier))
       (tuple_type
         (bounded_type
-          (type_identifier)
+          (primitive_type)
           (type_identifier)))))
   (function_item
     (identifier)
