@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Edit, Language, Parser, Query, type Node, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
@@ -74,8 +75,9 @@ test('preserves attributed struct pattern fields and turbofish through role edit
   parser.setLanguage(language);
   let tree: Tree | undefined;
   let query: Query | undefined;
+  let highlights: Query | undefined;
   const source =
-    'struct Record<T> { key: T, value: T } fn read(value: Record<i32>) { let Record::<i32> { #[allow(unused)] key, value: result } = value; }';
+    'enum Record<T> { Item { key: T, value: T } } fn read(value: Record<i32>) { let Record::Item::<i32> { #[allow(unused)] key, value: result } = value; }';
   try {
     tree = parser.parse(source)!;
     expect(tree.rootNode.hasError).toBe(false);
@@ -84,12 +86,21 @@ test('preserves attributed struct pattern fields and turbofish through role edit
       '(struct_pattern type: (generic_type) @type) (field_pattern (attribute_item) @attribute name: (shorthand_field_identifier) @name) (_pattern/struct_pattern) @pattern'
     );
     const captures = query.captures(tree.rootNode);
-    expect(captures.filter(({ name }) => name === 'type').map(({ node }) => node.text)).toEqual(['Record::<i32>']);
+    expect(captures.filter(({ name }) => name === 'type').map(({ node }) => node.text)).toEqual([
+      'Record::Item::<i32>',
+    ]);
     expect(captures.filter(({ name }) => name === 'attribute').map(({ node }) => node.text)).toEqual([
       '#[allow(unused)]',
     ]);
     expect(captures.filter(({ name }) => name === 'name').map(({ node }) => node.text)).toEqual(['key']);
     expect(captures.filter(({ name }) => name === 'pattern')).toHaveLength(1);
+    highlights = new Query(language, readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8'));
+    expect(
+      highlights
+        .captures(tree.rootNode.descendantsOfType('struct_pattern')[0]!)
+        .filter(({ name }) => name === 'constructor')
+        .map(({ node }) => node.text)
+    ).toEqual(['Record', 'Item']);
     let current = source;
     for (const replacement of ['#[allow(unused)] /* field */', '', '#[allow(unused)]']) {
       const start = current.indexOf('{ ', current.indexOf('let Record')) + 2;
@@ -118,12 +129,18 @@ test('preserves attributed struct pattern fields and turbofish through role edit
         ).toEqual(
           query.captures(fresh.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
         );
+        expect(
+          highlights.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
+        ).toEqual(
+          highlights.captures(fresh.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
+        );
       } finally {
         fresh.delete();
       }
       current = next;
     }
   } finally {
+    highlights?.delete();
     query?.delete();
     tree?.delete();
     parser.delete();
