@@ -1081,3 +1081,62 @@ mod trait_bound_names {
                     (type_identifier)))))
             (parameters)
             (block)))))))
+
+================================================================================
+Rust 2015 bare trait objects with primitive-spelled names
+================================================================================
+
+trait f16 {}
+type Object = f16 + Send;
+type Parenthesized = (f16) + Send;
+type Reference<'a> = &'a (f16 + Send);
+fn arithmetic(x: i32, y: i32) -> i32 { x as ((i32)) + y }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (trait_item
+    (type_identifier)
+    (declaration_list))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (type_identifier)
+      (type_identifier)))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (tuple_type
+        (type_identifier))
+      (type_identifier)))
+  (type_item
+    (type_identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))))
+    (reference_type
+      (lifetime
+        (identifier))
+      (tuple_type
+        (bounded_type
+          (type_identifier)
+          (type_identifier)))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (binary_expression
+        (type_cast_expression
+          (identifier)
+          (tuple_type
+            (tuple_type
+              (primitive_type))))
+        (identifier)))))

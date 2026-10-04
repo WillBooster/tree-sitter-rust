@@ -4815,67 +4815,20 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "abstract_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "reference_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "metavariable"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "pointer_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "generic_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "scoped_type_identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "tuple_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "unit_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "array_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "function_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_type_identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "macro_invocation"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "never_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "dynamic_type"
+          "name": "_type_no_bounds"
         },
         {
           "type": "SYMBOL",
           "name": "bounded_type"
-        },
+        }
+      ]
+    },
+    "_type_no_bounds": {
+      "type": "CHOICE",
+      "members": [
         {
           "type": "SYMBOL",
-          "name": "removed_trait_bound"
+          "name": "_non_primitive_type_no_bounds"
         },
         {
           "type": "ALIAS",
@@ -4962,6 +4915,84 @@
           },
           "named": true,
           "value": "primitive_type"
+        }
+      ]
+    },
+    "_non_primitive_type": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_non_primitive_type_no_bounds"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "bounded_type"
+        }
+      ]
+    },
+    "_non_primitive_type_no_bounds": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "abstract_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "reference_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "metavariable"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "pointer_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "generic_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "scoped_type_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tuple_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "unit_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "array_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_type_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "macro_invocation"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "never_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "dynamic_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "removed_trait_bound"
         }
       ]
     },
@@ -5771,7 +5802,102 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "_type"
+                "name": "_non_primitive_type"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "u8"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i8"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u16"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i16"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u32"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i32"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u64"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i64"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u128"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i128"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "isize"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "usize"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f16"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f32"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f64"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f128"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "bool"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "str"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "char"
+                    }
+                  ]
+                },
+                "named": true,
+                "value": "type_identifier"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_parenthesized_primitive_trait"
+                },
+                "named": true,
+                "value": "tuple_type"
               },
               {
                 "type": "SYMBOL",
@@ -5799,6 +5925,123 @@
                 "name": "use_bounds"
               }
             ]
+          }
+        ]
+      }
+    },
+    "_parenthesized_primitive_trait": {
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "("
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "u8"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i8"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u16"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i16"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u32"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i32"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u64"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i64"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "u128"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "i128"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "isize"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "usize"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f16"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f32"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f64"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "f128"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "bool"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "str"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "char"
+                    }
+                  ]
+                },
+                "named": true,
+                "value": "type_identifier"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_parenthesized_primitive_trait"
+                },
+                "named": true,
+                "value": "tuple_type"
+              }
+            ]
+          },
+          {
+            "type": "STRING",
+            "value": ")"
           }
         ]
       }
@@ -8135,7 +8378,7 @@
             "name": "type",
             "content": {
               "type": "SYMBOL",
-              "name": "_type"
+              "name": "_type_no_bounds"
             }
           }
         ]
@@ -11966,6 +12209,15 @@
   ],
   "conflicts": [
     [
+      "_type",
+      "_parenthesized_primitive_trait",
+      "_pattern"
+    ],
+    [
+      "_type",
+      "_parenthesized_primitive_trait"
+    ],
+    [
       "_expression_except_range",
       "struct_expression"
     ],
@@ -12065,6 +12317,9 @@
     }
   ],
   "inline": [
+    "_non_primitive_type",
+    "_non_primitive_type_no_bounds",
+    "_type_no_bounds",
     "_path",
     "_type_identifier",
     "_tokens",
