@@ -341,6 +341,10 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return process_line_doc_content(lexer);
     }
 
+    if (valid_symbols[RAW_STRING_LITERAL_CONTENT]) {
+        return scan_raw_string_content(scanner, lexer);
+    }
+
     while (iswspace(lexer->lookahead)) {
         skip(lexer);
     }
@@ -354,10 +358,6 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     if (valid_symbols[RAW_STRING_LITERAL_START] &&
         (lexer->lookahead == 'r' || lexer->lookahead == 'b' || lexer->lookahead == 'c')) {
         return scan_raw_string_start(scanner, lexer);
-    }
-
-    if (valid_symbols[RAW_STRING_LITERAL_CONTENT]) {
-        return scan_raw_string_content(scanner, lexer);
     }
 
     if (valid_symbols[RAW_STRING_LITERAL_END] && lexer->lookahead == '"') {
