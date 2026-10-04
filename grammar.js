@@ -166,6 +166,7 @@ module.exports = grammar({
         $.const_item,
         $.macro_invocation,
         $.macro_definition,
+        $.decl_macro,
         $.empty_statement,
         $.attribute_item,
         $.inner_attribute_item,
@@ -179,14 +180,13 @@ module.exports = grammar({
         $.function_signature_item,
         $.impl_item,
         $.trait_item,
+        $.trait_alias,
         $.associated_type,
         $.let_declaration,
         $.use_declaration,
         $.extern_crate_declaration,
         $.static_item
       ),
-
-    // Section - Macro definitions
 
     macro_definition: ($) => {
       const rules = seq(repeat(seq($.macro_rule, ';')), optional($.macro_rule));
@@ -197,6 +197,15 @@ module.exports = grammar({
         choice(seq('(', rules, ')', ';'), seq('[', rules, ']', ';'), seq('{', rules, '}'))
       );
     },
+
+    decl_macro: ($) =>
+      seq(
+        optional($.visibility_modifier),
+        'macro',
+        field('name', choice($.identifier, $._reserved_identifier)),
+        field('parameters', optional(alias($._parenthesized_token_tree, $.token_tree))),
+        field('body', alias($._braced_token_tree, $.token_tree))
+      ),
 
     macro_rule: ($) => seq(field('left', $.token_tree_pattern), '=>', field('right', $.token_tree)),
 
@@ -247,9 +256,6 @@ module.exports = grammar({
 
     token_repetition: ($) => seq('$', '(', repeat($._tokens), ')', optional(/[^+*?]+/), choice('+', '*', '?')),
 
-    // Matches non-delimiter tokens common to both macro invocations and
-    // definitions. This is everything except $ and metavariables (which begin
-    // with $).
     _non_special_token: ($) =>
       choice(
         $._literal,
@@ -290,8 +296,6 @@ module.exports = grammar({
         'where',
         'while'
       ),
-
-    // Section - Declarations
 
     attribute_item: ($) => seq('#', '[', $.attribute, ']'),
 
@@ -536,6 +540,22 @@ module.exports = grammar({
         field('body', $.declaration_list)
       ),
 
+    trait_alias: ($) =>
+      seq(
+        optional($.visibility_modifier),
+        optional('const'),
+        'trait',
+        field('name', $._type_identifier),
+        field('type_parameters', optional($.type_parameters)),
+        '=',
+        field('bounds', optional($.trait_alias_bounds)),
+        optional($.where_clause),
+        ';'
+      ),
+
+    trait_alias_bounds: ($) =>
+      seq(sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound)), optional('+')),
+
     associated_type: ($) =>
       seq(
         'type',
@@ -636,8 +656,6 @@ module.exports = grammar({
 
     visibility_modifier: ($) =>
       choice($.crate, seq('pub', optional(seq('(', choice($.self, $.super, $.crate, seq('in', $._path)), ')')))),
-
-    // Section - Types
 
     _type: ($) =>
       choice(
@@ -783,8 +801,6 @@ module.exports = grammar({
 
     mutable_specifier: () => 'mut',
 
-    // Section - Expressions
-
     _expression_except_range: ($) =>
       choice(
         $.unary_expression,
@@ -853,15 +869,14 @@ module.exports = grammar({
       ),
 
     delim_token_tree: ($) =>
-      choice(
-        seq('(', repeat($._delim_tokens), ')'),
-        seq('[', repeat($._delim_tokens), ']'),
-        seq('{', repeat($._delim_tokens), '}')
-      ),
+      choice($._parenthesized_token_tree, seq('[', repeat($._delim_tokens), ']'), $._braced_token_tree),
+
+    _parenthesized_token_tree: ($) => seq('(', repeat($._delim_tokens), ')'),
+
+    _braced_token_tree: ($) => seq('{', repeat($._delim_tokens), '}'),
 
     _delim_tokens: ($) => choice($._non_delim_token, alias($.delim_token_tree, $.token_tree)),
 
-    // Should match any token other than a delimiter.
     _non_delim_token: ($) => choice($._non_special_token, '$'),
 
     scoped_identifier: ($) =>
@@ -1144,8 +1159,6 @@ module.exports = grammar({
 
     block: ($) => seq(optional(seq($.label, ':')), '{', repeat($._statement), optional($._expression), '}'),
 
-    // Section - Patterns
-
     _pattern: ($) =>
       choice(
         $._literal_pattern,
@@ -1225,8 +1238,6 @@ module.exports = grammar({
     reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
 
     or_pattern: ($) => prec.left(-2, choice(seq($._pattern, '|', $._pattern), seq('|', $._pattern))),
-
-    // Section - Literals
 
     _literal: ($) =>
       choice(
@@ -1315,16 +1326,9 @@ module.exports = grammar({
 
     line_comment: ($) =>
       seq(
-        // All line comments start with two //
         '//',
-        // Then are followed by:
-        // - 2 or more slashes making it a regular comment
-        // - 1 slash or 1 or more bang operators making it a doc comment
-        // - or just content for the comment
         choice(
-          // A tricky edge case where what looks like a doc comment is not
           seq(token.immediate(prec(2, /\/\//)), /.*/),
-          // A regular doc comment
           seq($._line_doc_comment_marker, field('doc', alias($._line_doc_content, $.doc_comment))),
           token.immediate(prec(1, /.*/))
         )
@@ -1332,9 +1336,7 @@ module.exports = grammar({
 
     _line_doc_comment_marker: ($) =>
       choice(
-        // An outer line doc comment applies to the element that it is outside of
         field('outer', alias($._outer_line_doc_comment_marker, $.outer_doc_comment_marker)),
-        // An inner line doc comment applies to the element it is inside of
         field('inner', alias($._inner_line_doc_comment_marker, $.inner_doc_comment_marker))
       ),
 
@@ -1346,9 +1348,7 @@ module.exports = grammar({
         '/*',
         optional(
           choice(
-            // Documentation block comments: /** docs */ or /*! docs */
             seq($._block_doc_comment_marker, optional(field('doc', alias($._block_comment_content, $.doc_comment)))),
-            // Non-doc block comments
             $._block_comment_content
           )
         ),
@@ -1392,9 +1392,7 @@ module.exports = grammar({
 });
 
 /**
- * Creates a rule to match one or more of the rules separated by the separator.
- *
- * @param {RuleOrLiteral} sep - The separator to use.
+ * @param {RuleOrLiteral} sep
  * @param {RuleOrLiteral} rule
  *
  * @returns {SeqRule}
@@ -1404,9 +1402,7 @@ function sepBy1(sep, rule) {
 }
 
 /**
- * Creates a rule to optionally match one or more of the rules separated by the separator.
- *
- * @param {RuleOrLiteral} sep - The separator to use.
+ * @param {RuleOrLiteral} sep
  * @param {RuleOrLiteral} rule
  *
  * @returns {ChoiceRule}

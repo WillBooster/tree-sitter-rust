@@ -7,3 +7,8 @@
   (token_tree) @injection.content)
  (#set! injection.language "rust")
  (#set! injection.include-children))
+
+((decl_macro
+  body: (token_tree) @injection.content)
+ (#set! injection.language "rust")
+ (#set! injection.include-children))
