@@ -568,7 +568,7 @@ module.exports = grammar({
       ),
 
     trait_alias_bounds: ($) =>
-      seq(sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound)), optional('+')),
+      seq(sepBy1('+', choice($._trait_type, $.lifetime, $.higher_ranked_trait_bound)), optional('+')),
 
     associated_type: ($) =>
       seq(
@@ -580,11 +580,21 @@ module.exports = grammar({
         ';'
       ),
 
-    trait_bounds: ($) => seq(':', sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound))),
+    trait_bounds: ($) => seq(':', sepBy1('+', choice($._trait_type, $.lifetime, $.higher_ranked_trait_bound))),
 
-    higher_ranked_trait_bound: ($) => seq('for', field('type_parameters', $.type_parameters), field('type', $._type)),
+    higher_ranked_trait_bound: ($) =>
+      seq('for', field('type_parameters', $.type_parameters), field('type', $._trait_type)),
 
-    removed_trait_bound: ($) => seq('?', $._type),
+    removed_trait_bound: ($) => seq('?', $._trait_type),
+
+    _trait_type: ($) =>
+      choice(
+        prec(1, alias(choice(...primitiveTypes), $.type_identifier)),
+        prec(1, alias($._parenthesized_trait_type, $.tuple_type)),
+        prec(1, $._type)
+      ),
+
+    _parenthesized_trait_type: ($) => seq('(', $._trait_type, ')'),
 
     type_parameters: ($) =>
       prec(

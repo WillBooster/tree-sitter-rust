@@ -447,6 +447,23 @@ mod impl_parameters {
     impl<f128: Clone> S<f128> { fn cloned(&self) -> f128 { self.0.clone() } }
 }
 
+mod trait_bound_names {
+    trait f16 {}
+    trait f128: f16 {}
+    trait Alias = f16 + f128;
+    fn generic<T: f16>() {}
+    fn bounded<T>() where T: f128 {}
+    fn parenthesized<T: (f16)>() {}
+    mod higher_ranked {
+        trait f16<'a> {}
+        fn bounded<T: for<'a> f16<'a>>() {}
+    }
+    mod removed {
+        use std::marker::Sized as f128;
+        fn relaxed<T: ?f128>() {}
+    }
+}
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -798,4 +815,100 @@ mod impl_parameters {
                     (self)
                     (integer_literal))
                   (field_identifier))
-                (arguments)))))))))
+                (arguments))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (trait_item
+        (type_identifier)
+        (trait_bounds
+          (type_identifier))
+        (declaration_list))
+      (trait_alias
+        (type_identifier)
+        (trait_alias_bounds
+          (type_identifier)
+          (type_identifier)))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (type_identifier))))
+        (parameters)
+        (block))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (parameters)
+        (where_clause
+          (where_predicate
+            (type_identifier)
+            (trait_bounds
+              (type_identifier))))
+        (block))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (tuple_type
+                (type_identifier)))))
+        (parameters)
+        (block))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (type_parameters
+              (lifetime_parameter
+                (lifetime
+                  (identifier))))
+            (declaration_list))
+          (function_item
+            (identifier)
+            (type_parameters
+              (type_parameter
+                (type_identifier)
+                (trait_bounds
+                  (higher_ranked_trait_bound
+                    (type_parameters
+                      (lifetime_parameter
+                        (lifetime
+                          (identifier))))
+                    (generic_type
+                      (type_identifier)
+                      (type_arguments
+                        (lifetime
+                          (identifier))))))))
+            (parameters)
+            (block))))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (use_declaration
+            (use_as_clause
+              (scoped_identifier
+                (scoped_identifier
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (identifier)))
+          (function_item
+            (identifier)
+            (type_parameters
+              (type_parameter
+                (type_identifier)
+                (trait_bounds
+                  (removed_trait_bound
+                    (type_identifier)))))
+            (parameters)
+            (block)))))))
