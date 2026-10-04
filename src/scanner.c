@@ -15,7 +15,9 @@ enum TokenType {
     BLOCK_COMMENT_CONTENT,
     LINE_DOC_CONTENT,
     RANGE_UNARY_ENDPOINT_START,
-    ERROR_SENTINEL
+    ERROR_SENTINEL,
+    FOREIGN_DECLARATION_CONTEXT,
+    FOREIGN_DECLARATION_START
 };
 
 typedef struct {
@@ -269,6 +271,12 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
     return false;
 }
 
+static bool scan_foreign_declaration_start(TSLexer *lexer);
+static bool foreign_restricted_visibility(TSLexer *lexer);
+static bool foreign_identifier(TSLexer *lexer);
+static bool foreign_word(TSLexer *lexer, const char *word);
+static bool skip_trivia(TSLexer *lexer);
+
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     // Tree-sitter enables every external token during recovery; the unused sentinel suppresses normal scans.
     if (valid_symbols[ERROR_SENTINEL]) {
@@ -304,6 +312,9 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     while (iswspace(lexer->lookahead)) {
         skip(lexer);
     }
+    if (valid_symbols[FOREIGN_DECLARATION_CONTEXT] && valid_symbols[FOREIGN_DECLARATION_START]) {
+        return scan_foreign_declaration_start(lexer);
+    }
 
     if (valid_symbols[RANGE_UNARY_ENDPOINT_START] &&
         (lexer->lookahead == '*' || lexer->lookahead == '-' || lexer->lookahead == '!' || lexer->lookahead == '&' ||
@@ -329,43 +340,107 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
 
 static inline bool scan_range_unary_endpoint_start(TSLexer *lexer) {
     lexer->mark_end(lexer);
-    for (;;) {
-        while (iswspace(lexer->lookahead)) {
-            advance(lexer);
-        }
-        if (lexer->lookahead != '/') {
-            break;
-        }
-        advance(lexer);
-        if (lexer->lookahead == '/') {
-            while (!lexer->eof(lexer) && lexer->lookahead != '\n') {
-                advance(lexer);
-            }
-        } else if (lexer->lookahead == '*') {
-            advance(lexer);
-            unsigned depth = 1;
-            while (depth && !lexer->eof(lexer)) {
-                int32_t previous = lexer->lookahead;
-                advance(lexer);
-                if (previous == '/' && lexer->lookahead == '*') {
-                    depth++;
-                    advance(lexer);
-                } else if (previous == '*' && lexer->lookahead == '/') {
-                    depth--;
-                    advance(lexer);
-                }
-            }
-            if (depth) {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
+    if (!skip_trivia(lexer)) return false;
     if (lexer->lookahead != '*' && lexer->lookahead != '-' && lexer->lookahead != '!' && lexer->lookahead != '&') {
         return false;
     }
     advance(lexer);
     lexer->result_symbol = RANGE_UNARY_ENDPOINT_START;
     return true;
+}
+
+static bool scan_foreign_declaration_start(TSLexer *lexer) {
+    lexer->mark_end(lexer);
+    if (lexer->lookahead == 'p') {
+        if (!foreign_word(lexer, "pub") || !skip_trivia(lexer)) return false;
+        if (lexer->lookahead == '(') {
+            advance(lexer);
+            if (!foreign_restricted_visibility(lexer) || lexer->lookahead != ')') return false;
+            advance(lexer);
+        }
+        if (!skip_trivia(lexer)) return false;
+    }
+    if (lexer->lookahead == 'c') {
+        if (!foreign_word(lexer, "crate") || !skip_trivia(lexer)) return false;
+    }
+    bool safe = lexer->lookahead == 's';
+    if (!foreign_word(lexer, safe ? "safe" : "unsafe") || !skip_trivia(lexer)) return false;
+    bool function = lexer->lookahead == 'f';
+    if (function && !safe) return false;
+    if (!foreign_word(lexer, function ? "fn" : "static")) return false;
+    lexer->result_symbol = FOREIGN_DECLARATION_START;
+    return true;
+}
+
+static bool foreign_restricted_visibility(TSLexer *lexer) {
+    if (!skip_trivia(lexer)) return false;
+    if (lexer->lookahead == 'i') {
+        if (!foreign_word(lexer, "in") || !skip_trivia(lexer)) return false;
+        if (lexer->lookahead == ':') {
+            advance(lexer);
+            if (lexer->lookahead != ':') return false;
+            advance(lexer);
+            if (!skip_trivia(lexer)) return false;
+        }
+        for (;;) {
+            if (!foreign_identifier(lexer) || !skip_trivia(lexer)) return false;
+            if (lexer->lookahead != ':') return true;
+            advance(lexer);
+            if (lexer->lookahead != ':') return false;
+            advance(lexer);
+            if (!skip_trivia(lexer)) return false;
+        }
+    }
+    if (lexer->lookahead == 'c') {
+        if (!foreign_word(lexer, "crate")) return false;
+    } else if (lexer->lookahead == 's') {
+        advance(lexer);
+        if (!foreign_word(lexer, lexer->lookahead == 'e' ? "elf" : "uper")) return false;
+    } else return false;
+    return skip_trivia(lexer);
+}
+
+static bool foreign_identifier(TSLexer *lexer) {
+    if (lexer->lookahead == '$') advance(lexer);
+    bool started = false;
+    if (lexer->lookahead == 'r') {
+        advance(lexer);
+        started = true;
+        if (lexer->lookahead == '#') { advance(lexer); started = false; }
+    }
+    if (!started) {
+        if (!(lexer->lookahead == '_' || iswalpha(lexer->lookahead) || lexer->lookahead >= 0x80)) return false;
+        advance(lexer);
+    }
+    while (lexer->lookahead == '_' || iswalnum(lexer->lookahead) || lexer->lookahead >= 0x80) advance(lexer);
+    return true;
+}
+
+static bool foreign_word(TSLexer *lexer, const char *word) {
+    for (; *word; word++) {
+        if (lexer->lookahead != *word) return false;
+        advance(lexer);
+    }
+    return !(lexer->lookahead == '_' || iswalnum(lexer->lookahead) || lexer->lookahead >= 0x80);
+}
+
+static bool skip_trivia(TSLexer *lexer) {
+    for (;;) {
+        while (iswspace(lexer->lookahead)) advance(lexer);
+        if (lexer->lookahead != '/') return true;
+        advance(lexer);
+        if (lexer->lookahead == '/') {
+            while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
+        } else if (lexer->lookahead == '*') {
+            advance(lexer);
+            unsigned depth = 1;
+            while (depth > 0 && !lexer->eof(lexer)) {
+                int32_t previous = lexer->lookahead;
+                advance(lexer);
+                if (previous == '/' && lexer->lookahead == '*') { advance(lexer); depth++; }
+                else if (previous == '*' && lexer->lookahead == '/') { advance(lexer); depth--; }
+            }
+            if (depth > 0) return false;
+        } else return false;
+    }
 }
