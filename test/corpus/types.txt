@@ -435,6 +435,11 @@ mod associated_types {
     fn read(_: impl Trait<f16 = u8, f128 = u16>) {}
 }
 
+mod parenthesized_traits {
+    use std::ops::{Fn as f16, FnMut as f128};
+    fn apply<F: f16(u8) -> u8, G: f128(u8) -> u8>(f: F, mut g: G) -> u8 { g(f(1)) }
+}
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -687,4 +692,55 @@ mod associated_types {
                   (type_binding
                     (type_identifier)
                     (primitive_type)))))))
-        (block)))))
+        (block))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (use_declaration
+        (scoped_use_list
+          (scoped_identifier
+            (identifier)
+            (identifier))
+          (use_list
+            (use_as_clause
+              (identifier)
+              (identifier))
+            (use_as_clause
+              (identifier)
+              (identifier)))))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (function_type
+                (type_identifier)
+                (parameters
+                  (primitive_type))
+                (primitive_type))))
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (function_type
+                (type_identifier)
+                (parameters
+                  (primitive_type))
+                (primitive_type)))))
+        (parameters
+          (parameter
+            (identifier)
+            (type_identifier))
+          (parameter
+            (mutable_specifier)
+            (identifier)
+            (type_identifier)))
+        (primitive_type)
+        (block
+          (call_expression
+            (identifier)
+            (arguments
+              (call_expression
+                (identifier)
+                (arguments
+                  (integer_literal))))))))))

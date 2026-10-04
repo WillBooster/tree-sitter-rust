@@ -706,7 +706,14 @@ module.exports = grammar({
           PREC.call,
           seq(
             choice(
-              field('trait', choice($._type_identifier, $.scoped_type_identifier)),
+              field(
+                'trait',
+                choice(
+                  $._type_identifier,
+                  $.scoped_type_identifier,
+                  alias(choice(...primitiveTypes), $.type_identifier)
+                )
+              ),
               seq(optional($.function_modifiers), 'fn')
             ),
             field('parameters', $.parameters)
