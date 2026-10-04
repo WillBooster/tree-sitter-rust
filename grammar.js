@@ -32,6 +32,7 @@ const PREC = {
 
 const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]][_\p{XID_Continue}]*`, 'v');
 const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
+const hexadecimalSuffix = new RegExp(String.raw`[\p{XID_Start}--[a-fA-F]][_\p{XID_Continue}]*`, 'v');
 
 const numericTypes = [
   'u8',
@@ -1253,10 +1254,11 @@ module.exports = grammar({
       token(
         choice(
           seq(
-            choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0x[0-9a-fA-F_]+/, /0b[01_]+/, /0o[0-7_]+/),
+            choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
             optional(numericSuffixWithoutExponent)
           ),
-          seq('0', optional(zeroNumericSuffix))
+          seq('0', optional(zeroNumericSuffix)),
+          seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
         )
       ),
 

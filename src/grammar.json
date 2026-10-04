@@ -9255,15 +9255,11 @@
                   },
                   {
                     "type": "PATTERN",
-                    "value": "0x[0-9a-fA-F_]+"
+                    "value": "0b_*[01][01_]*"
                   },
                   {
                     "type": "PATTERN",
-                    "value": "0b[01_]+"
-                  },
-                  {
-                    "type": "PATTERN",
-                    "value": "0o[0-7_]+"
+                    "value": "0o_*[0-7][0-7_]*"
                   }
                 ]
               },
@@ -9295,6 +9291,28 @@
                   {
                     "type": "PATTERN",
                     "value": "[\\p{XID_Start}--[eEbox]][_\\p{XID_Continue}]*",
+                    "flags": "v"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "PATTERN",
+                "value": "0x_*[0-9a-fA-F][0-9a-fA-F_]*"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "PATTERN",
+                    "value": "[\\p{XID_Start}--[a-fA-F]][_\\p{XID_Continue}]*",
                     "flags": "v"
                   },
                   {

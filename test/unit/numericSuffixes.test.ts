@@ -58,6 +58,11 @@ test('preserves numeric suffixes and following string boundaries in macro tokens
       ['integer_literal', '00bfoo'],
       ['float_literal', '1e3_类型'],
       ['float_literal', '1.0e3_efoo'],
+      ['integer_literal', '0x1g\u0301'],
+      ['integer_literal', '0x1_类型'],
+      ['integer_literal', '0x__1类型'],
+      ['integer_literal', '0b__1unit'],
+      ['integer_literal', '0o__7unit'],
     ]);
   } finally {
     query.delete();
@@ -85,6 +90,12 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
       '1e3_\u0301',
       '1.0e3_\u0661',
       '1e3_\u0661',
+      '0x1a\u0301',
+      '0x1A\u0661',
+      '0x1a_\u0301',
+      '0x_g',
+      '0b_g',
+      '0o_g',
     ]) {
       const expression = parser.parse(`fn main() { let _ = ${literal}; }`)!;
       const macro = parser.parse(`swallow!(${literal});`)!;
