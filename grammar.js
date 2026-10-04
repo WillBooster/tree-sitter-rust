@@ -141,6 +141,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.bounded_type],
     [$._type, $._parenthesized_primitive_trait, $._pattern],
     [$._type, $._parenthesized_primitive_trait],
     [$._expression_except_range, $.struct_expression],
@@ -793,6 +794,14 @@ module.exports = grammar({
       prec.left(
         -1,
         choice(
+          prec.dynamic(
+            0,
+            seq(
+              choice($.function_type, $.dynamic_type, $.abstract_type),
+              '+',
+              choice($.lifetime, $._trait_type, $.use_bounds)
+            )
+          ),
           prec.dynamic(
             -2,
             seq(

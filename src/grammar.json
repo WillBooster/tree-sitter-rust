@@ -5777,6 +5777,53 @@
         "members": [
           {
             "type": "PREC_DYNAMIC",
+            "value": 0,
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "function_type"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "dynamic_type"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "abstract_type"
+                    }
+                  ]
+                },
+                {
+                  "type": "STRING",
+                  "value": "+"
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "lifetime"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_trait_type"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "use_bounds"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "PREC_DYNAMIC",
             "value": -2,
             "content": {
               "type": "SEQ",
@@ -12386,6 +12433,9 @@
     }
   ],
   "conflicts": [
+    [
+      "bounded_type"
+    ],
     [
       "_type",
       "_parenthesized_primitive_trait",
