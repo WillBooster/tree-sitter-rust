@@ -798,7 +798,7 @@ module.exports = grammar({
           prec.dynamic(
             0,
             seq(
-              choice($.function_type, $.dynamic_type, $.abstract_type),
+              choice($.function_type, $.dynamic_type, $.abstract_type, $.bounded_type),
               '+',
               choice($.lifetime, $._trait_type, $.use_bounds)
             )

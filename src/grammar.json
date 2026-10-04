@@ -5808,6 +5808,10 @@
                     {
                       "type": "SYMBOL",
                       "name": "abstract_type"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "bounded_type"
                     }
                   ]
                 },

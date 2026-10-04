@@ -36,16 +36,16 @@ fn callback() -> impl Fn(u8) -> (u8) + Send { |value| value }
       type: (type_identifier)
       type_arguments: (type_arguments
         (bounded_type
-          (dynamic_type
-            trait: (function_type
-              trait: (type_identifier)
-              parameters: (parameters
-                (primitive_type))
-              return_type: (bounded_type
-                (tuple_type
+          (bounded_type
+            (dynamic_type
+              trait: (function_type
+                trait: (type_identifier)
+                parameters: (parameters
+                  (primitive_type))
+                return_type: (tuple_type
                   (tuple_type
-                    (type_identifier)))
-                (type_identifier))))
+                    (primitive_type)))))
+            (type_identifier))
           (type_identifier)))))
   (function_item
     name: (identifier)
