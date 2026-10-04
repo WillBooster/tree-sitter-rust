@@ -1918,3 +1918,25 @@ fn main() {
             (identifier)
             (token_tree
               (integer_literal))))))))
+
+================================================================================
+Comma-only closure parameters
+================================================================================
+
+fn main() {
+    let z = |,| 1;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    body: (block
+      (let_declaration
+        pattern: (identifier)
+        value: (closure_expression
+          parameters: (closure_parameters
+            (ERROR))
+          body: (integer_literal))))))
