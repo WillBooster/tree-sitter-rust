@@ -384,3 +384,66 @@ d as *mut E<<F as E>::G>;
                   (type_identifier)
                   (type_identifier)))
               (type_identifier))))))))
+
+================================================================================
+Extended floating-point primitive types
+================================================================================
+
+fn floats(a: f16, b: f128) -> (f16, f128) {
+    let values: [f16; 2] = [1.0f16, a];
+    let _ = values;
+    (a + 1.0f16, b + 1.0f128)
+}
+type Wide = f128;
+fn names(f16: u8, f128: u8) -> u8 { f16 + f128 }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (tuple_type
+      (primitive_type)
+      (primitive_type))
+    (block
+      (let_declaration
+        (identifier)
+        (array_type
+          (primitive_type)
+          (integer_literal))
+        (array_expression
+          (float_literal)
+          (identifier)))
+      (let_declaration
+        (identifier))
+      (tuple_expression
+        (binary_expression
+          (identifier)
+          (float_literal))
+        (binary_expression
+          (identifier)
+          (float_literal)))))
+  (type_item
+    (type_identifier)
+    (primitive_type))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (binary_expression
+        (identifier)
+        (identifier)))))
