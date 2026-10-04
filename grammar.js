@@ -273,7 +273,6 @@ module.exports = grammar({
         "'",
         'as',
         'async',
-        alias('auto', $.identifier),
         'await',
         'break',
         'const',

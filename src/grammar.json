@@ -1145,15 +1145,6 @@
           "value": "async"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "auto"
-          },
-          "named": true,
-          "value": "identifier"
-        },
-        {
           "type": "STRING",
           "value": "await"
         },
