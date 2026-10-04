@@ -577,7 +577,10 @@ module.exports = grammar({
     removed_trait_bound: ($) => seq('?', $._type),
 
     modified_trait_bound: ($) =>
-      seq(choice('const', seq('~', 'const'), seq('[', 'const', ']'), 'async'), field('type', $._type)),
+      prec.dynamic(
+        -1,
+        seq(choice('const', seq('~', 'const'), seq('[', 'const', ']'), 'async'), field('type', $._type))
+      ),
 
     type_parameters: ($) =>
       prec(

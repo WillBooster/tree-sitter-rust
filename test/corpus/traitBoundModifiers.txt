@@ -189,3 +189,36 @@ fn use_callbacks() { accept(async || {}); opaque(async || {}); }
             (closure_expression
               (closure_parameters)
               (block))))))))
+
+==================
+Function-type modifier recovery
+==================
+
+type C = const fn();
+type A = async fn();
+type U = unsafe fn();
+type CU = const unsafe fn();
+
+---
+
+(source_file
+  (type_item
+    (type_identifier)
+    (function_type
+      (function_modifiers)
+      (parameters)))
+  (type_item
+    (type_identifier)
+    (function_type
+      (function_modifiers)
+      (parameters)))
+  (type_item
+    (type_identifier)
+    (function_type
+      (function_modifiers)
+      (parameters)))
+  (type_item
+    (type_identifier)
+    (function_type
+      (function_modifiers)
+      (parameters))))
