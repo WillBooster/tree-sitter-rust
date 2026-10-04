@@ -430,6 +430,11 @@ mod traits {
     fn read(_: &dyn f128) {}
 }
 
+mod associated_types {
+    trait Trait { type f16; type f128; }
+    fn read(_: impl Trait<f16 = u8, f128 = u16>) {}
+}
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -657,4 +662,29 @@ mod traits {
             (reference_type
               (dynamic_type
                 (type_identifier)))))
+        (block))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (trait_item
+        (type_identifier)
+        (declaration_list
+          (associated_type
+            (type_identifier))
+          (associated_type
+            (type_identifier))))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (abstract_type
+              (generic_type
+                (type_identifier)
+                (type_arguments
+                  (type_binding
+                    (type_identifier)
+                    (primitive_type))
+                  (type_binding
+                    (type_identifier)
+                    (primitive_type)))))))
         (block)))))

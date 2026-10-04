@@ -780,7 +780,7 @@ module.exports = grammar({
 
     type_binding: ($) =>
       seq(
-        field('name', $._type_identifier),
+        field('name', choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier))),
         field('type_arguments', optional($.type_arguments)),
         '=',
         field('type', $._type)
