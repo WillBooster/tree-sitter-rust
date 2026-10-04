@@ -325,9 +325,9 @@ module.exports = grammar({
 
     declaration_list: ($) => seq('{', repeat($._declaration_statement), '}'),
 
-    // Items in `extern` blocks may be `safe` functions and `safe` or `unsafe` statics. `safe` is a keyword only where
-    // such an item starts: accepting it on every item would make it one wherever an item can start, breaking its uses as
-    // an identifier (`let safe = …; safe = …;`).
+    // The scanner never emits `_foreign_declaration_context`: its validity enables the zero-width
+    // `_foreign_declaration_start` required by qualified extern items. Keep this context marker so `safe` remains
+    // an identifier outside extern blocks while qualified items still participate in declaration supertype queries.
     _foreign_declaration_list: ($) =>
       seq('{', repeat(seq(optional($._foreign_declaration_context), $._declaration_statement)), '}'),
 
