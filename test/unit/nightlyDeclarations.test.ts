@@ -86,16 +86,16 @@ test('exposes trait aliases and declarative macros through public fields and shi
             newEndPosition: position(next, index + replacement.length),
           })
         );
-        const incremental = parser.parse(next, current)!;
+        const old = current;
+        current = parser.parse(next, old)!;
+        old.delete();
         const fresh = parser.parse(next)!;
         try {
-          expect(incremental.rootNode.hasError).toBe(false);
-          expect(snapshot(incremental.rootNode)).toEqual(snapshot(fresh.rootNode));
+          expect(current.rootNode.hasError).toBe(false);
+          expect(snapshot(current.rootNode)).toEqual(snapshot(fresh.rootNode));
         } finally {
           fresh.delete();
-          current.delete();
         }
-        current = incremental;
         previous = next;
       }
     } finally {
