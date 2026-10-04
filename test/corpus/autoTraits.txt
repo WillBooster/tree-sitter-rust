@@ -78,6 +78,11 @@ mod type_name {
     fn f() -> auto { auto }
     impl auto {}
 }
+mod generic_call {
+    fn auto<T: Default>() -> T { T::default() }
+    fn consume(_: i32) {}
+    fn run() { auto::<i32>(); let _a = auto::<i32>(); consume(auto::<i32>()); }
+}
 mod macro_name {
     macro_rules! declare { ($item:ident) => { struct $item; }; }
     declare!(auto);
@@ -131,6 +136,59 @@ fn main() {
       (impl_item
         (type_identifier)
         (declaration_list))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (type_identifier))))
+        (parameters)
+        (type_identifier)
+        (block
+          (call_expression
+            (scoped_identifier
+              (identifier)
+              (identifier))
+            (arguments))))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (primitive_type)))
+        (block))
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (expression_statement
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments)))
+          (let_declaration
+            (identifier)
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments)))
+          (expression_statement
+            (call_expression
+              (identifier)
+              (arguments
+                (call_expression
+                  (generic_function
+                    (identifier)
+                    (type_arguments
+                      (primitive_type)))
+                  (arguments)))))))))
   (mod_item
     (identifier)
     (declaration_list

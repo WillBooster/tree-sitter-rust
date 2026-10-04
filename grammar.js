@@ -718,7 +718,7 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('function', choice($.identifier, $.scoped_identifier, $.field_expression)),
+          field('function', choice($.identifier, alias('auto', $.identifier), $.scoped_identifier, $.field_expression)),
           '::',
           field('type_arguments', $.type_arguments)
         )
