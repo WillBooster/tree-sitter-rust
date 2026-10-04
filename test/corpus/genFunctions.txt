@@ -114,3 +114,74 @@ fn main() { for value in Container.iter() { assert_eq!(value, 3); } }
                 (token_tree
                   (identifier)
                   (integer_literal))))))))))
+
+==================
+Contextual generator names in older editions
+==================
+
+#![allow(dead_code, non_upper_case_globals)]
+const gen: u8 = 1;
+pub const GEN: u8 = gen;
+struct S;
+impl S { const gen: u8 = 1; }
+trait T { const gen: u8; }
+fn f<const gen: usize>() { const gen: u8 = 1; }
+static gen_static: u8 = 1;
+mod m { static gen: u8 = 1; }
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (const_item
+    (identifier)
+    (primitive_type)
+    (integer_literal))
+  (const_item
+    (visibility_modifier)
+    (identifier)
+    (primitive_type)
+    (identifier))
+  (struct_item
+    (type_identifier))
+  (impl_item
+    (type_identifier)
+    (declaration_list
+      (const_item
+        (identifier)
+        (primitive_type)
+        (integer_literal))))
+  (trait_item
+    (type_identifier)
+    (declaration_list
+      (const_item
+        (identifier)
+        (primitive_type))))
+  (function_item
+    (identifier)
+    (type_parameters
+      (const_parameter
+        (identifier)
+        (primitive_type)))
+    (parameters)
+    (block
+      (const_item
+        (identifier)
+        (primitive_type)
+        (integer_literal))))
+  (static_item
+    (identifier)
+    (primitive_type)
+    (integer_literal))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (static_item
+        (identifier)
+        (primitive_type)
+        (integer_literal)))))
