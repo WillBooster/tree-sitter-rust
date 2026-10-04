@@ -121,6 +121,8 @@ module.exports = grammar({
     $._line_doc_content,
     $._range_unary_endpoint_start,
     $._error_sentinel,
+    $._foreign_declaration_context,
+    $._foreign_declaration_start,
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -182,7 +184,9 @@ module.exports = grammar({
         $.let_declaration,
         $.use_declaration,
         $.extern_crate_declaration,
-        $.static_item
+        $.static_item,
+        alias($._safe_function_signature_item, $.function_signature_item),
+        alias($._qualified_static_item, $.static_item)
       ),
 
     // Section - Macro definitions
@@ -325,27 +329,27 @@ module.exports = grammar({
     // such an item starts: accepting it on every item would make it one wherever an item can start, breaking its uses as
     // an identifier (`let safe = …; safe = …;`).
     _foreign_declaration_list: ($) =>
-      seq(
-        '{',
-        repeat(
-          choice(
-            $._declaration_statement,
-            alias($._safe_function_signature_item, $.function_signature_item),
-            alias($._qualified_static_item, $.static_item)
-          )
-        ),
-        '}'
-      ),
+      seq('{', repeat(seq(optional($._foreign_declaration_context), $._declaration_statement)), '}'),
 
     _safe_function_signature_item: ($) =>
-      seq(optional($.visibility_modifier), alias($._safe_modifier, $.function_modifiers), $._function_signature),
+      seq(
+        $._foreign_declaration_start,
+        optional($.visibility_modifier),
+        alias($._safe_modifier, $.function_modifiers),
+        $._function_signature
+      ),
 
     // Aliasing the bare token instead would make `function_modifiers` a leaf without the `safe` child that other
     // modifiers have.
     _safe_modifier: () => 'safe',
 
     _qualified_static_item: ($) =>
-      seq(optional($.visibility_modifier), choice('safe', 'unsafe'), $._static_declaration),
+      seq(
+        $._foreign_declaration_start,
+        optional($.visibility_modifier),
+        choice('safe', 'unsafe'),
+        $._static_declaration
+      ),
 
     struct_item: ($) =>
       seq(
