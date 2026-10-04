@@ -391,6 +391,9 @@ static bool scan_foreign_declaration_start(TSLexer *lexer) {
         }
         if (!foreign_trivia(lexer)) return false;
     }
+    if (lexer->lookahead == 'c') {
+        if (!foreign_word(lexer, "crate") || !foreign_trivia(lexer)) return false;
+    }
     bool safe = lexer->lookahead == 's';
     if (!foreign_word(lexer, safe ? "safe" : "unsafe") || !foreign_trivia(lexer)) return false;
     bool function = lexer->lookahead == 'f';

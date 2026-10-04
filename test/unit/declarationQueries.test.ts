@@ -37,6 +37,9 @@ test('captures qualified extern declarations without accepting their qualifiers 
     'fn ordinary();',
     'pub /* before */ safe /* after */ fn safe_function();',
     'static ORDINARY: i32;',
+    'crate /* visibility */ safe fn legacy_function();',
+    'crate safe static LEGACY_SAFE: i32;',
+    'crate unsafe static LEGACY_UNSAFE: i32;',
     'pub(crate) safe static SAFE: i32;',
     'pub(in /* outer /* inner */ comment */ crate) unsafe static UNSAFE: i32;',
   ];
