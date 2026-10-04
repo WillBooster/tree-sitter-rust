@@ -34,6 +34,8 @@ const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]]
 const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
 const hexadecimalSuffix = new RegExp(String.raw`[\p{XID_Start}--[a-fA-F]][_\p{XID_Continue}]*`, 'v');
 
+const extendedFloatTypes = ['f16', 'f128'];
+
 const numericTypes = [
   'u8',
   'i8',
@@ -49,6 +51,7 @@ const numericTypes = [
   'usize',
   'f32',
   'f64',
+  ...extendedFloatTypes,
 ];
 
 // https://doc.rust-lang.org/reference/tokens.html#punctuation
@@ -138,6 +141,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
@@ -272,7 +276,8 @@ module.exports = grammar({
         $.self,
         $.super,
         $.crate,
-        alias(choice(...primitiveTypes), $.primitive_type),
+        alias(choice(...primitiveTypes.filter((type) => !extendedFloatTypes.includes(type))), $.primitive_type),
+        alias(choice(...extendedFloatTypes), $.identifier),
         prec.right(repeat1(choice(...TOKEN_TREE_NON_SPECIAL_PUNCTUATION))),
         "'",
         'as',
@@ -529,7 +534,15 @@ module.exports = grammar({
         optional(
           seq(
             optional(choice('!', 'const', seq('~', 'const'))),
-            field('trait', choice($._type_identifier, $.scoped_type_identifier, $.generic_type)),
+            field(
+              'trait',
+              choice(
+                $._type_identifier,
+                alias(choice(...primitiveTypes), $.type_identifier),
+                $.scoped_type_identifier,
+                $.generic_type
+              )
+            ),
             'for'
           )
         ),
@@ -620,7 +633,7 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('name', $._type_identifier),
+          field('name', choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier))),
           optional(field('bounds', $.trait_bounds)),
           optional(seq('=', field('default_type', $._type)))
         )
@@ -714,7 +727,14 @@ module.exports = grammar({
           PREC.call,
           seq(
             choice(
-              field('trait', choice($._type_identifier, $.scoped_type_identifier)),
+              field(
+                'trait',
+                choice(
+                  $._type_identifier,
+                  $.scoped_type_identifier,
+                  alias(choice(...primitiveTypes), $.type_identifier)
+                )
+              ),
               seq(optional($.function_modifiers), 'fn')
             ),
             field('parameters', $.parameters)
@@ -731,7 +751,15 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('function', choice($.identifier, $.scoped_identifier, $.field_expression)),
+          field(
+            'function',
+            choice(
+              $.identifier,
+              alias(choice(...primitiveTypes), $.identifier),
+              $.scoped_identifier,
+              $.field_expression
+            )
+          ),
           '::',
           field('type_arguments', $.type_arguments)
         )
@@ -741,14 +769,25 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('type', choice($._type_identifier, $._reserved_identifier, $.scoped_type_identifier)),
+          field(
+            'type',
+            choice(
+              $._type_identifier,
+              alias(choice(...primitiveTypes), $.type_identifier),
+              $._reserved_identifier,
+              $.scoped_type_identifier
+            )
+          ),
           field('type_arguments', $.type_arguments)
         )
       ),
 
     generic_type_with_turbofish: ($) =>
       seq(
-        field('type', choice($._type_identifier, $.scoped_identifier)),
+        field(
+          'type',
+          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_identifier)
+        ),
         '::',
         field('type_arguments', $.type_arguments)
       ),
@@ -762,14 +801,20 @@ module.exports = grammar({
     type_arguments: ($) =>
       seq(
         token(prec(1, '<')),
-        sepBy1(',', seq(choice($._type, $.type_binding, $.lifetime, $._literal, $.block), optional($.trait_bounds))),
+        sepBy1(
+          ',',
+          choice(
+            seq(choice($._type, $.type_binding, $.lifetime, $._literal, $.block), optional($.trait_bounds)),
+            prec(1, seq(alias(choice(...primitiveTypes), $.type_identifier), $.trait_bounds))
+          )
+        ),
         optional(','),
         '>'
       ),
 
     type_binding: ($) =>
       seq(
-        field('name', $._type_identifier),
+        field('name', choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier))),
         field('type_arguments', optional($.type_arguments)),
         '=',
         field('type', $._type)
@@ -791,6 +836,7 @@ module.exports = grammar({
             1,
             choice(
               $._type_identifier,
+              alias(choice(...primitiveTypes), $.type_identifier),
               $.scoped_type_identifier,
               $.removed_trait_bound,
               $.modified_trait_bound,
@@ -812,6 +858,7 @@ module.exports = grammar({
             $.higher_ranked_trait_bound,
             $.modified_trait_bound,
             $._type_identifier,
+            alias(choice(...primitiveTypes), $.type_identifier),
             $.scoped_type_identifier,
             $.generic_type,
             $.function_type,
@@ -1037,6 +1084,7 @@ module.exports = grammar({
           'name',
           choice(
             $._type_identifier,
+            prec.dynamic(-1, alias(choice(...primitiveTypes), $.type_identifier)),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
           )
@@ -1208,7 +1256,11 @@ module.exports = grammar({
       ),
 
     generic_pattern: ($) =>
-      seq(choice($.identifier, $.scoped_identifier), '::', field('type_arguments', $.type_arguments)),
+      seq(
+        choice($.identifier, alias(choice(...primitiveTypes), $.identifier), $.scoped_identifier),
+        '::',
+        field('type_arguments', $.type_arguments)
+      ),
 
     tuple_pattern: ($) => seq('(', sepBy(',', choice($._pattern, $.closure_expression)), optional(','), ')'),
 
@@ -1216,7 +1268,15 @@ module.exports = grammar({
 
     tuple_struct_pattern: ($) =>
       seq(
-        field('type', choice($.identifier, $.scoped_identifier, alias($.generic_type_with_turbofish, $.generic_type))),
+        field(
+          'type',
+          choice(
+            $.identifier,
+            alias(choice(...primitiveTypes), $.identifier),
+            $.scoped_identifier,
+            alias($.generic_type_with_turbofish, $.generic_type)
+          )
+        ),
         '(',
         sepBy(',', $._pattern),
         optional(','),
@@ -1227,7 +1287,12 @@ module.exports = grammar({
       seq(
         field(
           'type',
-          choice($._type_identifier, $.scoped_type_identifier, alias($._generic_struct_pattern_type, $.generic_type))
+          choice(
+            $._type_identifier,
+            alias(choice(...primitiveTypes), $.type_identifier),
+            $.scoped_type_identifier,
+            alias($._generic_struct_pattern_type, $.generic_type)
+          )
         ),
         '{',
         sepBy(',', choice($.field_pattern, $.remaining_field_pattern)),
@@ -1237,7 +1302,10 @@ module.exports = grammar({
 
     _generic_struct_pattern_type: ($) =>
       seq(
-        field('type', choice($._type_identifier, $.scoped_type_identifier)),
+        field(
+          'type',
+          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_type_identifier)
+        ),
         '::',
         field('type_arguments', $.type_arguments)
       ),
@@ -1268,7 +1336,7 @@ module.exports = grammar({
 
     ref_pattern: ($) => seq('ref', $._pattern),
 
-    captured_pattern: ($) => seq($.identifier, '@', $._pattern),
+    captured_pattern: ($) => seq(choice($.identifier, alias(choice(...primitiveTypes), $.identifier)), '@', $._pattern),
 
     reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
 
