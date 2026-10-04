@@ -1,0 +1,227 @@
+================================================================================
+Trait aliases and declarative macros in a complete feature-gated program
+================================================================================
+
+#![feature(trait_alias, decl_macro)]
+#![allow(dead_code)]
+use std::fmt::Debug;
+trait Displayable = Debug + Send;
+pub(crate) trait Lending<'a, T> = Iterator<Item = &'a T> where T: 'a;
+trait Empty =;
+trait WithLifetime<'a> = Debug + 'a;
+trait HigherRanked = for<'a> Fn(&'a str);
+trait Trailing = Debug +;
+pub macro identity($value:expr) { $value }
+pub(crate) macro choose {
+    () => { 0 },
+    ($value:expr) => { $value },
+}
+fn main() { assert_eq!(identity!(1), choose!(1)); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier)
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier))))
+  (use_declaration
+    argument: (scoped_identifier
+      path: (scoped_identifier
+        path: (identifier)
+        name: (identifier))
+      name: (identifier)))
+  (trait_alias
+    name: (type_identifier)
+    bounds: (trait_alias_bounds
+      (type_identifier)
+      (type_identifier)))
+  (trait_alias
+    (visibility_modifier
+      (crate))
+    name: (type_identifier)
+    type_parameters: (type_parameters
+      (lifetime_parameter
+        name: (lifetime
+          (identifier)))
+      (type_parameter
+        name: (type_identifier)))
+    bounds: (trait_alias_bounds
+      (generic_type
+        type: (type_identifier)
+        type_arguments: (type_arguments
+          (type_binding
+            name: (type_identifier)
+            type: (reference_type
+              (lifetime
+                (identifier))
+              type: (type_identifier))))))
+    (where_clause
+      (where_predicate
+        left: (type_identifier)
+        bounds: (trait_bounds
+          (lifetime
+            (identifier))))))
+  (trait_alias
+    name: (type_identifier))
+  (trait_alias
+    name: (type_identifier)
+    type_parameters: (type_parameters
+      (lifetime_parameter
+        name: (lifetime
+          (identifier))))
+    bounds: (trait_alias_bounds
+      (type_identifier)
+      (lifetime
+        (identifier))))
+  (trait_alias
+    name: (type_identifier)
+    bounds: (trait_alias_bounds
+      (higher_ranked_trait_bound
+        type_parameters: (type_parameters
+          (lifetime_parameter
+            name: (lifetime
+              (identifier))))
+        type: (function_type
+          trait: (type_identifier)
+          parameters: (parameters
+            (reference_type
+              (lifetime
+                (identifier))
+              type: (primitive_type)))))))
+  (trait_alias
+    name: (type_identifier)
+    bounds: (trait_alias_bounds
+      (type_identifier)))
+  (decl_macro
+    (visibility_modifier)
+    name: (identifier)
+    parameters: (token_tree
+      (identifier)
+      (identifier))
+    body: (token_tree
+      (identifier)))
+  (decl_macro
+    (visibility_modifier
+      (crate))
+    name: (identifier)
+    body: (token_tree
+      (token_tree)
+      (token_tree
+        (integer_literal))
+      (token_tree
+        (identifier)
+        (identifier))
+      (token_tree
+        (identifier))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    body: (block
+      (expression_statement
+        (macro_invocation
+          macro: (identifier)
+          (token_tree
+            (identifier)
+            (token_tree
+              (integer_literal))
+            (identifier)
+            (token_tree
+              (integer_literal))))))))
+
+================================================================================
+Const trait alias with a feature-gated declaration
+================================================================================
+
+#![feature(trait_alias, const_trait_impl)]
+const trait ConstAlias = std::fmt::Debug;
+fn main() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier)
+        (identifier))))
+  (trait_alias
+    name: (type_identifier)
+    bounds: (trait_alias_bounds
+      (scoped_type_identifier
+        path: (scoped_identifier
+          path: (identifier)
+          name: (identifier))
+        name: (type_identifier))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    body: (block)))
+
+================================================================================
+Parenthesized trait bounds and raw or contextual macro names
+================================================================================
+
+#![feature(trait_alias, decl_macro)]
+#![allow(dead_code)]
+trait Parenthesized = (std::fmt::Debug) + Send;
+pub macro r#union($v:expr) { $v }
+pub macro raw { () => { 0 }, }
+fn main() { let _ = r#union!(1); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier)
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier))))
+  (trait_alias
+    name: (type_identifier)
+    bounds: (trait_alias_bounds
+      (tuple_type
+        (scoped_type_identifier
+          path: (scoped_identifier
+            path: (identifier)
+            name: (identifier))
+          name: (type_identifier)))
+      (type_identifier)))
+  (decl_macro
+    (visibility_modifier)
+    name: (identifier)
+    parameters: (token_tree
+      (identifier)
+      (identifier))
+    body: (token_tree
+      (identifier)))
+  (decl_macro
+    (visibility_modifier)
+    name: (identifier)
+    body: (token_tree
+      (token_tree)
+      (token_tree
+        (integer_literal))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    body: (block
+      (let_declaration
+        value: (macro_invocation
+          macro: (identifier)
+          (token_tree
+            (integer_literal)))))))
