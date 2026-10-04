@@ -169,6 +169,9 @@ typedef struct {
 static inline void process_left_forward_slash(BlockCommentProcessing *processing, int32_t current) {
     if (current == '*') {
         processing->nestingDepth += 1;
+    } else if (current == '/') {
+        processing->state = LeftForwardSlash;
+        return;
     }
     processing->state = Continuing;
 };
