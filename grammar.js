@@ -145,6 +145,8 @@ module.exports = grammar({
     [$._type, $._parenthesized_primitive_trait, $._pattern],
     [$._type, $._parenthesized_primitive_trait],
     [$._expression_except_range, $.struct_expression],
+    [$.function_modifiers, $.modified_trait_bound],
+    [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
     // Local ambiguity due to anonymous types:
     // See https://internals.rust-lang.org/t/pre-rfc-deprecating-anonymous-parameters/3710
@@ -530,7 +532,7 @@ module.exports = grammar({
         field('type_parameters', optional($.type_parameters)),
         optional(
           seq(
-            optional('!'),
+            optional(choice('!', 'const', seq('~', 'const'))),
             field(
               'trait',
               choice(
@@ -602,6 +604,12 @@ module.exports = grammar({
       ),
 
     _parenthesized_trait_type: ($) => seq('(', $._trait_type, ')'),
+
+    modified_trait_bound: ($) =>
+      prec.dynamic(
+        -1,
+        seq(choice('const', seq('~', 'const'), seq('[', 'const', ']'), 'async'), field('type', $._type))
+      ),
 
     type_parameters: ($) =>
       prec(
@@ -707,7 +715,8 @@ module.exports = grammar({
         $.never_type,
         $.dynamic_type,
         $.removed_trait_bound,
-        $.bounded_type
+        $.bounded_type,
+        $.modified_trait_bound
       ),
 
     bracketed_type: ($) => seq('<', choice($._type, $.qualified_type), '>'),
@@ -882,6 +891,7 @@ module.exports = grammar({
               alias(choice(...primitiveTypes), $.type_identifier),
               $.scoped_type_identifier,
               $.removed_trait_bound,
+              $.modified_trait_bound,
               $.generic_type,
               $.function_type,
               alias($._parenthesized_trait_type, $.tuple_type),
@@ -898,6 +908,7 @@ module.exports = grammar({
           'trait',
           choice(
             $.higher_ranked_trait_bound,
+            $.modified_trait_bound,
             $._type_identifier,
             alias(choice(...primitiveTypes), $.type_identifier),
             $.scoped_type_identifier,
