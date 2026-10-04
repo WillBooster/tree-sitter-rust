@@ -696,7 +696,15 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('function', choice($.identifier, $.scoped_identifier, $.field_expression)),
+          field(
+            'function',
+            choice(
+              $.identifier,
+              alias(choice(...primitiveTypes), $.identifier),
+              $.scoped_identifier,
+              $.field_expression
+            )
+          ),
           '::',
           field('type_arguments', $.type_arguments)
         )
@@ -713,7 +721,10 @@ module.exports = grammar({
 
     generic_type_with_turbofish: ($) =>
       seq(
-        field('type', choice($._type_identifier, $.scoped_identifier)),
+        field(
+          'type',
+          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_identifier)
+        ),
         '::',
         field('type_arguments', $.type_arguments)
       ),
@@ -1222,7 +1233,7 @@ module.exports = grammar({
 
     ref_pattern: ($) => seq('ref', $._pattern),
 
-    captured_pattern: ($) => seq($.identifier, '@', $._pattern),
+    captured_pattern: ($) => seq(choice($.identifier, alias(choice(...primitiveTypes), $.identifier)), '@', $._pattern),
 
     reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
 

@@ -397,6 +397,18 @@ fn floats(a: f16, b: f128) -> (f16, f128) {
 type Wide = f128;
 fn names(f16: u8, f128: u8) -> u8 { f16 + f128 }
 
+mod identifiers {
+    fn f16<T>(x: T) -> T { x }
+    fn f128<T>(x: T) -> T { x }
+    fn use_names() {
+        let x = f16::<u8>(1);
+        let y = f128::<u8>(2);
+        let f16 @ Some(_) = Some(x) else { return; };
+        let f128 @ Some(_) = Some(y) else { return; };
+        let _ = (f16, f128);
+    }
+}
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -446,4 +458,81 @@ fn names(f16: u8, f128: u8) -> u8 { f16 + f128 }
     (block
       (binary_expression
         (identifier)
-        (identifier)))))
+        (identifier))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (parameters
+          (parameter
+            (identifier)
+            (type_identifier)))
+        (type_identifier)
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (parameters
+          (parameter
+            (identifier)
+            (type_identifier)))
+        (type_identifier)
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (let_declaration
+            (identifier)
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments
+                (integer_literal))))
+          (let_declaration
+            (identifier)
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments
+                (integer_literal))))
+          (let_declaration
+            (captured_pattern
+              (identifier)
+              (tuple_struct_pattern
+                (identifier)))
+            (call_expression
+              (identifier)
+              (arguments
+                (identifier)))
+            (block
+              (expression_statement
+                (return_expression))))
+          (let_declaration
+            (captured_pattern
+              (identifier)
+              (tuple_struct_pattern
+                (identifier)))
+            (call_expression
+              (identifier)
+              (arguments
+                (identifier)))
+            (block
+              (expression_statement
+                (return_expression))))
+          (let_declaration
+            (tuple_expression
+              (identifier)
+              (identifier))))))))
