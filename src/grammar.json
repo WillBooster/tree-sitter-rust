@@ -10737,6 +10737,22 @@
                     {
                       "type": "STRING",
                       "value": "char"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "default"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "union"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "gen"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "raw"
                     }
                   ]
                 },
@@ -10925,6 +10941,22 @@
                     {
                       "type": "STRING",
                       "value": "char"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "default"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "union"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "gen"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "raw"
                     }
                   ]
                 },

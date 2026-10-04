@@ -45,3 +45,43 @@ test('preserves contextual constructor names in generic tuple patterns', () => {
     parser.delete();
   }
 });
+
+test('preserves contextual names and fields in plain and generic struct patterns', () => {
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(language, '(struct_pattern type: (_) @type (field_pattern name: (_) @field)) @pattern');
+  try {
+    for (const name of ['default', 'union', 'raw', 'gen', 'auto', 'Ordinary', 'r#gen']) {
+      for (const type of [name, `${name}::<u8>`]) {
+        for (const statement of [`let ${type} { a } = value;`, `match value { ${type} { a } => a };`]) {
+          const source = `fn f() { ${statement} after(); }`;
+          const tree = parser.parse(source)!;
+          try {
+            expect(tree.rootNode.hasError, source).toBe(false);
+            const captures = query.captures(tree.rootNode);
+            expect(
+              captures.filter((c) => c.name === 'type').map((c) => c.node.text),
+              source
+            ).toEqual([type]);
+            expect(
+              captures.filter((c) => c.name === 'field').map((c) => c.node.text),
+              source
+            ).toEqual(['a']);
+            expect(
+              captures.filter((c) => c.name === 'pattern').map((c) => c.node.text),
+              source
+            ).toEqual([`${type} { a }`]);
+            expect(
+              tree.rootNode.descendantsOfType('call_expression').map((n) => n.text),
+              source
+            ).toEqual(['after()']);
+          } finally {
+            tree.delete();
+          }
+        }
+      }
+    }
+  } finally {
+    query.delete();
+    parser.delete();
+  }
+});
