@@ -139,6 +139,8 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.function_modifiers, $.modified_trait_bound],
+    [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
     // Local ambiguity due to anonymous types:
     // See https://internals.rust-lang.org/t/pre-rfc-deprecating-anonymous-parameters/3710
@@ -524,7 +526,7 @@ module.exports = grammar({
         field('type_parameters', optional($.type_parameters)),
         optional(
           seq(
-            optional('!'),
+            optional(choice('!', 'const', seq('~', 'const'))),
             field('trait', choice($._type_identifier, $.scoped_type_identifier, $.generic_type)),
             'for'
           )
@@ -565,6 +567,7 @@ module.exports = grammar({
 
     associated_type: ($) =>
       seq(
+        optional($.visibility_modifier),
         'type',
         field('name', $._type_identifier),
         field('type_parameters', optional($.type_parameters)),
@@ -578,6 +581,12 @@ module.exports = grammar({
     higher_ranked_trait_bound: ($) => seq('for', field('type_parameters', $.type_parameters), field('type', $._type)),
 
     removed_trait_bound: ($) => seq('?', $._type),
+
+    modified_trait_bound: ($) =>
+      prec.dynamic(
+        -1,
+        seq(choice('const', seq('~', 'const'), seq('[', 'const', ']'), 'async'), field('type', $._type))
+      ),
 
     type_parameters: ($) =>
       prec(
@@ -682,6 +691,7 @@ module.exports = grammar({
         $.dynamic_type,
         $.bounded_type,
         $.removed_trait_bound,
+        $.modified_trait_bound,
         alias(choice(...primitiveTypes), $.primitive_type)
       ),
 
@@ -784,6 +794,7 @@ module.exports = grammar({
               $._type_identifier,
               $.scoped_type_identifier,
               $.removed_trait_bound,
+              $.modified_trait_bound,
               $.generic_type,
               $.function_type,
               $.tuple_type,
@@ -800,6 +811,7 @@ module.exports = grammar({
           'trait',
           choice(
             $.higher_ranked_trait_bound,
+            $.modified_trait_bound,
             $._type_identifier,
             $.scoped_type_identifier,
             $.generic_type,
