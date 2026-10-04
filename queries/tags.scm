@@ -29,6 +29,9 @@
 (trait_item
     name: (type_identifier) @name) @definition.interface
 
+(trait_alias
+    name: (type_identifier) @name) @definition.interface
+
 ; module definitions
 (mod_item
     name: (identifier) @name) @definition.module
@@ -36,6 +39,9 @@
 ; macro definitions
 
 (macro_definition
+    name: (identifier) @name) @definition.macro
+
+(decl_macro
     name: (identifier) @name) @definition.macro
 
 ; references

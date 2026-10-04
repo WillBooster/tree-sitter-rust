@@ -2835,3 +2835,162 @@ fn main() { assert_eq!(value(2), 1); S.method(3); }
             field: (field_identifier))
           arguments: (arguments
             (integer_literal)))))))
+
+================================================================================
+Trait aliases and declarative macros
+================================================================================
+
+trait Printable = std::fmt::Debug + Send;
+trait Borrowed<'a> = std::fmt::Debug + 'a;
+trait Generic<T> = Iterator<Item = T>;
+macro answer() { 42 }
+pub macro pair { ($x:expr, $y:expr) => { ($x, $y) } }
+fn main() { let _ = answer!(); let _ = pair!(1, 2); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (trait_alias
+    (type_identifier)
+    (trait_alias_bounds
+      (scoped_type_identifier
+        (scoped_identifier
+          (identifier)
+          (identifier))
+        (type_identifier))
+      (type_identifier)))
+  (trait_alias
+    (type_identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))))
+    (trait_alias_bounds
+      (scoped_type_identifier
+        (scoped_identifier
+          (identifier)
+          (identifier))
+        (type_identifier))
+      (lifetime
+        (identifier))))
+  (trait_alias
+    (type_identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (trait_alias_bounds
+      (generic_type
+        (type_identifier)
+        (type_arguments
+          (type_binding
+            (type_identifier)
+            (type_identifier))))))
+  (decl_macro
+    (identifier)
+    (token_tree)
+    (token_tree
+      (integer_literal)))
+  (decl_macro
+    (visibility_modifier)
+    (identifier)
+    (token_tree
+      (token_tree
+        (identifier)
+        (identifier)
+        (identifier)
+        (identifier))
+      (token_tree
+        (token_tree
+          (identifier)
+          (identifier)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (macro_invocation
+          (identifier)
+          (token_tree)))
+      (let_declaration
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (integer_literal)
+            (integer_literal)))))))
+
+================================================================================
+Trait alias bounds and declarative macro visibility
+================================================================================
+
+pub trait Printable = std::fmt::Debug + Send +;
+trait Empty =;
+trait Callable = for<'a> Fn(&'a str);
+trait Generic<T> = Iterator<Item = T> where T: Copy;
+pub(crate) macro answer() { 42 }
+macro choice { () => { 0 }, ($x:expr) => { $x } }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (trait_alias
+    (visibility_modifier)
+    (type_identifier)
+    (trait_alias_bounds
+      (scoped_type_identifier
+        (scoped_identifier
+          (identifier)
+          (identifier))
+        (type_identifier))
+      (type_identifier)))
+  (trait_alias
+    (type_identifier))
+  (trait_alias
+    (type_identifier)
+    (trait_alias_bounds
+      (higher_ranked_trait_bound
+        (type_parameters
+          (lifetime_parameter
+            (lifetime
+              (identifier))))
+        (function_type
+          (type_identifier)
+          (parameters
+            (reference_type
+              (lifetime
+                (identifier))
+              (primitive_type)))))))
+  (trait_alias
+    (type_identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (trait_alias_bounds
+      (generic_type
+        (type_identifier)
+        (type_arguments
+          (type_binding
+            (type_identifier)
+            (type_identifier)))))
+    (where_clause
+      (where_predicate
+        (type_identifier)
+        (trait_bounds
+          (type_identifier)))))
+  (decl_macro
+    (visibility_modifier
+      (crate))
+    (identifier)
+    (token_tree)
+    (token_tree
+      (integer_literal)))
+  (decl_macro
+    (identifier)
+    (token_tree
+      (token_tree)
+      (token_tree
+        (integer_literal))
+      (token_tree
+        (identifier)
+        (identifier))
+      (token_tree
+        (identifier)))))
