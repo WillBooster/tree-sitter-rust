@@ -57,7 +57,15 @@ test('exposes trait aliases and declarative macros through public fields and shi
         injected.some(
           (capture) => capture.node.startIndex === body.startIndex && capture.node.endIndex === body.endIndex
         )
-      ).toBe(true);
+      ).toBe(macro.childForFieldName('parameters') !== null);
+      if (macro.childForFieldName('parameters')) {
+        const expansion = parser.parse(body.text)!;
+        try {
+          expect(expansion.rootNode.hasError).toBe(false);
+        } finally {
+          expansion.delete();
+        }
+      }
     }
     const parameters = macros[0]!.childForFieldName('parameters')!;
     expect(injected.some((capture) => capture.node.startIndex === parameters.startIndex)).toBe(false);
