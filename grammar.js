@@ -131,8 +131,6 @@ module.exports = grammar({
 
   inline: ($) => [
     $._non_primitive_type,
-    $._non_primitive_type_no_bounds,
-    $._type_no_bounds,
     $._path,
     $._type_identifier,
     $._tokens,
@@ -686,13 +684,9 @@ module.exports = grammar({
     visibility_modifier: ($) =>
       choice($.crate, seq('pub', optional(seq('(', choice($.self, $.super, $.crate, seq('in', $._path)), ')')))),
 
-    _type: ($) => choice($._type_no_bounds, $.bounded_type),
+    _type: ($) => choice($._non_primitive_type, alias(choice(...primitiveTypes), $.primitive_type)),
 
-    _type_no_bounds: ($) => choice($._non_primitive_type_no_bounds, alias(choice(...primitiveTypes), $.primitive_type)),
-
-    _non_primitive_type: ($) => choice($._non_primitive_type_no_bounds, $.bounded_type),
-
-    _non_primitive_type_no_bounds: ($) =>
+    _non_primitive_type: ($) =>
       choice(
         $.abstract_type,
         $.reference_type,
@@ -708,7 +702,8 @@ module.exports = grammar({
         $.macro_invocation,
         $.never_type,
         $.dynamic_type,
-        $.removed_trait_bound
+        $.removed_trait_bound,
+        $.bounded_type
       ),
 
     bracketed_type: ($) => seq('<', choice($._type, $.qualified_type), '>'),
@@ -796,30 +791,39 @@ module.exports = grammar({
     bounded_type: ($) =>
       prec.left(
         -1,
-        seq(
-          choice(
-            $.lifetime,
-            $._non_primitive_type,
-            alias(choice(...primitiveTypes), $.type_identifier),
-            alias($._parenthesized_primitive_trait, $.tuple_type),
-            $.use_bounds
+        choice(
+          prec.dynamic(
+            -2,
+            seq(
+              choice(
+                $.lifetime,
+                $._non_primitive_type,
+                alias(choice(...primitiveTypes), $.type_identifier),
+                $.use_bounds
+              ),
+              '+',
+              choice($.lifetime, $._trait_type, $.use_bounds)
+            )
           ),
-          '+',
-          choice($.lifetime, $._trait_type, $.use_bounds)
+          prec.dynamic(
+            -1,
+            seq(
+              alias($._parenthesized_primitive_trait, $.tuple_type),
+              '+',
+              choice($.lifetime, $._trait_type, $.use_bounds)
+            )
+          )
         )
       ),
 
     _parenthesized_primitive_trait: ($) =>
-      prec.dynamic(
-        1,
-        seq(
-          '(',
-          choice(
-            alias(choice(...primitiveTypes), $.type_identifier),
-            alias($._parenthesized_primitive_trait, $.tuple_type)
-          ),
-          ')'
-        )
+      seq(
+        '(',
+        choice(
+          alias(choice(...primitiveTypes), $.type_identifier),
+          alias($._parenthesized_primitive_trait, $.tuple_type)
+        ),
+        ')'
       ),
 
     use_bounds: ($) =>
@@ -1064,8 +1068,7 @@ module.exports = grammar({
         )
       ),
 
-    type_cast_expression: ($) =>
-      prec.left(PREC.cast, seq(field('value', $._expression), 'as', field('type', $._type_no_bounds))),
+    type_cast_expression: ($) => prec.left(PREC.cast, seq(field('value', $._expression), 'as', field('type', $._type))),
 
     return_expression: ($) => choice(prec.left(seq('return', $._expression)), prec(-1, 'return')),
 
