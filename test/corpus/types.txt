@@ -440,6 +440,13 @@ mod parenthesized_traits {
     fn apply<F: f16(u8) -> u8, G: f128(u8) -> u8>(f: F, mut g: G) -> u8 { g(f(1)) }
 }
 
+mod impl_parameters {
+    struct S<T>(T);
+    trait Tr {}
+    impl<f16> Tr for S<f16> {}
+    impl<f128: Clone> S<f128> { fn cloned(&self) -> f128 { self.0.clone() } }
+}
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -743,4 +750,52 @@ mod parenthesized_traits {
               (call_expression
                 (identifier)
                 (arguments
-                  (integer_literal))))))))))
+                  (integer_literal)))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (struct_item
+        (type_identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (ordered_field_declaration_list
+          (type_identifier)))
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (impl_item
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (type_identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type)))
+        (declaration_list))
+      (impl_item
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (type_identifier))))
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type)))
+        (declaration_list
+          (function_item
+            (identifier)
+            (parameters
+              (self_parameter
+                (self)))
+            (primitive_type)
+            (block
+              (call_expression
+                (field_expression
+                  (field_expression
+                    (self)
+                    (integer_literal))
+                  (field_identifier))
+                (arguments)))))))))

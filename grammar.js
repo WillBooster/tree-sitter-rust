@@ -616,7 +616,7 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('name', $._type_identifier),
+          field('name', choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier))),
           optional(field('bounds', $.trait_bounds)),
           optional(seq('=', field('default_type', $._type)))
         )
