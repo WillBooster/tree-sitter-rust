@@ -1076,7 +1076,7 @@ module.exports = grammar({
         ']'
       ),
 
-    parenthesized_expression: ($) => seq('(', $._expression, ')'),
+    parenthesized_expression: ($) => seq('(', repeat(prec(PREC.call, $.attribute_item)), $._expression, ')'),
 
     tuple_expression: ($) =>
       seq(

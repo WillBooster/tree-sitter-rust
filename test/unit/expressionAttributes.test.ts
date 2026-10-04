@@ -119,6 +119,25 @@ test('retains multiple attributes through prefix edits and unchanged declaration
   }
 });
 
+test('retains attributes inside parentheses without converting them to tuples', () => {
+  const parser = new Parser().setLanguage(language);
+  try {
+    for (const expression of ['(#[a] 1)', '(#[a] x.y).z', '|| (#[a] 1)', '(#[a] (#[b] 1))']) {
+      const source = `fn f() { let value = ${expression}; }`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        expect(tree.rootNode.descendantsOfType('tuple_expression')).toHaveLength(0);
+        expect(tree.rootNode.descendantsOfType('attribute_item').length).toBe(expression.includes('#[b]') ? 2 : 1);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
 test('retains expression supertype captures for every list operand', () => {
   const parser = new Parser().setLanguage(language);
   const query = new Query(
