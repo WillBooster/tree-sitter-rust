@@ -524,7 +524,7 @@ module.exports = grammar({
         field('type_parameters', optional($.type_parameters)),
         optional(
           seq(
-            optional(choice('!', 'const')),
+            optional(choice('!', 'const', seq('~', 'const'))),
             field('trait', choice($._type_identifier, $.scoped_type_identifier, $.generic_type)),
             'for'
           )
