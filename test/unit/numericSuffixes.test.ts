@@ -56,6 +56,8 @@ test('preserves numeric suffixes and following string boundaries in macro tokens
       ['integer_literal', '0_unit'],
       ['integer_literal', '0_foo'],
       ['integer_literal', '00bfoo'],
+      ['float_literal', '1e3_类型'],
+      ['float_literal', '1.0e3_efoo'],
     ]);
   } finally {
     query.delete();
@@ -64,14 +66,26 @@ test('preserves numeric suffixes and following string boundaries in macro tokens
   }
 });
 
-test('keeps incomplete exponent spellings out of numeric literals', async () => {
+test('preserves syntax errors at invalid numeric suffix boundaries', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
   const query = new Query(language, '(_literal) @literal');
   try {
-    for (const literal of ['1efoo', '1Efoo', '1.0efoo', '1.0Efoo', '1_efoo', '1.0_efoo', '0b1efoo', '0o7Efoo']) {
+    for (const literal of [
+      '1efoo',
+      '1Efoo',
+      '1.0efoo',
+      '1.0Efoo',
+      '1_efoo',
+      '1.0_efoo',
+      '0b1efoo',
+      '0o7Efoo',
+      '1e3_\u0301',
+      '1.0e3_\u0661',
+      '1e3_\u0661',
+    ]) {
       const expression = parser.parse(`fn main() { let _ = ${literal}; }`)!;
       const macro = parser.parse(`swallow!(${literal});`)!;
       try {
