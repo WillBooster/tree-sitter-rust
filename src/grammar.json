@@ -3033,8 +3033,17 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "STRING",
-                      "value": "!"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "!"
+                        },
+                        {
+                          "type": "STRING",
+                          "value": "const"
+                        }
+                      ]
                     },
                     {
                       "type": "BLANK"
@@ -10463,6 +10472,11 @@
   "conflicts": [
     [
       "function_modifiers",
+      "modified_trait_bound"
+    ],
+    [
+      "function_modifiers",
+      "impl_item",
       "modified_trait_bound"
     ],
     [

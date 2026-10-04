@@ -222,3 +222,17 @@ type CU = const unsafe fn();
     (function_type
       (function_modifiers)
       (parameters))))
+
+==================
+Legacy const trait implementation fields
+==================
+
+impl const Default for Foo {}
+
+---
+
+(source_file
+  (impl_item
+    trait: (type_identifier)
+    type: (type_identifier)
+    body: (declaration_list)))
