@@ -40,14 +40,18 @@ test('captures qualified extern declarations without accepting their qualifiers 
     'crate /* visibility */ safe fn legacy_function();',
     'crate safe static LEGACY_SAFE: i32;',
     'crate unsafe static LEGACY_UNSAFE: i32;',
+    'pub(self) safe fn local();',
+    'pub(super) safe fn parent();',
+    'pub(in crate /* path */ :: r#outer) safe fn raw_path();',
     'pub(crate) safe static SAFE: i32;',
     'pub(in /* outer /* inner */ comment */ crate) unsafe static UNSAFE: i32;',
   ];
-  const source = `unsafe extern "C" { ${items.join('\n')} }`;
+  const foreignSource = `unsafe extern "C" { ${items.join('\n')} }`;
+  const source = `mod r#outer { ${foreignSource} }`;
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([source, ...items]);
+    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([source, foreignSource, ...items]);
     for (const invalid of ['safe fn f();', 'safe static X: i32;', 'unsafe static X: i32;']) {
       const invalidTree = parser.parse(invalid)!;
       try {

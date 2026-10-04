@@ -269,6 +269,8 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
 }
 
 static bool scan_foreign_declaration_start(TSLexer *lexer);
+static bool foreign_restricted_visibility(TSLexer *lexer);
+static bool foreign_identifier(TSLexer *lexer);
 static bool foreign_word(TSLexer *lexer, const char *word);
 static bool foreign_trivia(TSLexer *lexer);
 
@@ -382,11 +384,7 @@ static bool scan_foreign_declaration_start(TSLexer *lexer) {
         if (!foreign_word(lexer, "pub") || !foreign_trivia(lexer)) return false;
         if (lexer->lookahead == '(') {
             advance(lexer);
-            while (!lexer->eof(lexer) && lexer->lookahead != ')') {
-                if (!foreign_trivia(lexer)) return false;
-                if (lexer->lookahead != ')') advance(lexer);
-            }
-            if (lexer->eof(lexer)) return false;
+            if (!foreign_restricted_visibility(lexer) || lexer->lookahead != ')') return false;
             advance(lexer);
         }
         if (!foreign_trivia(lexer)) return false;
@@ -400,6 +398,50 @@ static bool scan_foreign_declaration_start(TSLexer *lexer) {
     if (function && !safe) return false;
     if (!foreign_word(lexer, function ? "fn" : "static")) return false;
     lexer->result_symbol = FOREIGN_DECLARATION_START;
+    return true;
+}
+
+static bool foreign_restricted_visibility(TSLexer *lexer) {
+    if (!foreign_trivia(lexer)) return false;
+    if (lexer->lookahead == 'i') {
+        if (!foreign_word(lexer, "in") || !foreign_trivia(lexer)) return false;
+        if (lexer->lookahead == ':') {
+            advance(lexer);
+            if (lexer->lookahead != ':') return false;
+            advance(lexer);
+            if (!foreign_trivia(lexer)) return false;
+        }
+        for (;;) {
+            if (!foreign_identifier(lexer) || !foreign_trivia(lexer)) return false;
+            if (lexer->lookahead != ':') return true;
+            advance(lexer);
+            if (lexer->lookahead != ':') return false;
+            advance(lexer);
+            if (!foreign_trivia(lexer)) return false;
+        }
+    }
+    if (lexer->lookahead == 'c') {
+        if (!foreign_word(lexer, "crate")) return false;
+    } else if (lexer->lookahead == 's') {
+        advance(lexer);
+        if (!foreign_word(lexer, lexer->lookahead == 'e' ? "elf" : "uper")) return false;
+    } else return false;
+    return foreign_trivia(lexer);
+}
+
+static bool foreign_identifier(TSLexer *lexer) {
+    if (lexer->lookahead == '$') advance(lexer);
+    bool started = false;
+    if (lexer->lookahead == 'r') {
+        advance(lexer);
+        started = true;
+        if (lexer->lookahead == '#') { advance(lexer); started = false; }
+    }
+    if (!started) {
+        if (!(lexer->lookahead == '_' || iswalpha(lexer->lookahead) || lexer->lookahead >= 0x80)) return false;
+        advance(lexer);
+    }
+    while (lexer->lookahead == '_' || iswalnum(lexer->lookahead) || lexer->lookahead >= 0x80) advance(lexer);
     return true;
 }
 
