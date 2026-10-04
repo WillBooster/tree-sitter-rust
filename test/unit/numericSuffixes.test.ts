@@ -119,6 +119,8 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
       '0o_\u0661',
       '1e_\u0301',
       '1e_\u0661',
+      '1.0e_\u0301',
+      '1.0e_\u0661',
     ]) {
       const tree = parser.parse(`swallow!(${literal});`)!;
       try {

@@ -1277,7 +1277,7 @@ module.exports = grammar({
                 /[eE][+-]?_*[0-9][0-9_]*/,
                 optional(/\p{XID_Start}[_\p{XID_Continue}]*/u)
               ),
-              seq(/[0-9][0-9_]*/, /[eE][+-]?_*/),
+              seq(/[0-9][0-9_]*/, optional(seq('.', /[0-9][0-9_]*/)), /[eE][+-]?_*/),
               seq(/[0-9][0-9_]*/, '.', /[0-9][0-9_]*/, optional(numericSuffixWithoutExponent))
             )
           )
