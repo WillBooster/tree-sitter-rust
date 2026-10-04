@@ -2295,8 +2295,17 @@
           "type": "FIELD",
           "name": "name",
           "content": {
-            "type": "SYMBOL",
-            "name": "identifier"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_reserved_identifier"
+              }
+            ]
           }
         },
         {
@@ -2793,6 +2802,10 @@
           {
             "type": "STRING",
             "value": "unsafe"
+          },
+          {
+            "type": "STRING",
+            "value": "gen"
           },
           {
             "type": "SYMBOL",
@@ -12448,6 +12461,10 @@
     [
       "_expression_except_range",
       "struct_expression"
+    ],
+    [
+      "const_item",
+      "function_modifiers"
     ],
     [
       "_type",
