@@ -446,6 +446,10 @@
         "named": true
       },
       {
+        "type": "modified_trait_bound",
+        "named": true
+      },
+      {
         "type": "never_type",
         "named": true
       },
@@ -501,6 +505,10 @@
           },
           {
             "type": "generic_type",
+            "named": true
+          },
+          {
+            "type": "modified_trait_bound",
             "named": true
           },
           {
@@ -1581,6 +1589,10 @@
           },
           {
             "type": "higher_ranked_trait_bound",
+            "named": true
+          },
+          {
+            "type": "modified_trait_bound",
             "named": true
           },
           {
@@ -3083,6 +3095,22 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "modified_trait_bound",
+    "named": true,
+    "fields": {
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_type",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
