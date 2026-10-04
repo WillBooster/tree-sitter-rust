@@ -117,3 +117,23 @@ test('retains multiple attributes through prefix edits and unchanged declaration
     parser.delete();
   }
 });
+
+test('retains expression supertype captures for every list operand', () => {
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(
+    language,
+    '(arguments (_expression) @argument) (array_expression (_expression) @array) (tuple_expression (_expression) @tuple)'
+  );
+  const tree = parser.parse('fn f() { g(1, x); let a = [1, 2]; let b = [0; 3]; let c = (1, 2); }')!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    const captures = query.captures(tree.rootNode);
+    expect(captures.filter((c) => c.name === 'argument').map((c) => c.node.text)).toEqual(['1', 'x']);
+    expect(captures.filter((c) => c.name === 'array').map((c) => c.node.text)).toEqual(['1', '2', '0', '3']);
+    expect(captures.filter((c) => c.name === 'tuple').map((c) => c.node.text)).toEqual(['1', '2']);
+  } finally {
+    tree.delete();
+    query.delete();
+    parser.delete();
+  }
+});

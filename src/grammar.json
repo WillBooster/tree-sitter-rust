@@ -7037,24 +7037,15 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_expression_without_attributes"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "attributed_expression"
-        }
-      ]
-    },
-    "_expression_without_attributes": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
           "name": "_expression_except_range"
         },
         {
           "type": "SYMBOL",
           "name": "range_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "attributed_expression"
         }
       ]
     },
@@ -8441,13 +8432,17 @@
                     {
                       "type": "REPEAT",
                       "content": {
-                        "type": "SYMBOL",
-                        "name": "attribute_item"
+                        "type": "PREC",
+                        "value": 15,
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "attribute_item"
+                        }
                       }
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "_expression_without_attributes"
+                      "name": "_expression"
                     }
                   ]
                 },
@@ -8466,13 +8461,17 @@
                           {
                             "type": "REPEAT",
                             "content": {
-                              "type": "SYMBOL",
-                              "name": "attribute_item"
+                              "type": "PREC",
+                              "value": 15,
+                              "content": {
+                                "type": "SYMBOL",
+                                "name": "attribute_item"
+                              }
                             }
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "_expression_without_attributes"
+                            "name": "_expression"
                           }
                         ]
                       }
@@ -8514,8 +8513,12 @@
         {
           "type": "REPEAT",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute_item"
+            "type": "PREC",
+            "value": 15,
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute_item"
+            }
           }
         },
         {
@@ -8526,7 +8529,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_expression_without_attributes"
+                  "name": "_expression"
                 },
                 {
                   "type": "STRING",
@@ -8557,13 +8560,17 @@
                             {
                               "type": "REPEAT",
                               "content": {
-                                "type": "SYMBOL",
-                                "name": "attribute_item"
+                                "type": "PREC",
+                                "value": 15,
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "attribute_item"
+                                }
                               }
                             },
                             {
                               "type": "SYMBOL",
-                              "name": "_expression_without_attributes"
+                              "name": "_expression"
                             }
                           ]
                         },
@@ -8582,13 +8589,17 @@
                                   {
                                     "type": "REPEAT",
                                     "content": {
-                                      "type": "SYMBOL",
-                                      "name": "attribute_item"
+                                      "type": "PREC",
+                                      "value": 15,
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "attribute_item"
+                                      }
                                     }
                                   },
                                   {
                                     "type": "SYMBOL",
-                                    "name": "_expression_without_attributes"
+                                    "name": "_expression"
                                   }
                                 ]
                               }
@@ -8651,8 +8662,12 @@
         {
           "type": "REPEAT",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute_item"
+            "type": "PREC",
+            "value": 15,
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute_item"
+            }
           }
         },
         {
@@ -8660,7 +8675,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_expression_without_attributes"
+              "name": "_expression"
             },
             {
               "type": "STRING",

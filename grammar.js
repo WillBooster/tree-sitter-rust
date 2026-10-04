@@ -913,9 +913,7 @@ module.exports = grammar({
         $._expression_ending_with_block
       ),
 
-    _expression: ($) => choice($._expression_without_attributes, $.attributed_expression),
-
-    _expression_without_attributes: ($) => choice($._expression_except_range, $.range_expression),
+    _expression: ($) => choice($._expression_except_range, $.range_expression, $.attributed_expression),
 
     attributed_expression: ($) =>
       prec.dynamic(-1, prec.right(PREC.unary, seq(repeat1($.attribute_item), field('value', $._expression)))),
@@ -1065,15 +1063,15 @@ module.exports = grammar({
       prec(PREC.call, seq(field('function', $._expression_except_range), field('arguments', $.arguments))),
 
     arguments: ($) =>
-      seq('(', sepBy(',', seq(repeat($.attribute_item), $._expression_without_attributes)), optional(','), ')'),
+      seq('(', sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','), ')'),
 
     array_expression: ($) =>
       seq(
         '[',
-        repeat($.attribute_item),
+        repeat(prec(PREC.call, $.attribute_item)),
         choice(
-          seq($._expression_without_attributes, ';', field('length', $._expression)),
-          seq(sepBy(',', seq(repeat($.attribute_item), $._expression_without_attributes)), optional(','))
+          seq($._expression, ';', field('length', $._expression)),
+          seq(sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','))
         ),
         ']'
       ),
@@ -1083,8 +1081,8 @@ module.exports = grammar({
     tuple_expression: ($) =>
       seq(
         '(',
-        repeat($.attribute_item),
-        seq($._expression_without_attributes, ','),
+        repeat(prec(PREC.call, $.attribute_item)),
+        seq($._expression, ','),
         repeat(seq($._expression, ',')),
         optional($._expression),
         ')'
