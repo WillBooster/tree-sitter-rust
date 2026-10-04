@@ -614,7 +614,7 @@ module.exports = grammar({
         '(',
         sepBy(
           ',',
-          seq(optional($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
+          seq(repeat($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
         ),
         optional(','),
         ')'

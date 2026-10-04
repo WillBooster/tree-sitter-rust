@@ -2738,3 +2738,100 @@ pub struct Loaf<T: Sized, const N: usize = 1>([T; N]);
       (array_type
         (type_identifier)
         (identifier)))))
+
+================================================================================
+Multiple attributes on function and receiver parameters
+================================================================================
+
+#![allow(dead_code)]
+fn value(#[allow(unused_variables)] #[allow(unused_mut)] mut x: i32) -> i32 { 1 }
+struct S;
+impl S {
+    fn method(#[allow(unused_variables)] #[allow(unused_mut)] mut self,
+              #[allow(unused_variables)] #[allow(unused_mut)] mut x: i32) {}
+}
+fn main() { assert_eq!(value(2), 1); S.method(3); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (attribute_item
+        (attribute
+          (identifier)
+          arguments: (token_tree
+            (identifier))))
+      (attribute_item
+        (attribute
+          (identifier)
+          arguments: (token_tree
+            (identifier))))
+      (parameter
+        (mutable_specifier)
+        pattern: (identifier)
+        type: (primitive_type)))
+    return_type: (primitive_type)
+    body: (block
+      (integer_literal)))
+  (struct_item
+    name: (type_identifier))
+  (impl_item
+    type: (type_identifier)
+    body: (declaration_list
+      (function_item
+        name: (identifier)
+        parameters: (parameters
+          (attribute_item
+            (attribute
+              (identifier)
+              arguments: (token_tree
+                (identifier))))
+          (attribute_item
+            (attribute
+              (identifier)
+              arguments: (token_tree
+                (identifier))))
+          (self_parameter
+            (mutable_specifier)
+            (self))
+          (attribute_item
+            (attribute
+              (identifier)
+              arguments: (token_tree
+                (identifier))))
+          (attribute_item
+            (attribute
+              (identifier)
+              arguments: (token_tree
+                (identifier))))
+          (parameter
+            (mutable_specifier)
+            pattern: (identifier)
+            type: (primitive_type)))
+        body: (block))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    body: (block
+      (expression_statement
+        (macro_invocation
+          macro: (identifier)
+          (token_tree
+            (identifier)
+            (token_tree
+              (integer_literal))
+            (integer_literal))))
+      (expression_statement
+        (call_expression
+          function: (field_expression
+            value: (identifier)
+            field: (field_identifier))
+          arguments: (arguments
+            (integer_literal)))))))
