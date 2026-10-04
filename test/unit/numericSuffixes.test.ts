@@ -104,3 +104,46 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
     parser.delete();
   }
 });
+
+test('keeps tuple fields suffixless while preserving public integer captures', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  const fieldQuery = new Query(
+    language,
+    '(field_expression field: (integer_literal) @field) (field_initializer field: (integer_literal) @field)'
+  );
+  const literalQuery = new Query(language, '(_literal) @literal');
+  try {
+    for (const source of [
+      'fn main() { let _ = 0x1f.0foo; }',
+      'fn main() { let _ = 0b1.0foo; }',
+      'fn main() { let _ = 0o7.5x; }',
+      'fn main() { let x=(1,); let _ = x.0foo; }',
+      'struct Tuple(u32); fn main() { let _ = Tuple { 0foo: 1 }; }',
+    ]) {
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
+    const tree = parser.parse('struct Tuple(u32); fn main() { let t=(1u32,); let _=t.0; let _=Tuple { 0: 1 }; }')!;
+    try {
+      expect(tree.rootNode.hasError).toBe(false);
+      expect(fieldQuery.captures(tree.rootNode).map(({ node }) => [node.type, node.text])).toEqual([
+        ['integer_literal', '0'],
+        ['integer_literal', '0'],
+      ]);
+      expect(literalQuery.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(['1u32', '1']);
+    } finally {
+      tree.delete();
+    }
+  } finally {
+    fieldQuery.delete();
+    literalQuery.delete();
+    parser.delete();
+  }
+});
