@@ -1110,7 +1110,7 @@ module.exports = grammar({
           'name',
           choice(
             $._type_identifier,
-            alias(choice(...primitiveTypes), $.type_identifier),
+            prec.dynamic(-1, alias(choice(...primitiveTypes), $.type_identifier)),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
           )

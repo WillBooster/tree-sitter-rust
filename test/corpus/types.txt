@@ -1140,3 +1140,57 @@ fn arithmetic(x: i32, y: i32) -> i32 { x as ((i32)) + y }
             (tuple_type
               (primitive_type))))
         (identifier)))))
+
+================================================================================
+Primitive-spelled condition names retain their following bodies
+================================================================================
+
+fn conditions(f16: bool, u8: bool, f128: [u8; 1], x: ()) {
+    if f16 { x } {}
+    while u8 { x } {}
+    for i in f128 { x } {}
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        pattern: (identifier)
+        type: (primitive_type))
+      (parameter
+        pattern: (identifier)
+        type: (primitive_type))
+      (parameter
+        pattern: (identifier)
+        type: (array_type
+          element: (primitive_type)
+          length: (integer_literal)))
+      (parameter
+        pattern: (identifier)
+        type: (unit_type)))
+    body: (block
+      (expression_statement
+        (if_expression
+          condition: (identifier)
+          consequence: (block
+            (identifier))))
+      (expression_statement
+        (block))
+      (expression_statement
+        (while_expression
+          condition: (identifier)
+          body: (block
+            (identifier))))
+      (expression_statement
+        (block))
+      (expression_statement
+        (for_expression
+          pattern: (identifier)
+          value: (identifier)
+          body: (block
+            (identifier))))
+      (expression_statement
+        (block)))))
