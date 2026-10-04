@@ -105,6 +105,7 @@ const TOKEN_TREE_NON_SPECIAL_PUNCTUATION = [
 
 const primitiveTypes = [...numericTypes, 'bool', 'str', 'char'];
 const reservedIdentifiers = ['default', 'union', 'gen', 'raw'];
+const fieldIdentifierKeywords = [...reservedIdentifiers, ...primitiveTypes, 'auto'];
 
 // oxlint-disable-next-line unicorn/prefer-module -- This package is CommonJS, so tree-sitter loads grammar.js as CommonJS.
 module.exports = grammar({
@@ -1110,7 +1111,8 @@ module.exports = grammar({
         '}'
       ),
 
-    shorthand_field_initializer: ($) => seq(repeat($.attribute_item), $.identifier),
+    shorthand_field_initializer: ($) =>
+      seq(repeat($.attribute_item), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
 
     field_initializer: ($) =>
       seq(
@@ -1119,7 +1121,7 @@ module.exports = grammar({
           'field',
           choice(
             $._field_identifier,
-            alias(choice(...reservedIdentifiers, ...primitiveTypes, 'auto'), $.field_identifier),
+            alias(choice(...fieldIdentifierKeywords), $.field_identifier),
             alias(/[0-9][0-9_]*/, $.integer_literal)
           )
         ),

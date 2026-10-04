@@ -13,10 +13,13 @@ test('preserves contextual struct construction names and initializer fields', ()
   );
   try {
     for (const field of ['default', 'union', 'raw', 'gen', 'auto', 'u8']) {
-      const source = `fn f() { let value = gen { ${field}: 1 }; }`;
+      const source = `fn f() { let value = gen { ${field}: 1 }; let other = Self { ${field} }; }`;
       const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError, source).toBe(false);
+        expect(
+          tree.rootNode.descendantsOfType('shorthand_field_initializer').map((node) => node.firstNamedChild?.type)
+        ).toEqual(['identifier']);
         expect(
           tree.rootNode.descendantsOfType('field_initializer').map((node) => node.childForFieldName('field')?.text)
         ).toEqual([field]);
