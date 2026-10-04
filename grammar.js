@@ -827,7 +827,7 @@ module.exports = grammar({
               $.removed_trait_bound,
               $.generic_type,
               $.function_type,
-              $.tuple_type,
+              alias($._parenthesized_trait_type, $.tuple_type),
               $.bounded_type
             )
           )
@@ -846,7 +846,7 @@ module.exports = grammar({
             $.scoped_type_identifier,
             $.generic_type,
             $.function_type,
-            $.tuple_type
+            alias($._parenthesized_trait_type, $.tuple_type)
           )
         )
       ),

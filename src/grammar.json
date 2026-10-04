@@ -6374,8 +6374,13 @@
                   "name": "function_type"
                 },
                 {
-                  "type": "SYMBOL",
-                  "name": "tuple_type"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_parenthesized_trait_type"
+                  },
+                  "named": true,
+                  "value": "tuple_type"
                 },
                 {
                   "type": "SYMBOL",
@@ -6507,8 +6512,13 @@
                 "name": "function_type"
               },
               {
-                "type": "SYMBOL",
-                "name": "tuple_type"
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_parenthesized_trait_type"
+                },
+                "named": true,
+                "value": "tuple_type"
               }
             ]
           }

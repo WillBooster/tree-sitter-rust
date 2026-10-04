@@ -451,6 +451,12 @@ mod trait_bound_names {
     trait f16 {}
     trait f128: f16 {}
     trait Alias = f16 + f128;
+    struct S;
+    impl f16 for S {}
+    impl f128 for S {}
+    fn objects(_: &dyn (f16), _: &dyn (f128)) {}
+    fn opaque() -> impl (f16) { S }
+    fn wide_opaque() -> impl (f128) { S }
     fn generic<T: f16>() {}
     fn bounded<T>() where T: f128 {}
     fn parenthesized<T: (f16)>() {}
@@ -832,6 +838,46 @@ mod trait_bound_names {
         (trait_alias_bounds
           (type_identifier)
           (type_identifier)))
+      (struct_item
+        (type_identifier))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (reference_type
+              (dynamic_type
+                (tuple_type
+                  (type_identifier)))))
+          (parameter
+            (reference_type
+              (dynamic_type
+                (tuple_type
+                  (type_identifier))))))
+        (block))
+      (function_item
+        (identifier)
+        (parameters)
+        (abstract_type
+          (tuple_type
+            (type_identifier)))
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (parameters)
+        (abstract_type
+          (tuple_type
+            (type_identifier)))
+        (block
+          (identifier)))
       (function_item
         (identifier)
         (type_parameters
