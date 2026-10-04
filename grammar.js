@@ -1107,7 +1107,8 @@ module.exports = grammar({
         )
       ),
 
-    closure_parameters: ($) => seq('|', sepBy(',', choice($._pattern, $.parameter)), '|'),
+    closure_parameters: ($) =>
+      seq('|', optional(seq(sepBy1(',', choice($._pattern, $.parameter)), optional(','))), '|'),
 
     label: ($) => seq("'", $.identifier),
 

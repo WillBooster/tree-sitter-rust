@@ -8005,42 +8005,59 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "CHOICE",
+                  "type": "SEQ",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "_pattern"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "_pattern"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "parameter"
+                        }
+                      ]
                     },
                     {
-                      "type": "SYMBOL",
-                      "name": "parameter"
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "STRING",
+                            "value": ","
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "_pattern"
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "parameter"
+                              }
+                            ]
+                          }
+                        ]
+                      }
                     }
                   ]
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "STRING",
-                        "value": ","
-                      },
-                      {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "_pattern"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "parameter"
-                          }
-                        ]
-                      }
-                    ]
-                  }
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": ","
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
                 }
               ]
             },
