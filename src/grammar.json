@@ -9048,6 +9048,10 @@
             },
             {
               "type": "SYMBOL",
+              "name": "_reserved_identifier"
+            },
+            {
+              "type": "SYMBOL",
               "name": "scoped_identifier"
             }
           ]

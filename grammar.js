@@ -1209,7 +1209,11 @@ module.exports = grammar({
       ),
 
     generic_pattern: ($) =>
-      seq(choice($.identifier, $.scoped_identifier), '::', field('type_arguments', $.type_arguments)),
+      seq(
+        choice($.identifier, $._reserved_identifier, $.scoped_identifier),
+        '::',
+        field('type_arguments', $.type_arguments)
+      ),
 
     tuple_pattern: ($) => seq('(', sepBy(',', choice($._pattern, $.closure_expression)), optional(','), ')'),
 

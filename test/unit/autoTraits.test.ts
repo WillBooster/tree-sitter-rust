@@ -36,3 +36,36 @@ test('highlights auto trait modifiers while retaining ordinary macro identifiers
     parser.delete();
   }
 });
+
+test('preserves contextual names in generic unit-struct patterns', async () => {
+  await Parser.init();
+  const language = await Language.load(path.join(import.meta.dirname, '../../tree-sitter-rust.wasm'));
+  const parser = new Parser();
+  parser.setLanguage(language);
+  try {
+    for (const name of ['auto', 'default', 'union', 'raw', 'gen']) {
+      const tree = parser.parse(
+        `struct ${name}<const N: usize>; fn f(value: ${name}<1>) { let ${name}::<1> = value; match value { ${name}::<1> => () } }`
+      )!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(
+          tree.rootNode
+            .descendantsOfType('generic_pattern')
+            .map((node) => [
+              node.firstNamedChild?.type,
+              node.firstNamedChild?.text,
+              node.childForFieldName('type_arguments')?.text,
+            ])
+        ).toEqual([
+          ['identifier', name, '<1>'],
+          ['identifier', name, '<1>'],
+        ]);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
