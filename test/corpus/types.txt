@@ -409,6 +409,27 @@ mod identifiers {
     }
 }
 
+mod constructors {
+    struct f16<T>(T);
+    struct f128 { x: u8 }
+    impl<T> f16<T> { const X: u8 = 1; }
+    fn use_names() {
+        let a: f16<u8> = f16(1);
+        let f16(x) = a;
+        let f128 { x } = f128 { x };
+        let _ = (x, f16::<u8>::X);
+    }
+}
+mod traits {
+    trait f16 {}
+    unsafe trait f128 {}
+    struct S;
+    impl f16 for S {}
+    unsafe impl f128 for S {}
+    fn make() -> impl f16 { S }
+    fn read(_: &dyn f128) {}
+}
+
 --------------------------------------------------------------------------------
 
 (source_file
@@ -535,4 +556,105 @@ mod identifiers {
           (let_declaration
             (tuple_expression
               (identifier)
-              (identifier))))))))
+              (identifier)))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (struct_item
+        (type_identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (ordered_field_declaration_list
+          (type_identifier)))
+      (struct_item
+        (type_identifier)
+        (field_declaration_list
+          (field_declaration
+            (field_identifier)
+            (primitive_type))))
+      (impl_item
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (type_identifier)))
+        (declaration_list
+          (const_item
+            (identifier)
+            (primitive_type)
+            (integer_literal))))
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (let_declaration
+            (identifier)
+            (generic_type
+              (type_identifier)
+              (type_arguments
+                (primitive_type)))
+            (call_expression
+              (identifier)
+              (arguments
+                (integer_literal))))
+          (let_declaration
+            (tuple_struct_pattern
+              (identifier)
+              (identifier))
+            (identifier))
+          (let_declaration
+            (struct_pattern
+              (type_identifier)
+              (field_pattern
+                (shorthand_field_identifier)))
+            (struct_expression
+              (type_identifier)
+              (field_initializer_list
+                (shorthand_field_initializer
+                  (identifier)))))
+          (let_declaration
+            (tuple_expression
+              (identifier)
+              (scoped_identifier
+                (generic_type
+                  (type_identifier)
+                  (type_arguments
+                    (primitive_type)))
+                (identifier))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (struct_item
+        (type_identifier))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (function_item
+        (identifier)
+        (parameters)
+        (abstract_type
+          (type_identifier))
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (reference_type
+              (dynamic_type
+                (type_identifier)))))
+        (block)))))

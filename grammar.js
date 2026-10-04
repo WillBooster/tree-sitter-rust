@@ -139,6 +139,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$._expression_except_range, $.struct_expression],
     // Local ambiguity due to anonymous types:
     // See https://internals.rust-lang.org/t/pre-rfc-deprecating-anonymous-parameters/3710
     [$._type, $._pattern],
@@ -517,7 +518,15 @@ module.exports = grammar({
         optional(
           seq(
             optional('!'),
-            field('trait', choice($._type_identifier, $.scoped_type_identifier, $.generic_type)),
+            field(
+              'trait',
+              choice(
+                $._type_identifier,
+                alias(choice(...primitiveTypes), $.type_identifier),
+                $.scoped_type_identifier,
+                $.generic_type
+              )
+            ),
             'for'
           )
         ),
@@ -714,7 +723,15 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('type', choice($._type_identifier, $._reserved_identifier, $.scoped_type_identifier)),
+          field(
+            'type',
+            choice(
+              $._type_identifier,
+              alias(choice(...primitiveTypes), $.type_identifier),
+              $._reserved_identifier,
+              $.scoped_type_identifier
+            )
+          ),
           field('type_arguments', $.type_arguments)
         )
       ),
@@ -767,6 +784,7 @@ module.exports = grammar({
             1,
             choice(
               $._type_identifier,
+              alias(choice(...primitiveTypes), $.type_identifier),
               $.scoped_type_identifier,
               $.removed_trait_bound,
               $.generic_type,
@@ -786,6 +804,7 @@ module.exports = grammar({
           choice(
             $.higher_ranked_trait_bound,
             $._type_identifier,
+            alias(choice(...primitiveTypes), $.type_identifier),
             $.scoped_type_identifier,
             $.generic_type,
             $.function_type,
@@ -1011,6 +1030,7 @@ module.exports = grammar({
           'name',
           choice(
             $._type_identifier,
+            alias(choice(...primitiveTypes), $.type_identifier),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
           )
@@ -1184,7 +1204,11 @@ module.exports = grammar({
       ),
 
     generic_pattern: ($) =>
-      seq(choice($.identifier, $.scoped_identifier), '::', field('type_arguments', $.type_arguments)),
+      seq(
+        choice($.identifier, alias(choice(...primitiveTypes), $.identifier), $.scoped_identifier),
+        '::',
+        field('type_arguments', $.type_arguments)
+      ),
 
     tuple_pattern: ($) => seq('(', sepBy(',', choice($._pattern, $.closure_expression)), optional(','), ')'),
 
@@ -1192,7 +1216,15 @@ module.exports = grammar({
 
     tuple_struct_pattern: ($) =>
       seq(
-        field('type', choice($.identifier, $.scoped_identifier, alias($.generic_type_with_turbofish, $.generic_type))),
+        field(
+          'type',
+          choice(
+            $.identifier,
+            alias(choice(...primitiveTypes), $.identifier),
+            $.scoped_identifier,
+            alias($.generic_type_with_turbofish, $.generic_type)
+          )
+        ),
         '(',
         sepBy(',', $._pattern),
         optional(','),
@@ -1201,7 +1233,10 @@ module.exports = grammar({
 
     struct_pattern: ($) =>
       seq(
-        field('type', choice($._type_identifier, $.scoped_type_identifier)),
+        field(
+          'type',
+          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_type_identifier)
+        ),
         '{',
         sepBy(',', choice($.field_pattern, $.remaining_field_pattern)),
         optional(','),
