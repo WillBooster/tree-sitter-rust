@@ -30,6 +30,10 @@ const PREC = {
   closure: -1,
 };
 
+const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]][_\p{XID_Continue}]*`, 'v');
+const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
+const hexadecimalSuffix = new RegExp(String.raw`[\p{XID_Start}--[a-fA-F]][_\p{XID_Continue}]*`, 'v');
+
 const numericTypes = [
   'u8',
   'i8',
@@ -110,7 +114,7 @@ module.exports = grammar({
     $._raw_string_literal_start,
     $.raw_string_literal_content,
     $._raw_string_literal_end,
-    $.float_literal,
+    $._trailing_dot_float_literal,
     $._outer_block_doc_comment_marker,
     $._inner_block_doc_comment_marker,
     $._block_comment_content,
@@ -1014,7 +1018,7 @@ module.exports = grammar({
     field_initializer: ($) =>
       seq(
         repeat($.attribute_item),
-        field('field', choice($._field_identifier, $.integer_literal)),
+        field('field', choice($._field_identifier, alias(/[0-9][0-9_]*/, $.integer_literal))),
         ':',
         field('value', $._expression)
       ),
@@ -1123,7 +1127,11 @@ module.exports = grammar({
     field_expression: ($) =>
       prec(
         PREC.field,
-        seq(field('value', $._expression), '.', field('field', choice($._field_identifier, $.integer_literal)))
+        seq(
+          field('value', $._expression),
+          '.',
+          field('field', choice($._field_identifier, alias(/[0-9][0-9_]*/, $.integer_literal)))
+        )
       ),
 
     unsafe_block: ($) => seq('unsafe', $.block),
@@ -1244,7 +1252,37 @@ module.exports = grammar({
     negative_literal: ($) => seq('-', choice($.integer_literal, $.float_literal)),
 
     integer_literal: () =>
-      token(seq(choice(/[0-9][0-9_]*/, /0x[0-9a-fA-F_]+/, /0b[01_]+/, /0o[0-7_]+/), optional(choice(...numericTypes)))),
+      token(
+        choice(
+          seq(
+            choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
+            optional(numericSuffixWithoutExponent)
+          ),
+          /0[box]_+/,
+          seq('0', optional(zeroNumericSuffix)),
+          seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
+        )
+      ),
+
+    float_literal: ($) =>
+      choice(
+        $._trailing_dot_float_literal,
+        token(
+          prec(
+            1,
+            choice(
+              seq(
+                /[0-9][0-9_]*/,
+                optional(seq('.', /[0-9][0-9_]*/)),
+                /[eE][+-]?_*[0-9][0-9_]*/,
+                optional(/\p{XID_Start}[_\p{XID_Continue}]*/u)
+              ),
+              seq(/[0-9][0-9_]*/, optional(seq('.', /[0-9][0-9_]*/)), /[eE][+-]?_+/),
+              seq(/[0-9][0-9_]*/, '.', /[0-9][0-9_]*/, optional(numericSuffixWithoutExponent))
+            )
+          )
+        )
+      ),
 
     string_literal: ($) =>
       seq(alias(/[bc]?"/, '"'), repeat(choice($.escape_sequence, $.string_content)), alias($.string_close, '"')),
