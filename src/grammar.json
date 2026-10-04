@@ -1158,6 +1158,10 @@
         },
         {
           "type": "STRING",
+          "value": "become"
+        },
+        {
+          "type": "STRING",
           "value": "break"
         },
         {
@@ -7034,6 +7038,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "become_expression"
+        },
+        {
+          "type": "SYMBOL",
           "name": "yield_expression"
         },
         {
@@ -8426,6 +8434,23 @@
           }
         }
       ]
+    },
+    "become_expression": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "become"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_expression"
+          }
+        ]
+      }
     },
     "yield_expression": {
       "type": "CHOICE",
