@@ -139,6 +139,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.const_item, $.function_modifiers],
     // Local ambiguity due to anonymous types:
     // See https://internals.rust-lang.org/t/pre-rfc-deprecating-anonymous-parameters/3710
     [$._type, $._pattern],
@@ -428,7 +429,7 @@ module.exports = grammar({
       seq(
         optional($.visibility_modifier),
         'const',
-        field('name', $.identifier),
+        field('name', choice($.identifier, $._reserved_identifier)),
         ':',
         field('type', $._type),
         optional(seq('=', field('value', $._expression))),
@@ -492,7 +493,7 @@ module.exports = grammar({
         ';'
       ),
 
-    function_modifiers: ($) => repeat1(choice('async', 'default', 'const', 'unsafe', $.extern_modifier)),
+    function_modifiers: ($) => repeat1(choice('async', 'default', 'const', 'unsafe', 'gen', $.extern_modifier)),
 
     where_clause: ($) => prec.right(seq('where', optional(seq(sepBy1(',', $.where_predicate), optional(','))))),
 

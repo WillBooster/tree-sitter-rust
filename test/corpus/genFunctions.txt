@@ -1,0 +1,187 @@
+================================================================================
+Generator functions and methods
+================================================================================
+
+#![feature(gen_blocks)]
+#![allow(dead_code)]
+pub gen fn values() -> u32 { yield 1; yield 2; }
+async gen fn stream() -> u32 { yield 5; }
+struct Container;
+impl Container {
+    pub gen fn iter(&self) -> u32 { yield 3; }
+}
+fn ordinary() {
+    let r#gen = values();
+    for value in r#gen { assert!(value > 0); }
+    let _ = gen { yield 4; };
+}
+fn main() { for value in Container.iter() { assert_eq!(value, 3); } }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (function_item
+    (visibility_modifier)
+    (function_modifiers)
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (expression_statement
+        (yield_expression
+          (integer_literal)))
+      (expression_statement
+        (yield_expression
+          (integer_literal)))))
+  (function_item
+    (function_modifiers)
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (expression_statement
+        (yield_expression
+          (integer_literal)))))
+  (struct_item
+    (type_identifier))
+  (impl_item
+    (type_identifier)
+    (declaration_list
+      (function_item
+        (visibility_modifier)
+        (function_modifiers)
+        (identifier)
+        (parameters
+          (self_parameter
+            (self)))
+        (primitive_type)
+        (block
+          (expression_statement
+            (yield_expression
+              (integer_literal)))))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (identifier)
+          (arguments)))
+      (expression_statement
+        (for_expression
+          (identifier)
+          (identifier)
+          (block
+            (expression_statement
+              (macro_invocation
+                (identifier)
+                (token_tree
+                  (identifier)
+                  (integer_literal)))))))
+      (let_declaration
+        (gen_block
+          (block
+            (expression_statement
+              (yield_expression
+                (integer_literal))))))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (for_expression
+          (identifier)
+          (call_expression
+            (field_expression
+              (identifier)
+              (field_identifier))
+            (arguments))
+          (block
+            (expression_statement
+              (macro_invocation
+                (identifier)
+                (token_tree
+                  (identifier)
+                  (integer_literal))))))))))
+
+==================
+Contextual generator names in older editions
+==================
+
+#![allow(dead_code, non_upper_case_globals)]
+const gen: u8 = 1;
+pub const GEN: u8 = gen;
+struct S;
+impl S { const gen: u8 = 1; }
+trait T { const gen: u8; }
+fn f<const gen: usize>() { const gen: u8 = 1; }
+static gen_static: u8 = 1;
+mod m { static gen: u8 = 1; }
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (const_item
+    (identifier)
+    (primitive_type)
+    (integer_literal))
+  (const_item
+    (visibility_modifier)
+    (identifier)
+    (primitive_type)
+    (identifier))
+  (struct_item
+    (type_identifier))
+  (impl_item
+    (type_identifier)
+    (declaration_list
+      (const_item
+        (identifier)
+        (primitive_type)
+        (integer_literal))))
+  (trait_item
+    (type_identifier)
+    (declaration_list
+      (const_item
+        (identifier)
+        (primitive_type))))
+  (function_item
+    (identifier)
+    (type_parameters
+      (const_parameter
+        (identifier)
+        (primitive_type)))
+    (parameters)
+    (block
+      (const_item
+        (identifier)
+        (primitive_type)
+        (integer_literal))))
+  (static_item
+    (identifier)
+    (primitive_type)
+    (integer_literal))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (static_item
+        (identifier)
+        (primitive_type)
+        (integer_literal)))))
