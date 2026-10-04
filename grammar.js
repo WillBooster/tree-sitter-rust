@@ -1115,7 +1115,14 @@ module.exports = grammar({
     field_initializer: ($) =>
       seq(
         repeat($.attribute_item),
-        field('field', choice($._field_identifier, alias(/[0-9][0-9_]*/, $.integer_literal))),
+        field(
+          'field',
+          choice(
+            $._field_identifier,
+            alias(choice(...reservedIdentifiers, ...primitiveTypes, 'auto'), $.field_identifier),
+            alias(/[0-9][0-9_]*/, $.integer_literal)
+          )
+        ),
         ':',
         field('value', $._expression)
       ),

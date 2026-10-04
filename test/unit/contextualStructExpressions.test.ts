@@ -12,6 +12,19 @@ test('preserves contextual struct construction names and initializer fields', ()
     '(struct_expression name: (_) @name body: (field_initializer_list) @body) @expression'
   );
   try {
+    for (const field of ['default', 'union', 'raw', 'gen', 'auto', 'u8']) {
+      const source = `fn f() { let value = gen { ${field}: 1 }; }`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        expect(
+          tree.rootNode.descendantsOfType('field_initializer').map((node) => node.childForFieldName('field')?.text)
+        ).toEqual([field]);
+      } finally {
+        tree.delete();
+      }
+    }
+
     for (const name of ['default', 'union', 'raw', 'gen', 'auto', 'Ordinary', 'r#gen']) {
       for (const type of [name, `${name}::<u8>`]) {
         for (const body of [
