@@ -490,7 +490,7 @@ module.exports = grammar({
         ';'
       ),
 
-    function_modifiers: ($) => repeat1(choice('async', 'default', 'const', 'unsafe', $.extern_modifier)),
+    function_modifiers: ($) => repeat1(choice('async', 'default', 'const', 'unsafe', 'gen', $.extern_modifier)),
 
     where_clause: ($) => prec.right(seq('where', optional(seq(sepBy1(',', $.where_predicate), optional(','))))),
 

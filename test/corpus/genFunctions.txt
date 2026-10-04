@@ -1,0 +1,116 @@
+================================================================================
+Generator functions and methods
+================================================================================
+
+#![feature(gen_blocks)]
+#![allow(dead_code)]
+pub gen fn values() -> u32 { yield 1; yield 2; }
+async gen fn stream() -> u32 { yield 5; }
+struct Container;
+impl Container {
+    pub gen fn iter(&self) -> u32 { yield 3; }
+}
+fn ordinary() {
+    let r#gen = values();
+    for value in r#gen { assert!(value > 0); }
+    let _ = gen { yield 4; };
+}
+fn main() { for value in Container.iter() { assert_eq!(value, 3); } }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (function_item
+    (visibility_modifier)
+    (function_modifiers)
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (expression_statement
+        (yield_expression
+          (integer_literal)))
+      (expression_statement
+        (yield_expression
+          (integer_literal)))))
+  (function_item
+    (function_modifiers)
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (expression_statement
+        (yield_expression
+          (integer_literal)))))
+  (struct_item
+    (type_identifier))
+  (impl_item
+    (type_identifier)
+    (declaration_list
+      (function_item
+        (visibility_modifier)
+        (function_modifiers)
+        (identifier)
+        (parameters
+          (self_parameter
+            (self)))
+        (primitive_type)
+        (block
+          (expression_statement
+            (yield_expression
+              (integer_literal)))))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (identifier)
+          (arguments)))
+      (expression_statement
+        (for_expression
+          (identifier)
+          (identifier)
+          (block
+            (expression_statement
+              (macro_invocation
+                (identifier)
+                (token_tree
+                  (identifier)
+                  (integer_literal)))))))
+      (let_declaration
+        (gen_block
+          (block
+            (expression_statement
+              (yield_expression
+                (integer_literal))))))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (for_expression
+          (identifier)
+          (call_expression
+            (field_expression
+              (identifier)
+              (field_identifier))
+            (arguments))
+          (block
+            (expression_statement
+              (macro_invocation
+                (identifier)
+                (token_tree
+                  (identifier)
+                  (integer_literal))))))))))
