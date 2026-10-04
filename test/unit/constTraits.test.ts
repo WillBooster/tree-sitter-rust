@@ -33,15 +33,17 @@ test('preserves const declaration fields and shipped query captures', async () =
       expect(captured).toContain(declaration.startIndex);
     }
     const keywords = highlights.captures(tree.rootNode).filter(({ name }) => name === 'keyword');
-    for (const declaration of [...traits, ...implementations]) {
-      for (const child of declaration.children.filter((node) =>
-        ['const', 'unsafe', 'trait', 'impl'].includes(node.type)
-      )) {
-        expect(
-          keywords.some(({ node }) => node.startIndex === child.startIndex && node.endIndex === child.endIndex)
-        ).toBe(true);
-      }
-    }
+    expect(
+      [...traits, ...implementations].map((declaration) =>
+        keywords.filter(({ node }) => node.parent?.id === declaration.id).map(({ node }) => node.text)
+      )
+    ).toEqual([
+      ['const', 'trait'],
+      ['const', 'unsafe', 'trait'],
+      ['const', 'impl', 'for'],
+      ['const', 'impl', 'for'],
+      ['const', 'unsafe', 'impl', 'for'],
+    ]);
     expect(tree.rootNode.descendantsOfType('const_item').map((node) => node.childForFieldName('name')?.text)).toEqual([
       'VALUE',
     ]);
