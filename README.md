@@ -75,6 +75,17 @@ let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_rust::LANGUAGE.into())?;
 ```
 
+## Expression attributes
+
+An attribute in an expression position can produce an `attributed_expression` node with a `value` field.
+For example, in `let x = #[allow(unused)] 1 + 2;`, that field contains `1`; the enclosing binary expression
+still contains `+ 2`. Multiple attributes can form nested wrappers. Queries matching `_expression` include
+these wrappers, and consumers inspecting an operand should follow `value` to reach the attributed expression.
+
+Existing item, parameter and simple list attributes retain their sibling nodes. In compound list operands,
+attributes can instead appear on the operand they modify, so consumers should also handle the wrapper there.
+Compiler feature gates and attribute-placement diagnostics remain the compiler's responsibility.
+
 ## Development
 
 ```sh

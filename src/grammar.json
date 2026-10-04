@@ -7037,6 +7037,19 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_expression_without_attributes"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "attributed_expression"
+        }
+      ]
+    },
+    "_expression_without_attributes": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "_expression_except_range"
         },
         {
@@ -7044,6 +7057,34 @@
           "name": "range_expression"
         }
       ]
+    },
+    "attributed_expression": {
+      "type": "PREC_DYNAMIC",
+      "value": -1,
+      "content": {
+        "type": "PREC_RIGHT",
+        "value": 12,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "REPEAT1",
+              "content": {
+                "type": "SYMBOL",
+                "name": "attribute_item"
+              }
+            },
+            {
+              "type": "FIELD",
+              "name": "value",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_expression"
+              }
+            }
+          ]
+        }
+      }
     },
     "_expression_ending_with_block": {
       "type": "CHOICE",
@@ -8406,7 +8447,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "_expression"
+                      "name": "_expression_without_attributes"
                     }
                   ]
                 },
@@ -8431,7 +8472,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "_expression"
+                            "name": "_expression_without_attributes"
                           }
                         ]
                       }
@@ -8485,7 +8526,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_expression"
+                  "name": "_expression_without_attributes"
                 },
                 {
                   "type": "STRING",
@@ -8522,7 +8563,7 @@
                             },
                             {
                               "type": "SYMBOL",
-                              "name": "_expression"
+                              "name": "_expression_without_attributes"
                             }
                           ]
                         },
@@ -8547,7 +8588,7 @@
                                   },
                                   {
                                     "type": "SYMBOL",
-                                    "name": "_expression"
+                                    "name": "_expression_without_attributes"
                                   }
                                 ]
                               }
@@ -8619,7 +8660,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "_expression_without_attributes"
             },
             {
               "type": "STRING",
@@ -12317,6 +12358,10 @@
     }
   ],
   "conflicts": [
+    [
+      "_declaration_statement",
+      "attributed_expression"
+    ],
     [
       "_expression_except_range",
       "struct_expression"
