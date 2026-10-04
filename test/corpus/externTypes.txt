@@ -1,0 +1,88 @@
+================================================================================
+Visible extern types
+================================================================================
+
+#![feature(extern_types)]
+#![allow(dead_code)]
+unsafe extern "C" {
+    type Private;
+    pub type Public;
+    pub(crate) type CrateVisible;
+    fn consume(value: *mut Public, private: *const Private);
+}
+mod nested {
+    unsafe extern "C" {
+        pub(super) type ParentVisible;
+        pub(in crate) type RootVisible;
+    }
+}
+fn use_pointer(value: *mut Public) -> *mut Public { value }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (foreign_mod_item
+    (extern_modifier
+      (string_literal
+        (string_content)))
+    (declaration_list
+      (associated_type
+        (type_identifier))
+      (associated_type
+        (visibility_modifier)
+        (type_identifier))
+      (associated_type
+        (visibility_modifier
+          (crate))
+        (type_identifier))
+      (function_signature_item
+        (identifier)
+        (parameters
+          (parameter
+            (identifier)
+            (pointer_type
+              (mutable_specifier)
+              (type_identifier)))
+          (parameter
+            (identifier)
+            (pointer_type
+              (type_identifier)))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (foreign_mod_item
+        (extern_modifier
+          (string_literal
+            (string_content)))
+        (declaration_list
+          (associated_type
+            (visibility_modifier
+              (super))
+            (type_identifier))
+          (associated_type
+            (visibility_modifier
+              (crate))
+            (type_identifier))))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (pointer_type
+          (mutable_specifier)
+          (type_identifier))))
+    (pointer_type
+      (mutable_specifier)
+      (type_identifier))
+    (block
+      (identifier))))
