@@ -789,7 +789,11 @@ module.exports = grammar({
       seq(
         field(
           'type',
-          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_identifier)
+          choice(
+            $._type_identifier,
+            alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier),
+            $.scoped_identifier
+          )
         ),
         '::',
         field('type_arguments', $.type_arguments)
