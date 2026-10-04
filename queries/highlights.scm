@@ -102,6 +102,7 @@
 "as" @keyword
 "async" @keyword
 "await" @keyword
+"become" @keyword
 "break" @keyword
 "const" @keyword
 "continue" @keyword
