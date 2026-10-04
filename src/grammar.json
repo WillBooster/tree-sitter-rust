@@ -3013,6 +3013,18 @@
           "members": [
             {
               "type": "STRING",
+              "value": "const"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
               "value": "unsafe"
             },
             {
@@ -3160,6 +3172,18 @@
             {
               "type": "SYMBOL",
               "name": "visibility_modifier"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "const"
             },
             {
               "type": "BLANK"
@@ -10714,6 +10738,15 @@
     [
       "foreign_mod_item",
       "function_modifiers"
+    ],
+    [
+      "function_modifiers",
+      "impl_item",
+      "trait_item"
+    ],
+    [
+      "function_modifiers",
+      "trait_item"
     ]
   ],
   "precedences": [],

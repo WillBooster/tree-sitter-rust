@@ -153,6 +153,8 @@ module.exports = grammar({
     [$.visibility_modifier],
     [$.visibility_modifier, $.scoped_identifier, $.scoped_type_identifier],
     [$.foreign_mod_item, $.function_modifiers],
+    [$.function_modifiers, $.impl_item, $.trait_item],
+    [$.function_modifiers, $.trait_item],
   ],
 
   word: ($) => $.identifier,
@@ -521,6 +523,7 @@ module.exports = grammar({
 
     impl_item: ($) =>
       seq(
+        optional('const'),
         optional('unsafe'),
         'impl',
         field('type_parameters', optional($.type_parameters)),
@@ -539,6 +542,7 @@ module.exports = grammar({
     trait_item: ($) =>
       seq(
         optional($.visibility_modifier),
+        optional('const'),
         optional('unsafe'),
         optional('auto'),
         'trait',
