@@ -102,7 +102,6 @@
 "as" @keyword
 "async" @keyword
 "auto" @keyword
-(token_tree (identifier) @keyword . "trait" (#eq? @keyword "auto"))
 "await" @keyword
 "break" @keyword
 "const" @keyword
