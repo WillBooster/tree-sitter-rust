@@ -138,6 +138,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.function_modifiers, $.modified_trait_bound],
     // Local ambiguity due to anonymous types:
     // See https://internals.rust-lang.org/t/pre-rfc-deprecating-anonymous-parameters/3710
     [$._type, $._pattern],
@@ -575,6 +576,9 @@ module.exports = grammar({
 
     removed_trait_bound: ($) => seq('?', $._type),
 
+    modified_trait_bound: ($) =>
+      seq(choice('const', seq('~', 'const'), seq('[', 'const', ']'), 'async'), field('type', $._type)),
+
     type_parameters: ($) =>
       prec(
         1,
@@ -678,6 +682,7 @@ module.exports = grammar({
         $.dynamic_type,
         $.bounded_type,
         $.removed_trait_bound,
+        $.modified_trait_bound,
         alias(choice(...primitiveTypes), $.primitive_type)
       ),
 
@@ -777,6 +782,7 @@ module.exports = grammar({
               $._type_identifier,
               $.scoped_type_identifier,
               $.removed_trait_bound,
+              $.modified_trait_bound,
               $.generic_type,
               $.function_type,
               $.tuple_type,
@@ -793,6 +799,7 @@ module.exports = grammar({
           'trait',
           choice(
             $.higher_ranked_trait_bound,
+            $.modified_trait_bound,
             $._type_identifier,
             $.scoped_type_identifier,
             $.generic_type,

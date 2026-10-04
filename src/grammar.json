@@ -3529,6 +3529,62 @@
         }
       ]
     },
+    "modified_trait_bound": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "const"
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "~"
+                },
+                {
+                  "type": "STRING",
+                  "value": "const"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "["
+                },
+                {
+                  "type": "STRING",
+                  "value": "const"
+                },
+                {
+                  "type": "STRING",
+                  "value": "]"
+                }
+              ]
+            },
+            {
+              "type": "STRING",
+              "value": "async"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_type"
+          }
+        }
+      ]
+    },
     "type_parameters": {
       "type": "PREC",
       "value": 1,
@@ -4552,6 +4608,10 @@
           "name": "removed_trait_bound"
         },
         {
+          "type": "SYMBOL",
+          "name": "modified_trait_bound"
+        },
+        {
           "type": "ALIAS",
           "content": {
             "type": "CHOICE",
@@ -5512,6 +5572,10 @@
                 },
                 {
                   "type": "SYMBOL",
+                  "name": "modified_trait_bound"
+                },
+                {
+                  "type": "SYMBOL",
                   "name": "generic_type"
                 },
                 {
@@ -5548,6 +5612,10 @@
               {
                 "type": "SYMBOL",
                 "name": "higher_ranked_trait_bound"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "modified_trait_bound"
               },
               {
                 "type": "SYMBOL",
@@ -10339,6 +10407,10 @@
     }
   ],
   "conflicts": [
+    [
+      "function_modifiers",
+      "modified_trait_bound"
+    ],
     [
       "_type",
       "_pattern"

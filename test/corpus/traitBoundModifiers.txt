@@ -1,0 +1,191 @@
+==================
+Const and async trait bounds
+==================
+
+#![feature(const_trait_impl, const_destruct, async_trait_bounds)]
+#![allow(dead_code, unused_variables)]
+const fn conditional<T: [const] core::marker::Destruct>(_value: T) {}
+const fn legacy<T: ~const core::marker::Destruct>(_value: T) {}
+const fn unconditional<T: const core::marker::Destruct>(_value: T) {}
+const fn constrained<T>(_value: T) where T: [const] core::marker::Destruct {}
+fn accept<F: async Fn()>(_: F) {}
+fn accept_hr<F: for<'a> async Fn(&'a str)>(_: F) {}
+fn opaque(_: impl async Fn()) {}
+trait AsyncCallback: async Fn() {}
+trait Holder { type Callback: async Fn(); }
+fn use_callbacks() { accept(async || {}); opaque(async || {}); }
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier)
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (function_item
+    (function_modifiers)
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (modified_trait_bound
+            (scoped_type_identifier
+              (scoped_identifier
+                (identifier)
+                (identifier))
+              (type_identifier))))))
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (block))
+  (function_item
+    (function_modifiers)
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (modified_trait_bound
+            (scoped_type_identifier
+              (scoped_identifier
+                (identifier)
+                (identifier))
+              (type_identifier))))))
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (block))
+  (function_item
+    (function_modifiers)
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (modified_trait_bound
+            (scoped_type_identifier
+              (scoped_identifier
+                (identifier)
+                (identifier))
+              (type_identifier))))))
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (block))
+  (function_item
+    (function_modifiers)
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (where_clause
+      (where_predicate
+        (type_identifier)
+        (trait_bounds
+          (modified_trait_bound
+            (scoped_type_identifier
+              (scoped_identifier
+                (identifier)
+                (identifier))
+              (type_identifier))))))
+    (block))
+  (function_item
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (modified_trait_bound
+            (function_type
+              (type_identifier)
+              (parameters))))))
+    (parameters
+      (parameter
+        (type_identifier)))
+    (block))
+  (function_item
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (higher_ranked_trait_bound
+            (type_parameters
+              (lifetime_parameter
+                (lifetime
+                  (identifier))))
+            (modified_trait_bound
+              (function_type
+                (type_identifier)
+                (parameters
+                  (reference_type
+                    (lifetime
+                      (identifier))
+                    (primitive_type)))))))))
+    (parameters
+      (parameter
+        (type_identifier)))
+    (block))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (abstract_type
+          (modified_trait_bound
+            (function_type
+              (type_identifier)
+              (parameters))))))
+    (block))
+  (trait_item
+    (type_identifier)
+    (trait_bounds
+      (modified_trait_bound
+        (function_type
+          (type_identifier)
+          (parameters))))
+    (declaration_list))
+  (trait_item
+    (type_identifier)
+    (declaration_list
+      (associated_type
+        (type_identifier)
+        (trait_bounds
+          (modified_trait_bound
+            (function_type
+              (type_identifier)
+              (parameters)))))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments
+            (closure_expression
+              (closure_parameters)
+              (block)))))
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments
+            (closure_expression
+              (closure_parameters)
+              (block))))))))
