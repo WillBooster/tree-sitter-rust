@@ -1967,9 +1967,13 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "attribute_item",
+          "named": true
+        },
         {
           "type": "mutable_specifier",
           "named": true
@@ -3922,6 +3926,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "generic_type",
+            "named": true
+          },
           {
             "type": "scoped_type_identifier",
             "named": true
