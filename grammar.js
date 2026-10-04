@@ -618,7 +618,7 @@ module.exports = grammar({
         '(',
         sepBy(
           ',',
-          seq(optional($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
+          seq(repeat($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
         ),
         optional(','),
         ')'
@@ -1111,7 +1111,8 @@ module.exports = grammar({
         )
       ),
 
-    closure_parameters: ($) => seq('|', sepBy(',', choice($._pattern, $.parameter)), '|'),
+    closure_parameters: ($) =>
+      seq('|', optional(seq(sepBy1(',', choice($._pattern, $.parameter)), optional(','))), '|'),
 
     label: ($) => seq("'", $.identifier),
 
