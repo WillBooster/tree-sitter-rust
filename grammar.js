@@ -905,7 +905,7 @@ module.exports = grammar({
         seq(
           field('path', optional(choice($._path, alias($.generic_type_with_turbofish, $.generic_type)))),
           '::',
-          field('name', $._type_identifier)
+          field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), $.type_identifier)))
         )
       ),
 
@@ -918,7 +918,7 @@ module.exports = grammar({
           )
         ),
         '::',
-        field('name', $._type_identifier)
+        field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), $.type_identifier)))
       ),
 
     range_expression: ($) =>
