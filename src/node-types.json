@@ -122,6 +122,10 @@
         "named": true
       },
       {
+        "type": "become_expression",
+        "named": true
+      },
+      {
         "type": "binary_expression",
         "named": true
       },
@@ -797,6 +801,21 @@
     }
   },
   {
+    "type": "become_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "binary_expression",
     "named": true,
     "fields": {
@@ -1066,6 +1085,10 @@
           },
           {
             "type": "await_expression",
+            "named": true
+          },
+          {
+            "type": "become_expression",
             "named": true
           },
           {
@@ -5395,6 +5418,10 @@
   },
   {
     "type": "await",
+    "named": false
+  },
+  {
+    "type": "become",
     "named": false
   },
   {
