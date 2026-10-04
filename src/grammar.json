@@ -10299,6 +10299,10 @@
           {
             "type": "STRING",
             "value": "raw"
+          },
+          {
+            "type": "STRING",
+            "value": "auto"
           }
         ]
       },

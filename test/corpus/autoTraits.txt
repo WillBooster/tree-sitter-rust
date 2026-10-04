@@ -65,3 +65,96 @@ fn main() {}
     (identifier)
     (parameters)
     (block)))
+
+==================
+Auto remains a contextual identifier
+==================
+
+#![allow(dead_code, unused_variables, unused_assignments, path_statements)]
+mod auto { pub fn run() {} pub struct Item; }
+macro_rules! auto { () => {} }
+auto!();
+fn main() {
+    let mut auto: u32 = 1;
+    auto;
+    auto + 1;
+    auto.count_ones();
+    auto = 2;
+    auto::run();
+    auto!();
+    let _: auto::Item = auto::Item;
+}
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier)
+        (identifier)
+        (identifier))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (function_item
+        (visibility_modifier)
+        (identifier)
+        (parameters)
+        (block))
+      (struct_item
+        (visibility_modifier)
+        (type_identifier))))
+  (macro_definition
+    (identifier)
+    (macro_rule
+      (token_tree_pattern)
+      (token_tree)))
+  (expression_statement
+    (macro_invocation
+      (identifier)
+      (token_tree)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (mutable_specifier)
+        (identifier)
+        (primitive_type)
+        (integer_literal))
+      (expression_statement
+        (identifier))
+      (expression_statement
+        (binary_expression
+          (identifier)
+          (integer_literal)))
+      (expression_statement
+        (call_expression
+          (field_expression
+            (identifier)
+            (field_identifier))
+          (arguments)))
+      (expression_statement
+        (assignment_expression
+          (identifier)
+          (integer_literal)))
+      (expression_statement
+        (call_expression
+          (scoped_identifier
+            (identifier)
+            (identifier))
+          (arguments)))
+      (expression_statement
+        (macro_invocation
+          (identifier)
+          (token_tree)))
+      (let_declaration
+        (scoped_type_identifier
+          (identifier)
+          (type_identifier))
+        (scoped_identifier
+          (identifier)
+          (identifier))))))

@@ -1383,7 +1383,7 @@ module.exports = grammar({
     // oxlint-disable-next-line no-useless-escape -- tree-sitter's regex parser rejects an unescaped `[` in a character class.
     shebang: () => /#![\r\f\t\v ]*([^\[\n].*)?\n/,
 
-    _reserved_identifier: ($) => alias(choice('default', 'union', 'gen', 'raw'), $.identifier),
+    _reserved_identifier: ($) => alias(choice('default', 'union', 'gen', 'raw', 'auto'), $.identifier),
 
     _type_identifier: ($) => alias($.identifier, $.type_identifier),
     _field_identifier: ($) => alias($.identifier, $.field_identifier),
