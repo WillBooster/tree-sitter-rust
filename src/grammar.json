@@ -2287,8 +2287,17 @@
           "type": "FIELD",
           "name": "name",
           "content": {
-            "type": "SYMBOL",
-            "name": "identifier"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_reserved_identifier"
+              }
+            ]
           }
         },
         {
@@ -2785,6 +2794,10 @@
           {
             "type": "STRING",
             "value": "unsafe"
+          },
+          {
+            "type": "STRING",
+            "value": "gen"
           },
           {
             "type": "SYMBOL",
@@ -10516,6 +10529,10 @@
       "function_modifiers",
       "impl_item",
       "modified_trait_bound"
+    ],
+    [
+      "const_item",
+      "function_modifiers"
     ],
     [
       "_type",
