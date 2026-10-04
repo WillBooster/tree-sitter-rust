@@ -704,7 +704,7 @@ module.exports = grammar({
 
     bracketed_type: ($) => seq('<', choice($._type, $.qualified_type), '>'),
 
-    qualified_type: ($) => seq(field('type', $._type), 'as', field('alias', $._type)),
+    qualified_type: ($) => seq(field('type', $._type), 'as', field('alias', $._trait_type)),
 
     lifetime: ($) => prec(1, seq("'", $.identifier)),
 
@@ -785,7 +785,10 @@ module.exports = grammar({
       ),
 
     bounded_type: ($) =>
-      prec.left(-1, seq(choice($.lifetime, $._type, $.use_bounds), '+', choice($.lifetime, $._type, $.use_bounds))),
+      prec.left(
+        -1,
+        seq(choice($.lifetime, $._type, $.use_bounds), '+', choice($.lifetime, $._trait_type, $.use_bounds))
+      ),
 
     use_bounds: ($) =>
       seq('use', token(prec(1, '<')), sepBy(',', choice($.lifetime, $._type_identifier)), optional(','), '>'),

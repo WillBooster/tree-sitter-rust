@@ -457,6 +457,20 @@ mod trait_bound_names {
     fn objects(_: &dyn (f16), _: &dyn (f128)) {}
     fn opaque() -> impl (f16) { S }
     fn wide_opaque() -> impl (f128) { S }
+    fn combined() -> impl f16 + f128 { S }
+    mod object_bounds {
+        trait f16 {}
+        use std::marker::Send as f128;
+        type D = dyn f16 + f128;
+        type Boxed = Box<dyn f16 + f128>;
+    }
+    mod qualified {
+        trait f16 { type Assoc; fn item() {} }
+        struct S;
+        impl f16 for S { type Assoc = (); }
+        type Value = <S as f16>::Assoc;
+        fn call() { <S as f16>::item(); }
+    }
     fn generic<T: f16>() {}
     fn bounded<T>() where T: f128 {}
     fn parenthesized<T: (f16)>() {}
@@ -878,6 +892,86 @@ mod trait_bound_names {
             (type_identifier)))
         (block
           (identifier)))
+      (function_item
+        (identifier)
+        (parameters)
+        (bounded_type
+          (abstract_type
+            (type_identifier))
+          (type_identifier))
+        (block
+          (identifier)))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (declaration_list))
+          (use_declaration
+            (use_as_clause
+              (scoped_identifier
+                (scoped_identifier
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (identifier)))
+          (type_item
+            (type_identifier)
+            (bounded_type
+              (dynamic_type
+                (type_identifier))
+              (type_identifier)))
+          (type_item
+            (type_identifier)
+            (generic_type
+              (type_identifier)
+              (type_arguments
+                (bounded_type
+                  (dynamic_type
+                    (type_identifier))
+                  (type_identifier)))))))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (declaration_list
+              (associated_type
+                (type_identifier))
+              (function_item
+                (identifier)
+                (parameters)
+                (block))))
+          (struct_item
+            (type_identifier))
+          (impl_item
+            (type_identifier)
+            (type_identifier)
+            (declaration_list
+              (type_item
+                (type_identifier)
+                (unit_type))))
+          (type_item
+            (type_identifier)
+            (scoped_type_identifier
+              (bracketed_type
+                (qualified_type
+                  (type_identifier)
+                  (type_identifier)))
+              (type_identifier)))
+          (function_item
+            (identifier)
+            (parameters)
+            (block
+              (expression_statement
+                (call_expression
+                  (scoped_identifier
+                    (bracketed_type
+                      (qualified_type
+                        (type_identifier)
+                        (type_identifier)))
+                    (identifier))
+                  (arguments)))))))
       (function_item
         (identifier)
         (type_parameters

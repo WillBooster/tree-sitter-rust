@@ -5011,7 +5011,7 @@
           "name": "alias",
           "content": {
             "type": "SYMBOL",
-            "name": "_type"
+            "name": "_trait_type"
           }
         }
       ]
@@ -5792,7 +5792,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "_type"
+                "name": "_trait_type"
               },
               {
                 "type": "SYMBOL",
