@@ -789,7 +789,11 @@ module.exports = grammar({
       seq(
         field(
           'type',
-          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_identifier)
+          choice(
+            $._type_identifier,
+            alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier),
+            $.scoped_identifier
+          )
         ),
         '::',
         field('type_arguments', $.type_arguments)
@@ -1299,7 +1303,7 @@ module.exports = grammar({
           'type',
           choice(
             $._type_identifier,
-            alias(choice(...primitiveTypes), $.type_identifier),
+            alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier),
             $.scoped_type_identifier,
             alias($._generic_struct_pattern_type, $.generic_type)
           )
@@ -1314,7 +1318,11 @@ module.exports = grammar({
       seq(
         field(
           'type',
-          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_type_identifier)
+          choice(
+            $._type_identifier,
+            alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier),
+            $.scoped_type_identifier
+          )
         ),
         '::',
         field('type_arguments', $.type_arguments)
