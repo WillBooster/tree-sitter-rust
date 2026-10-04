@@ -1,0 +1,258 @@
+==================
+Contextual names in qualified types and patterns
+==================
+
+#![allow(non_camel_case_types, dead_code)]
+mod m {
+ pub struct default(pub u8);
+ pub struct gen(pub u8);
+ pub struct raw(pub u8);
+ pub struct union(pub u8);
+}
+fn default(v: m::default) -> m::default { let m::default(n) = v; m::default(n) }
+fn gen(v: m::gen) -> m::gen { let m::gen(n) = v; m::gen(n) }
+fn raw(v: m::raw) -> m::raw { let m::raw(n) = v; m::raw(n) }
+fn union(v: m::union) -> m::union { let m::union(n) = v; m::union(n) }
+mod records {
+ pub struct default { pub value: u8 }
+ pub struct gen { pub value: u8 }
+ pub struct raw { pub value: u8 }
+ pub struct union { pub value: u8 }
+}
+fn record_default() -> records::default { records::default { value: 1 } }
+fn record_gen() -> records::gen { records::gen { value: 1 } }
+fn record_raw() -> records::raw { records::raw { value: 1 } }
+fn record_union() -> records::union { records::union { value: 1 } }
+
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier)
+        (identifier))))
+  (mod_item
+    name: (identifier)
+    body: (declaration_list
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (ordered_field_declaration_list
+          (visibility_modifier)
+          type: (primitive_type)))
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (ordered_field_declaration_list
+          (visibility_modifier)
+          type: (primitive_type)))
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (ordered_field_declaration_list
+          (visibility_modifier)
+          type: (primitive_type)))
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (ordered_field_declaration_list
+          (visibility_modifier)
+          type: (primitive_type)))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        pattern: (identifier)
+        type: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))))
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (let_declaration
+        pattern: (tuple_struct_pattern
+          type: (scoped_identifier
+            path: (identifier)
+            name: (identifier))
+          (identifier))
+        value: (identifier))
+      (call_expression
+        function: (scoped_identifier
+          path: (identifier)
+          name: (identifier))
+        arguments: (arguments
+          (identifier)))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        pattern: (identifier)
+        type: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))))
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (let_declaration
+        pattern: (tuple_struct_pattern
+          type: (scoped_identifier
+            path: (identifier)
+            name: (identifier))
+          (identifier))
+        value: (identifier))
+      (call_expression
+        function: (scoped_identifier
+          path: (identifier)
+          name: (identifier))
+        arguments: (arguments
+          (identifier)))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        pattern: (identifier)
+        type: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))))
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (let_declaration
+        pattern: (tuple_struct_pattern
+          type: (scoped_identifier
+            path: (identifier)
+            name: (identifier))
+          (identifier))
+        value: (identifier))
+      (call_expression
+        function: (scoped_identifier
+          path: (identifier)
+          name: (identifier))
+        arguments: (arguments
+          (identifier)))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        pattern: (identifier)
+        type: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))))
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (let_declaration
+        pattern: (tuple_struct_pattern
+          type: (scoped_identifier
+            path: (identifier)
+            name: (identifier))
+          (identifier))
+        value: (identifier))
+      (call_expression
+        function: (scoped_identifier
+          path: (identifier)
+          name: (identifier))
+        arguments: (arguments
+          (identifier)))))
+  (mod_item
+    name: (identifier)
+    body: (declaration_list
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (field_declaration_list
+          (field_declaration
+            (visibility_modifier)
+            name: (field_identifier)
+            type: (primitive_type))))
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (field_declaration_list
+          (field_declaration
+            (visibility_modifier)
+            name: (field_identifier)
+            type: (primitive_type))))
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (field_declaration_list
+          (field_declaration
+            (visibility_modifier)
+            name: (field_identifier)
+            type: (primitive_type))))
+      (struct_item
+        (visibility_modifier)
+        name: (type_identifier)
+        body: (field_declaration_list
+          (field_declaration
+            (visibility_modifier)
+            name: (field_identifier)
+            type: (primitive_type))))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (struct_expression
+        name: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))
+        body: (field_initializer_list
+          (field_initializer
+            field: (field_identifier)
+            value: (integer_literal))))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (struct_expression
+        name: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))
+        body: (field_initializer_list
+          (field_initializer
+            field: (field_identifier)
+            value: (integer_literal))))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (struct_expression
+        name: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))
+        body: (field_initializer_list
+          (field_initializer
+            field: (field_identifier)
+            value: (integer_literal))))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    return_type: (scoped_type_identifier
+      path: (identifier)
+      name: (type_identifier))
+    body: (block
+      (struct_expression
+        name: (scoped_type_identifier
+          path: (identifier)
+          name: (type_identifier))
+        body: (field_initializer_list
+          (field_initializer
+            field: (field_identifier)
+            value: (integer_literal)))))))

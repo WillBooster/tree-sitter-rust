@@ -1,0 +1,407 @@
+==================
+Auto traits and negative implementations
+==================
+
+#![feature(auto_traits, negative_impls)]
+#![allow(dead_code)]
+auto trait Local {}
+pub auto trait Public {}
+pub(crate) unsafe auto trait Trusted {}
+struct Excluded;
+impl !Local for Excluded {}
+macro_rules! declare { ($($item:tt)*) => { $($item)* }; }
+declare! { auto trait Generated {} }
+fn main() {}
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (trait_item
+    (type_identifier)
+    (declaration_list))
+  (trait_item
+    (visibility_modifier)
+    (type_identifier)
+    (declaration_list))
+  (trait_item
+    (visibility_modifier
+      (crate))
+    (type_identifier)
+    (declaration_list))
+  (struct_item
+    (type_identifier))
+  (impl_item
+    (type_identifier)
+    (type_identifier)
+    (declaration_list))
+  (macro_definition
+    (identifier)
+    (macro_rule
+      (token_tree_pattern
+        (token_repetition_pattern
+          (token_binding_pattern
+            (metavariable)
+            (fragment_specifier))))
+      (token_tree
+        (token_repetition
+          (metavariable)))))
+  (macro_invocation
+    (identifier)
+    (token_tree
+      (identifier)
+      (identifier)
+      (token_tree)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
+
+==================
+Auto remains a contextual identifier
+==================
+
+#![allow(dead_code, unused_variables, unused_assignments, path_statements)]
+mod auto { pub fn run() {} pub struct Item; }
+mod type_name {
+    struct auto;
+    fn f() -> auto { auto }
+    impl auto {}
+}
+mod generic_call {
+    fn auto<T: Default>() -> T { T::default() }
+    fn consume(_: i32) {}
+    fn run() {
+        auto::<i32>(); let _a = auto::<i32>(); consume(auto::<i32>());
+        self::auto::<i32>(); let _function = self::auto::<i32>;
+    }
+}
+mod tuple_name {
+    struct auto(u8);
+    fn run(value: auto) { let auto(inner) = value; }
+}
+mod capture_name {
+    fn run() {
+        let auto @ x = 1;
+        match Some(1) { auto @ Some(_) => { let _ = auto; }, _ => {} }
+        match x { auto @ 1..=2 => { let _ = auto; }, _ => {} }
+    }
+}
+mod path_name {
+    mod auto { pub fn b<T: Default>() -> T { T::default() } }
+    fn run() { self::auto::b::<i32>(); let _ = self::auto::b::<i32>; }
+}
+mod macro_name {
+    macro_rules! declare { ($item:ident) => { struct $item; }; }
+    declare!(auto);
+}
+macro_rules! auto { () => {} }
+auto!();
+fn main() {
+    let mut auto: u32 = 1;
+    auto;
+    auto + 1;
+    auto.count_ones();
+    auto = 2;
+    auto::run();
+    auto!();
+    let _: auto::Item = auto::Item;
+}
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier)
+        (identifier)
+        (identifier))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (function_item
+        (visibility_modifier)
+        (identifier)
+        (parameters)
+        (block))
+      (struct_item
+        (visibility_modifier)
+        (type_identifier))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (struct_item
+        (type_identifier))
+      (function_item
+        (identifier)
+        (parameters)
+        (type_identifier)
+        (block
+          (identifier)))
+      (impl_item
+        (type_identifier)
+        (declaration_list))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (type_identifier))))
+        (parameters)
+        (type_identifier)
+        (block
+          (call_expression
+            (scoped_identifier
+              (identifier)
+              (identifier))
+            (arguments))))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (primitive_type)))
+        (block))
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (expression_statement
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments)))
+          (let_declaration
+            (identifier)
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments)))
+          (expression_statement
+            (call_expression
+              (identifier)
+              (arguments
+                (call_expression
+                  (generic_function
+                    (identifier)
+                    (type_arguments
+                      (primitive_type)))
+                  (arguments)))))
+          (expression_statement
+            (call_expression
+              (generic_function
+                (scoped_identifier
+                  (self)
+                  (identifier))
+                (type_arguments
+                  (primitive_type)))
+              (arguments)))
+          (let_declaration
+            (identifier)
+            (generic_function
+              (scoped_identifier
+                (self)
+                (identifier))
+              (type_arguments
+                (primitive_type))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (struct_item
+        (type_identifier)
+        (ordered_field_declaration_list
+          (primitive_type)))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (identifier)
+            (type_identifier)))
+        (block
+          (let_declaration
+            (tuple_struct_pattern
+              (identifier)
+              (identifier))
+            (identifier))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (let_declaration
+            (captured_pattern
+              (identifier)
+              (identifier))
+            (integer_literal))
+          (expression_statement
+            (match_expression
+              (call_expression
+                (identifier)
+                (arguments
+                  (integer_literal)))
+              (match_block
+                (match_arm
+                  (match_pattern
+                    (captured_pattern
+                      (identifier)
+                      (tuple_struct_pattern
+                        (identifier))))
+                  (block
+                    (let_declaration
+                      (identifier))))
+                (match_arm
+                  (match_pattern)
+                  (block)))))
+          (expression_statement
+            (match_expression
+              (identifier)
+              (match_block
+                (match_arm
+                  (match_pattern
+                    (captured_pattern
+                      (identifier)
+                      (range_pattern
+                        (integer_literal)
+                        (integer_literal))))
+                  (block
+                    (let_declaration
+                      (identifier))))
+                (match_arm
+                  (match_pattern)
+                  (block)))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (mod_item
+        (identifier)
+        (declaration_list
+          (function_item
+            (visibility_modifier)
+            (identifier)
+            (type_parameters
+              (type_parameter
+                (type_identifier)
+                (trait_bounds
+                  (type_identifier))))
+            (parameters)
+            (type_identifier)
+            (block
+              (call_expression
+                (scoped_identifier
+                  (identifier)
+                  (identifier))
+                (arguments))))))
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (expression_statement
+            (call_expression
+              (generic_function
+                (scoped_identifier
+                  (scoped_identifier
+                    (self)
+                    (identifier))
+                  (identifier))
+                (type_arguments
+                  (primitive_type)))
+              (arguments)))
+          (let_declaration
+            (generic_function
+              (scoped_identifier
+                (scoped_identifier
+                  (self)
+                  (identifier))
+                (identifier))
+              (type_arguments
+                (primitive_type))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (macro_definition
+        (identifier)
+        (macro_rule
+          (token_tree_pattern
+            (token_binding_pattern
+              (metavariable)
+              (fragment_specifier)))
+          (token_tree
+            (metavariable))))
+      (macro_invocation
+        (identifier)
+        (token_tree
+          (identifier)))
+      (empty_statement)))
+  (macro_definition
+    (identifier)
+    (macro_rule
+      (token_tree_pattern)
+      (token_tree)))
+  (expression_statement
+    (macro_invocation
+      (identifier)
+      (token_tree)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (mutable_specifier)
+        (identifier)
+        (primitive_type)
+        (integer_literal))
+      (expression_statement
+        (identifier))
+      (expression_statement
+        (binary_expression
+          (identifier)
+          (integer_literal)))
+      (expression_statement
+        (call_expression
+          (field_expression
+            (identifier)
+            (field_identifier))
+          (arguments)))
+      (expression_statement
+        (assignment_expression
+          (identifier)
+          (integer_literal)))
+      (expression_statement
+        (call_expression
+          (scoped_identifier
+            (identifier)
+            (identifier))
+          (arguments)))
+      (expression_statement
+        (macro_invocation
+          (identifier)
+          (token_tree)))
+      (let_declaration
+        (scoped_type_identifier
+          (identifier)
+          (type_identifier))
+        (scoped_identifier
+          (identifier)
+          (identifier))))))

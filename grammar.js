@@ -104,6 +104,7 @@ const TOKEN_TREE_NON_SPECIAL_PUNCTUATION = [
 ];
 
 const primitiveTypes = [...numericTypes, 'bool', 'str', 'char'];
+const reservedIdentifiers = ['default', 'union', 'gen', 'raw'];
 
 // oxlint-disable-next-line unicorn/prefer-module -- This package is CommonJS, so tree-sitter loads grammar.js as CommonJS.
 module.exports = grammar({
@@ -556,6 +557,7 @@ module.exports = grammar({
         optional($.visibility_modifier),
         optional('const'),
         optional('unsafe'),
+        optional('auto'),
         'trait',
         field('name', $._type_identifier),
         field('type_parameters', optional($.type_parameters)),
@@ -755,6 +757,7 @@ module.exports = grammar({
             'function',
             choice(
               $.identifier,
+              $._reserved_identifier,
               alias(choice(...primitiveTypes), $.identifier),
               $.scoped_identifier,
               $.field_expression
@@ -774,7 +777,7 @@ module.exports = grammar({
             choice(
               $._type_identifier,
               alias(choice(...primitiveTypes), $.type_identifier),
-              $._reserved_identifier,
+              alias(choice(...reservedIdentifiers), $.identifier),
               $.scoped_type_identifier
             )
           ),
@@ -955,7 +958,7 @@ module.exports = grammar({
           optional(choice($._path, $.bracketed_type, alias($.generic_type_with_turbofish, $.generic_type)))
         ),
         '::',
-        field('name', choice($.identifier, $.super))
+        field('name', choice($.identifier, $._reserved_identifier, $.super))
       ),
 
     scoped_type_identifier_in_expression_position: ($) =>
@@ -964,7 +967,7 @@ module.exports = grammar({
         seq(
           field('path', optional(choice($._path, alias($.generic_type_with_turbofish, $.generic_type)))),
           '::',
-          field('name', $._type_identifier)
+          field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), $.type_identifier)))
         )
       ),
 
@@ -977,7 +980,7 @@ module.exports = grammar({
           )
         ),
         '::',
-        field('name', $._type_identifier)
+        field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), $.type_identifier)))
       ),
 
     range_expression: ($) =>
@@ -1257,7 +1260,13 @@ module.exports = grammar({
 
     generic_pattern: ($) =>
       seq(
-        choice($.identifier, alias(choice(...primitiveTypes), $.identifier), $.scoped_identifier),
+        choice(
+          $.identifier,
+          $._reserved_identifier,
+          alias(choice(...primitiveTypes), $.identifier),
+          $.scoped_identifier
+        ),
+
         '::',
         field('type_arguments', $.type_arguments)
       ),
@@ -1272,6 +1281,7 @@ module.exports = grammar({
           'type',
           choice(
             $.identifier,
+            $._reserved_identifier,
             alias(choice(...primitiveTypes), $.identifier),
             $.scoped_identifier,
             alias($.generic_type_with_turbofish, $.generic_type)
@@ -1336,7 +1346,12 @@ module.exports = grammar({
 
     ref_pattern: ($) => seq('ref', $._pattern),
 
-    captured_pattern: ($) => seq(choice($.identifier, alias(choice(...primitiveTypes), $.identifier)), '@', $._pattern),
+    captured_pattern: ($) =>
+      seq(
+        choice($.identifier, $._reserved_identifier, alias(choice(...primitiveTypes), $.identifier)),
+        '@',
+        $._pattern
+      ),
 
     reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
 
@@ -1481,9 +1496,9 @@ module.exports = grammar({
     // oxlint-disable-next-line no-useless-escape -- tree-sitter's regex parser rejects an unescaped `[` in a character class.
     shebang: () => /#![\r\f\t\v ]*([^\[\n].*)?\n/,
 
-    _reserved_identifier: ($) => alias(choice('default', 'union', 'gen', 'raw'), $.identifier),
+    _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto'), $.identifier),
 
-    _type_identifier: ($) => alias($.identifier, $.type_identifier),
+    _type_identifier: ($) => alias(choice($.identifier, 'auto'), $.type_identifier),
     _field_identifier: ($) => alias($.identifier, $.field_identifier),
 
     self: () => 'self',

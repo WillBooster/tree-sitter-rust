@@ -97,6 +97,7 @@
 
 "as" @keyword
 "async" @keyword
+"auto" @keyword
 "await" @keyword
 "become" @keyword
 "break" @keyword
