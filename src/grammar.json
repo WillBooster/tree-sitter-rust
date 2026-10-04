@@ -8770,6 +8770,22 @@
                       {
                         "type": "STRING",
                         "value": "char"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "default"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "union"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "gen"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "raw"
                       }
                     ]
                   },
@@ -12317,6 +12333,19 @@
     }
   ],
   "conflicts": [
+    [
+      "field_initializer_list",
+      "block"
+    ],
+    [
+      "_declaration_statement",
+      "shorthand_field_initializer",
+      "field_initializer"
+    ],
+    [
+      "_expression_except_range",
+      "shorthand_field_initializer"
+    ],
     [
       "_expression_except_range",
       "struct_expression"

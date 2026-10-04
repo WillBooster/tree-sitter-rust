@@ -142,6 +142,9 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.field_initializer_list, $.block],
+    [$._declaration_statement, $.shorthand_field_initializer, $.field_initializer],
+    [$._expression_except_range, $.shorthand_field_initializer],
     [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
@@ -1091,7 +1094,7 @@ module.exports = grammar({
           'name',
           choice(
             $._type_identifier,
-            prec.dynamic(-1, alias(choice(...primitiveTypes), $.type_identifier)),
+            prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier)),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
           )
