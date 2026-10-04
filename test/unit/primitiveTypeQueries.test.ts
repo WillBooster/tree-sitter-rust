@@ -1,9 +1,11 @@
+import path from 'node:path';
+
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('keeps primitive casts in type queries without consuming following arithmetic', async () => {
   await Parser.init();
-  const language = await Language.load('tree-sitter-rust.wasm');
+  const language = await Language.load(path.join(import.meta.dirname, '../../tree-sitter-rust.wasm'));
   const parser = new Parser();
   parser.setLanguage(language);
   const query = new Query(language, '(_type/primitive_type) @primitive');
