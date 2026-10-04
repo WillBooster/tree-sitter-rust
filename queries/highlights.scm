@@ -99,6 +99,7 @@
 "async" @keyword
 "auto" @keyword
 "await" @keyword
+"become" @keyword
 "break" @keyword
 "const" @keyword
 "continue" @keyword
