@@ -895,7 +895,7 @@ module.exports = grammar({
           optional(choice($._path, $.bracketed_type, alias($.generic_type_with_turbofish, $.generic_type)))
         ),
         '::',
-        field('name', choice($.identifier, $.super))
+        field('name', choice($.identifier, alias('auto', $.identifier), $.super))
       ),
 
     scoped_type_identifier_in_expression_position: ($) =>
@@ -1201,7 +1201,15 @@ module.exports = grammar({
 
     tuple_struct_pattern: ($) =>
       seq(
-        field('type', choice($.identifier, $.scoped_identifier, alias($.generic_type_with_turbofish, $.generic_type))),
+        field(
+          'type',
+          choice(
+            $.identifier,
+            alias('auto', $.identifier),
+            $.scoped_identifier,
+            alias($.generic_type_with_turbofish, $.generic_type)
+          )
+        ),
         '(',
         sepBy(',', $._pattern),
         optional(','),
@@ -1242,7 +1250,7 @@ module.exports = grammar({
 
     ref_pattern: ($) => seq('ref', $._pattern),
 
-    captured_pattern: ($) => seq($.identifier, '@', $._pattern),
+    captured_pattern: ($) => seq(choice($.identifier, alias('auto', $.identifier)), '@', $._pattern),
 
     reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
 
