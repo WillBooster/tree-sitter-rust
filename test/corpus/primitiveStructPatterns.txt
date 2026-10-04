@@ -1,0 +1,79 @@
+==================
+Primitive-spelled struct names in turbofish patterns
+==================
+
+#![allow(non_camel_case_types, dead_code)]
+struct f16<T> { value: T }
+struct f128<T> { value: T }
+fn inspect(a: f16<u8>, b: f128<u8>) {
+    let f16::<u8> { #[allow(unused_variables)] value } = a;
+    let f128::<u8> { value: renamed } = b;
+}
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (struct_item
+    (type_identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (field_declaration_list
+      (field_declaration
+        (field_identifier)
+        (type_identifier))))
+  (struct_item
+    (type_identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (field_declaration_list
+      (field_declaration
+        (field_identifier)
+        (type_identifier))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type))))
+      (parameter
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type)))))
+    (block
+      (let_declaration
+        (struct_pattern
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (primitive_type)))
+          (field_pattern
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (shorthand_field_identifier)))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (primitive_type)))
+          (field_pattern
+            (field_identifier)
+            (identifier)))
+        (identifier)))))

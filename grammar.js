@@ -1313,7 +1313,12 @@ module.exports = grammar({
       seq(
         field(
           'type',
-          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_type_identifier)
+          choice(
+            $._type_identifier,
+            alias(choice(...primitiveTypes), $.type_identifier),
+            $.scoped_type_identifier,
+            alias($._generic_struct_pattern_type, $.generic_type)
+          )
         ),
         '{',
         sepBy(',', choice($.field_pattern, $.remaining_field_pattern)),
@@ -1321,8 +1326,19 @@ module.exports = grammar({
         '}'
       ),
 
+    _generic_struct_pattern_type: ($) =>
+      seq(
+        field(
+          'type',
+          choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier), $.scoped_type_identifier)
+        ),
+        '::',
+        field('type_arguments', $.type_arguments)
+      ),
+
     field_pattern: ($) =>
       seq(
+        repeat($.attribute_item),
         optional('ref'),
         optional($.mutable_specifier),
         choice(
