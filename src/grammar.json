@@ -164,6 +164,24 @@
         {
           "type": "SYMBOL",
           "name": "static_item"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_safe_function_signature_item"
+          },
+          "named": true,
+          "value": "function_signature_item"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_qualified_static_item"
+          },
+          "named": true,
+          "value": "static_item"
         }
       ]
     },
@@ -1457,29 +1475,23 @@
         {
           "type": "REPEAT",
           "content": {
-            "type": "CHOICE",
+            "type": "SEQ",
             "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_foreign_declaration_context"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
               {
                 "type": "SYMBOL",
                 "name": "_declaration_statement"
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_safe_function_signature_item"
-                },
-                "named": true,
-                "value": "function_signature_item"
-              },
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_qualified_static_item"
-                },
-                "named": true,
-                "value": "static_item"
               }
             ]
           }
@@ -1493,6 +1505,10 @@
     "_safe_function_signature_item": {
       "type": "SEQ",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_foreign_declaration_start"
+        },
         {
           "type": "CHOICE",
           "members": [
@@ -1527,6 +1543,10 @@
     "_qualified_static_item": {
       "type": "SEQ",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_foreign_declaration_start"
+        },
         {
           "type": "CHOICE",
           "members": [
@@ -11592,6 +11612,14 @@
     {
       "type": "SYMBOL",
       "name": "_error_sentinel"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_foreign_declaration_context"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_foreign_declaration_start"
     }
   ],
   "inline": [
@@ -11600,11 +11628,11 @@
     "_tokens",
     "_field_identifier",
     "_non_special_token",
-    "_declaration_statement",
     "_reserved_identifier",
     "_expression_ending_with_block"
   ],
   "supertypes": [
+    "_declaration_statement",
     "_expression",
     "_type",
     "_literal",
