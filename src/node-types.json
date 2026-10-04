@@ -1467,7 +1467,7 @@
     "fields": {
       "body": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "token_tree",
@@ -1490,16 +1490,20 @@
         "required": false,
         "types": [
           {
-            "type": "token_tree",
+            "type": "token_tree_pattern",
             "named": true
           }
         ]
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "macro_rule",
+          "named": true
+        },
         {
           "type": "visibility_modifier",
           "named": true

@@ -2844,6 +2844,7 @@ trait Printable = std::fmt::Debug + Send;
 trait Borrowed<'a> = std::fmt::Debug + 'a;
 trait Generic<T> = Iterator<Item = T>;
 macro answer() { 42 }
+macro collect($($x:expr),*) { [$($x),*] }
 pub macro pair { ($x:expr, $y:expr) => { ($x, $y) } }
 fn main() { let _ = answer!(); let _ = pair!(1, 2); }
 
@@ -2887,22 +2888,35 @@ fn main() { let _ = answer!(); let _ = pair!(1, 2); }
             (type_identifier))))))
   (decl_macro
     (identifier)
-    (token_tree)
+    (token_tree_pattern)
     (token_tree
       (integer_literal)))
   (decl_macro
-    (visibility_modifier)
     (identifier)
+    (token_tree_pattern
+      (token_repetition_pattern
+        (token_binding_pattern
+          (metavariable)
+          (fragment_specifier))))
     (token_tree
       (token_tree
-        (identifier)
-        (identifier)
-        (identifier)
-        (identifier))
+        (token_repetition
+          (metavariable)))))
+  (decl_macro
+    (visibility_modifier)
+    (identifier)
+    (macro_rule
+      (token_tree_pattern
+        (token_binding_pattern
+          (metavariable)
+          (fragment_specifier))
+        (token_binding_pattern
+          (metavariable)
+          (fragment_specifier)))
       (token_tree
         (token_tree
-          (identifier)
-          (identifier)))))
+          (metavariable)
+          (metavariable)))))
   (function_item
     (identifier)
     (parameters)
@@ -2980,17 +2994,19 @@ macro choice { () => { 0 }, ($x:expr) => { $x } }
     (visibility_modifier
       (crate))
     (identifier)
-    (token_tree)
+    (token_tree_pattern)
     (token_tree
       (integer_literal)))
   (decl_macro
     (identifier)
-    (token_tree
-      (token_tree)
+    (macro_rule
+      (token_tree_pattern)
       (token_tree
-        (integer_literal))
+        (integer_literal)))
+    (macro_rule
+      (token_tree_pattern
+        (token_binding_pattern
+          (metavariable)
+          (fragment_specifier)))
       (token_tree
-        (identifier)
-        (identifier))
-      (token_tree
-        (identifier)))))
+        (metavariable)))))
