@@ -101,6 +101,7 @@ const TOKEN_TREE_NON_SPECIAL_PUNCTUATION = [
 ];
 
 const primitiveTypes = [...numericTypes, 'bool', 'str', 'char'];
+const reservedIdentifiers = ['default', 'union', 'gen', 'raw'];
 
 // oxlint-disable-next-line unicorn/prefer-module -- This package is CommonJS, so tree-sitter loads grammar.js as CommonJS.
 module.exports = grammar({
@@ -272,7 +273,7 @@ module.exports = grammar({
         "'",
         'as',
         'async',
-        'auto',
+        alias('auto', $.identifier),
         'await',
         'break',
         'const',
@@ -727,7 +728,10 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('type', choice($._type_identifier, $._reserved_identifier, $.scoped_type_identifier)),
+          field(
+            'type',
+            choice($._type_identifier, alias(choice(...reservedIdentifiers), $.identifier), $.scoped_type_identifier)
+          ),
           field('type_arguments', $.type_arguments)
         )
       ),
@@ -1383,9 +1387,9 @@ module.exports = grammar({
     // oxlint-disable-next-line no-useless-escape -- tree-sitter's regex parser rejects an unescaped `[` in a character class.
     shebang: () => /#![\r\f\t\v ]*([^\[\n].*)?\n/,
 
-    _reserved_identifier: ($) => alias(choice('default', 'union', 'gen', 'raw', 'auto'), $.identifier),
+    _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto'), $.identifier),
 
-    _type_identifier: ($) => alias($.identifier, $.type_identifier),
+    _type_identifier: ($) => alias(choice($.identifier, 'auto'), $.type_identifier),
     _field_identifier: ($) => alias($.identifier, $.field_identifier),
 
     self: () => 'self',

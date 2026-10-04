@@ -60,6 +60,7 @@ fn main() {}
     (identifier)
     (token_tree
       (identifier)
+      (identifier)
       (token_tree)))
   (function_item
     (identifier)
@@ -72,6 +73,15 @@ Auto remains a contextual identifier
 
 #![allow(dead_code, unused_variables, unused_assignments, path_statements)]
 mod auto { pub fn run() {} pub struct Item; }
+mod type_name {
+    struct auto;
+    fn f() -> auto { auto }
+    impl auto {}
+}
+mod macro_name {
+    macro_rules! declare { ($item:ident) => { struct $item; }; }
+    declare!(auto);
+}
 macro_rules! auto { () => {} }
 auto!();
 fn main() {
@@ -107,6 +117,37 @@ fn main() {
       (struct_item
         (visibility_modifier)
         (type_identifier))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (struct_item
+        (type_identifier))
+      (function_item
+        (identifier)
+        (parameters)
+        (type_identifier)
+        (block
+          (identifier)))
+      (impl_item
+        (type_identifier)
+        (declaration_list))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (macro_definition
+        (identifier)
+        (macro_rule
+          (token_tree_pattern
+            (token_binding_pattern
+              (metavariable)
+              (fragment_specifier)))
+          (token_tree
+            (metavariable))))
+      (macro_invocation
+        (identifier)
+        (token_tree
+          (identifier)))
+      (empty_statement)))
   (macro_definition
     (identifier)
     (macro_rule
