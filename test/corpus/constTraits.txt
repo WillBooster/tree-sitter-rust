@@ -1,0 +1,136 @@
+================================================================================
+Const traits and implementations
+================================================================================
+
+#![feature(const_trait_impl)]
+#![allow(dead_code)]
+pub const trait Value { fn value(&self) -> u8; }
+const impl Value for u8 { fn value(&self) -> u8 { *self } }
+struct Wrapper<T>(T);
+const impl<T> Value for Wrapper<T> { fn value(&self) -> u8 { 2 } }
+pub(crate) const unsafe trait Marker {}
+const unsafe impl<T> Marker for Wrapper<T> {}
+const VALUE: u8 = 1u8.value() + Wrapper(2u8).value();
+const fn ordinary() -> u8 { VALUE }
+pub const unsafe fn unsafe_function() -> u8 { VALUE }
+fn main() { assert_eq!(ordinary(), 3); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (trait_item
+    (visibility_modifier)
+    (type_identifier)
+    (declaration_list
+      (function_signature_item
+        (identifier)
+        (parameters
+          (self_parameter
+            (self)))
+        (primitive_type))))
+  (impl_item
+    (type_identifier)
+    (primitive_type)
+    (declaration_list
+      (function_item
+        (identifier)
+        (parameters
+          (self_parameter
+            (self)))
+        (primitive_type)
+        (block
+          (unary_expression
+            (self))))))
+  (struct_item
+    (type_identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (ordered_field_declaration_list
+      (type_identifier)))
+  (impl_item
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (type_identifier)
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (type_identifier)))
+    (declaration_list
+      (function_item
+        (identifier)
+        (parameters
+          (self_parameter
+            (self)))
+        (primitive_type)
+        (block
+          (integer_literal)))))
+  (trait_item
+    (visibility_modifier
+      (crate))
+    (type_identifier)
+    (declaration_list))
+  (impl_item
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (type_identifier)
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (type_identifier)))
+    (declaration_list))
+  (const_item
+    (identifier)
+    (primitive_type)
+    (binary_expression
+      (call_expression
+        (field_expression
+          (integer_literal)
+          (field_identifier))
+        (arguments))
+      (call_expression
+        (field_expression
+          (call_expression
+            (identifier)
+            (arguments
+              (integer_literal)))
+          (field_identifier))
+        (arguments))))
+  (function_item
+    (function_modifiers)
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (identifier)))
+  (function_item
+    (visibility_modifier)
+    (function_modifiers)
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (identifier)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (identifier)
+            (token_tree)
+            (integer_literal)))))))
