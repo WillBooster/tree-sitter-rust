@@ -79,6 +79,18 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
   const query = new Query(language, '(_literal) @literal');
   try {
     for (const literal of [
+      '1e',
+      '1E',
+      '1e+',
+      '1e-',
+      '1.5e',
+      '1.5E',
+      '0e+',
+      '01e',
+      '0_e',
+      '1_1e',
+      '1.5_1e',
+      '12e',
       '1efoo',
       '1Efoo',
       '1.0efoo',
