@@ -62,6 +62,8 @@
   macro: (identifier) @function.macro
   "!" @function.macro)
 
+(decl_macro name: (identifier) @function.macro)
+
 ; Function definitions
 
 (function_item (identifier) @function)
@@ -117,6 +119,7 @@
 "let" @keyword
 "loop" @keyword
 "macro_rules!" @keyword
+"macro" @keyword
 "match" @keyword
 "mod" @keyword
 "move" @keyword
