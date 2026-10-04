@@ -5002,13 +5002,8 @@
                   "name": "identifier"
                 },
                 {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "STRING",
-                    "value": "auto"
-                  },
-                  "named": true,
-                  "value": "identifier"
+                  "type": "SYMBOL",
+                  "name": "_reserved_identifier"
                 },
                 {
                   "type": "SYMBOL",
@@ -6180,13 +6175,8 @@
                 "name": "identifier"
               },
               {
-                "type": "ALIAS",
-                "content": {
-                  "type": "STRING",
-                  "value": "auto"
-                },
-                "named": true,
-                "value": "identifier"
+                "type": "SYMBOL",
+                "name": "_reserved_identifier"
               },
               {
                 "type": "SYMBOL",
@@ -9027,13 +9017,8 @@
                 "name": "identifier"
               },
               {
-                "type": "ALIAS",
-                "content": {
-                  "type": "STRING",
-                  "value": "auto"
-                },
-                "named": true,
-                "value": "identifier"
+                "type": "SYMBOL",
+                "name": "_reserved_identifier"
               },
               {
                 "type": "SYMBOL",
@@ -9426,13 +9411,8 @@
               "name": "identifier"
             },
             {
-              "type": "ALIAS",
-              "content": {
-                "type": "STRING",
-                "value": "auto"
-              },
-              "named": true,
-              "value": "identifier"
+              "type": "SYMBOL",
+              "name": "_reserved_identifier"
             }
           ]
         },
