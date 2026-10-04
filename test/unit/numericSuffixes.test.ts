@@ -110,6 +110,23 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
         macro.delete();
       }
     }
+    for (const literal of [
+      '0x_\u0301',
+      '0b_\u0301',
+      '0o_\u0301',
+      '0x_\u0661',
+      '0b_\u0661',
+      '0o_\u0661',
+      '1e_\u0301',
+      '1e_\u0661',
+    ]) {
+      const tree = parser.parse(`swallow!(${literal});`)!;
+      try {
+        expect(tree.rootNode.hasError, literal).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
   } finally {
     query.delete();
     parser.delete();

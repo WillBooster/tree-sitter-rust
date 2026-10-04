@@ -9286,6 +9286,10 @@
             ]
           },
           {
+            "type": "PATTERN",
+            "value": "0[box]_+"
+          },
+          {
             "type": "SEQ",
             "members": [
               {
@@ -9391,6 +9395,19 @@
                           "type": "BLANK"
                         }
                       ]
+                    }
+                  ]
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "PATTERN",
+                      "value": "[0-9][0-9_]*"
+                    },
+                    {
+                      "type": "PATTERN",
+                      "value": "[eE][+-]?_*"
                     }
                   ]
                 },
