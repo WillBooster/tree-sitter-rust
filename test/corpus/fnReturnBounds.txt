@@ -1,0 +1,66 @@
+==================
+Parenthesized primitive callback return types
+==================
+
+#![allow(dead_code, unused_parens)]
+type Callback = Box<dyn Fn(u8) -> (u8) + Send>;
+type Nested = Box<dyn Fn(u8) -> ((u8)) + Send + Sync>;
+fn callback() -> impl Fn(u8) -> (u8) + Send { |value| value }
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      arguments: (token_tree
+        (identifier)
+        (identifier))))
+  (type_item
+    name: (type_identifier)
+    type: (generic_type
+      type: (type_identifier)
+      type_arguments: (type_arguments
+        (bounded_type
+          (dynamic_type
+            trait: (function_type
+              trait: (type_identifier)
+              parameters: (parameters
+                (primitive_type))
+              return_type: (tuple_type
+                (primitive_type))))
+          (type_identifier)))))
+  (type_item
+    name: (type_identifier)
+    type: (generic_type
+      type: (type_identifier)
+      type_arguments: (type_arguments
+        (bounded_type
+          (bounded_type
+            (dynamic_type
+              trait: (function_type
+                trait: (type_identifier)
+                parameters: (parameters
+                  (primitive_type))
+                return_type: (tuple_type
+                  (tuple_type
+                    (primitive_type)))))
+            (type_identifier))
+          (type_identifier)))))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    return_type: (bounded_type
+      (abstract_type
+        trait: (function_type
+          trait: (type_identifier)
+          parameters: (parameters
+            (primitive_type))
+          return_type: (tuple_type
+            (primitive_type))))
+      (type_identifier))
+    body: (block
+      (closure_expression
+        parameters: (closure_parameters
+          (identifier))
+        body: (identifier)))))

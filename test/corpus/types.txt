@@ -384,3 +384,813 @@ d as *mut E<<F as E>::G>;
                   (type_identifier)
                   (type_identifier)))
               (type_identifier))))))))
+
+================================================================================
+Extended floating-point primitive types
+================================================================================
+
+fn floats(a: f16, b: f128) -> (f16, f128) {
+    let values: [f16; 2] = [1.0f16, a];
+    let _ = values;
+    (a + 1.0f16, b + 1.0f128)
+}
+type Wide = f128;
+fn names(f16: u8, f128: u8) -> u8 { f16 + f128 }
+
+mod identifiers {
+    fn f16<T>(x: T) -> T { x }
+    fn f128<T>(x: T) -> T { x }
+    fn use_names() {
+        let x = f16::<u8>(1);
+        let y = f128::<u8>(2);
+        let f16 @ Some(_) = Some(x) else { return; };
+        let f128 @ Some(_) = Some(y) else { return; };
+        let _ = (f16, f128);
+    }
+}
+
+mod constructors {
+    struct f16<T>(T);
+    struct f128 { x: u8 }
+    impl<T> f16<T> { const X: u8 = 1; }
+    fn use_names() {
+        let a: f16<u8> = f16(1);
+        let f16(x) = a;
+        let f128 { x } = f128 { x };
+        let _ = (x, f16::<u8>::X);
+    }
+}
+mod traits {
+    trait f16 {}
+    unsafe trait f128 {}
+    struct S;
+    impl f16 for S {}
+    unsafe impl f128 for S {}
+    fn make() -> impl f16 { S }
+    fn read(_: &dyn f128) {}
+}
+
+mod associated_types {
+    trait Trait { type f16; type f128; }
+    fn read(_: impl Trait<f16 = u8, f128 = u16>) {}
+}
+
+mod parenthesized_traits {
+    use std::ops::{Fn as f16, FnMut as f128};
+    fn apply<F: f16(u8) -> u8, G: f128(u8) -> u8>(f: F, mut g: G) -> u8 { g(f(1)) }
+}
+
+mod impl_parameters {
+    struct S<T>(T);
+    trait Tr {}
+    impl<f16> Tr for S<f16> {}
+    impl<f128: Clone> S<f128> { fn cloned(&self) -> f128 { self.0.clone() } }
+}
+
+mod trait_bound_names {
+    trait f16 {}
+    trait f128: f16 {}
+    trait Alias = f16 + f128;
+    struct S;
+    impl f16 for S {}
+    impl f128 for S {}
+    fn objects(_: &dyn (f16), _: &dyn (f128)) {}
+    fn opaque() -> impl (f16) { S }
+    fn wide_opaque() -> impl (f128) { S }
+    fn combined() -> impl f16 + f128 { S }
+    mod associated_bounds {
+        trait Trait { type f16; type f128; }
+        fn read(_: impl Trait<f16: Sized, f128: Clone>) {}
+    }
+    mod object_bounds {
+        trait f16 {}
+        use std::marker::Send as f128;
+        type D = dyn f16 + f128;
+        type Boxed = Box<dyn f16 + f128>;
+    }
+    mod qualified {
+        trait f16 { type Assoc; fn item() {} }
+        struct S;
+        impl f16 for S { type Assoc = (); }
+        type Value = <S as f16>::Assoc;
+        fn call() { <S as f16>::item(); }
+    }
+    fn generic<T: f16>() {}
+    fn bounded<T>() where T: f128 {}
+    fn parenthesized<T: (f16)>() {}
+    mod higher_ranked {
+        trait f16<'a> {}
+        fn bounded<T: for<'a> f16<'a>>() {}
+    }
+    mod removed {
+        use std::marker::Sized as f128;
+        fn relaxed<T: ?f128>() {}
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (tuple_type
+      (primitive_type)
+      (primitive_type))
+    (block
+      (let_declaration
+        (identifier)
+        (array_type
+          (primitive_type)
+          (integer_literal))
+        (array_expression
+          (float_literal)
+          (identifier)))
+      (let_declaration
+        (identifier))
+      (tuple_expression
+        (binary_expression
+          (identifier)
+          (float_literal))
+        (binary_expression
+          (identifier)
+          (float_literal)))))
+  (type_item
+    (type_identifier)
+    (primitive_type))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (binary_expression
+        (identifier)
+        (identifier))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (parameters
+          (parameter
+            (identifier)
+            (type_identifier)))
+        (type_identifier)
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (parameters
+          (parameter
+            (identifier)
+            (type_identifier)))
+        (type_identifier)
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (let_declaration
+            (identifier)
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments
+                (integer_literal))))
+          (let_declaration
+            (identifier)
+            (call_expression
+              (generic_function
+                (identifier)
+                (type_arguments
+                  (primitive_type)))
+              (arguments
+                (integer_literal))))
+          (let_declaration
+            (captured_pattern
+              (identifier)
+              (tuple_struct_pattern
+                (identifier)))
+            (call_expression
+              (identifier)
+              (arguments
+                (identifier)))
+            (block
+              (expression_statement
+                (return_expression))))
+          (let_declaration
+            (captured_pattern
+              (identifier)
+              (tuple_struct_pattern
+                (identifier)))
+            (call_expression
+              (identifier)
+              (arguments
+                (identifier)))
+            (block
+              (expression_statement
+                (return_expression))))
+          (let_declaration
+            (tuple_expression
+              (identifier)
+              (identifier)))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (struct_item
+        (type_identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (ordered_field_declaration_list
+          (type_identifier)))
+      (struct_item
+        (type_identifier)
+        (field_declaration_list
+          (field_declaration
+            (field_identifier)
+            (primitive_type))))
+      (impl_item
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (type_identifier)))
+        (declaration_list
+          (const_item
+            (identifier)
+            (primitive_type)
+            (integer_literal))))
+      (function_item
+        (identifier)
+        (parameters)
+        (block
+          (let_declaration
+            (identifier)
+            (generic_type
+              (type_identifier)
+              (type_arguments
+                (primitive_type)))
+            (call_expression
+              (identifier)
+              (arguments
+                (integer_literal))))
+          (let_declaration
+            (tuple_struct_pattern
+              (identifier)
+              (identifier))
+            (identifier))
+          (let_declaration
+            (struct_pattern
+              (type_identifier)
+              (field_pattern
+                (shorthand_field_identifier)))
+            (struct_expression
+              (type_identifier)
+              (field_initializer_list
+                (shorthand_field_initializer
+                  (identifier)))))
+          (let_declaration
+            (tuple_expression
+              (identifier)
+              (scoped_identifier
+                (generic_type
+                  (type_identifier)
+                  (type_arguments
+                    (primitive_type)))
+                (identifier))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (struct_item
+        (type_identifier))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (function_item
+        (identifier)
+        (parameters)
+        (abstract_type
+          (type_identifier))
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (reference_type
+              (dynamic_type
+                (type_identifier)))))
+        (block))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (trait_item
+        (type_identifier)
+        (declaration_list
+          (associated_type
+            (type_identifier))
+          (associated_type
+            (type_identifier))))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (abstract_type
+              (generic_type
+                (type_identifier)
+                (type_arguments
+                  (type_binding
+                    (type_identifier)
+                    (primitive_type))
+                  (type_binding
+                    (type_identifier)
+                    (primitive_type)))))))
+        (block))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (use_declaration
+        (scoped_use_list
+          (scoped_identifier
+            (identifier)
+            (identifier))
+          (use_list
+            (use_as_clause
+              (identifier)
+              (identifier))
+            (use_as_clause
+              (identifier)
+              (identifier)))))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (function_type
+                (type_identifier)
+                (parameters
+                  (primitive_type))
+                (primitive_type))))
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (function_type
+                (type_identifier)
+                (parameters
+                  (primitive_type))
+                (primitive_type)))))
+        (parameters
+          (parameter
+            (identifier)
+            (type_identifier))
+          (parameter
+            (mutable_specifier)
+            (identifier)
+            (type_identifier)))
+        (primitive_type)
+        (block
+          (call_expression
+            (identifier)
+            (arguments
+              (call_expression
+                (identifier)
+                (arguments
+                  (integer_literal)))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (struct_item
+        (type_identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (ordered_field_declaration_list
+          (type_identifier)))
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (impl_item
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (type_identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type)))
+        (declaration_list))
+      (impl_item
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (type_identifier))))
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type)))
+        (declaration_list
+          (function_item
+            (identifier)
+            (parameters
+              (self_parameter
+                (self)))
+            (primitive_type)
+            (block
+              (call_expression
+                (field_expression
+                  (field_expression
+                    (self)
+                    (integer_literal))
+                  (field_identifier))
+                (arguments))))))))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (trait_item
+        (type_identifier)
+        (declaration_list))
+      (trait_item
+        (type_identifier)
+        (trait_bounds
+          (primitive_type))
+        (declaration_list))
+      (trait_alias
+        (type_identifier)
+        (trait_alias_bounds
+          (primitive_type)
+          (primitive_type)))
+      (struct_item
+        (type_identifier))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (impl_item
+        (type_identifier)
+        (type_identifier)
+        (declaration_list))
+      (function_item
+        (identifier)
+        (parameters
+          (parameter
+            (reference_type
+              (dynamic_type
+                (tuple_type
+                  (primitive_type)))))
+          (parameter
+            (reference_type
+              (dynamic_type
+                (tuple_type
+                  (primitive_type))))))
+        (block))
+      (function_item
+        (identifier)
+        (parameters)
+        (abstract_type
+          (tuple_type
+            (primitive_type)))
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (parameters)
+        (abstract_type
+          (tuple_type
+            (primitive_type)))
+        (block
+          (identifier)))
+      (function_item
+        (identifier)
+        (parameters)
+        (bounded_type
+          (abstract_type
+            (type_identifier))
+          (primitive_type))
+        (block
+          (identifier)))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (declaration_list
+              (associated_type
+                (type_identifier))
+              (associated_type
+                (type_identifier))))
+          (function_item
+            (identifier)
+            (parameters
+              (parameter
+                (abstract_type
+                  (generic_type
+                    (type_identifier)
+                    (type_arguments
+                      (type_identifier)
+                      (trait_bounds
+                        (type_identifier))
+                      (type_identifier)
+                      (trait_bounds
+                        (type_identifier)))))))
+            (block))))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (declaration_list))
+          (use_declaration
+            (use_as_clause
+              (scoped_identifier
+                (scoped_identifier
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (identifier)))
+          (type_item
+            (type_identifier)
+            (bounded_type
+              (dynamic_type
+                (type_identifier))
+              (primitive_type)))
+          (type_item
+            (type_identifier)
+            (generic_type
+              (type_identifier)
+              (type_arguments
+                (bounded_type
+                  (dynamic_type
+                    (type_identifier))
+                  (primitive_type)))))))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (declaration_list
+              (associated_type
+                (type_identifier))
+              (function_item
+                (identifier)
+                (parameters)
+                (block))))
+          (struct_item
+            (type_identifier))
+          (impl_item
+            (type_identifier)
+            (type_identifier)
+            (declaration_list
+              (type_item
+                (type_identifier)
+                (unit_type))))
+          (type_item
+            (type_identifier)
+            (scoped_type_identifier
+              (bracketed_type
+                (qualified_type
+                  (type_identifier)
+                  (primitive_type)))
+              (type_identifier)))
+          (function_item
+            (identifier)
+            (parameters)
+            (block
+              (expression_statement
+                (call_expression
+                  (scoped_identifier
+                    (bracketed_type
+                      (qualified_type
+                        (type_identifier)
+                        (primitive_type)))
+                    (identifier))
+                  (arguments)))))))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (primitive_type))))
+        (parameters)
+        (block))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)))
+        (parameters)
+        (where_clause
+          (where_predicate
+            (type_identifier)
+            (trait_bounds
+              (primitive_type))))
+        (block))
+      (function_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds
+              (tuple_type
+                (primitive_type)))))
+        (parameters)
+        (block))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (type_parameters
+              (lifetime_parameter
+                (lifetime
+                  (identifier))))
+            (declaration_list))
+          (function_item
+            (identifier)
+            (type_parameters
+              (type_parameter
+                (type_identifier)
+                (trait_bounds
+                  (higher_ranked_trait_bound
+                    (type_parameters
+                      (lifetime_parameter
+                        (lifetime
+                          (identifier))))
+                    (generic_type
+                      (type_identifier)
+                      (type_arguments
+                        (lifetime
+                          (identifier))))))))
+            (parameters)
+            (block))))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (use_declaration
+            (use_as_clause
+              (scoped_identifier
+                (scoped_identifier
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (identifier)))
+          (function_item
+            (identifier)
+            (type_parameters
+              (type_parameter
+                (type_identifier)
+                (trait_bounds
+                  (removed_trait_bound
+                    (primitive_type)))))
+            (parameters)
+            (block)))))))
+
+================================================================================
+Rust 2015 bare trait objects with primitive-spelled names
+================================================================================
+
+trait f16 {}
+type Object = f16 + Send;
+type Parenthesized = (f16) + Send;
+type Reference<'a> = &'a (f16 + Send);
+fn arithmetic(x: i32, y: i32) -> i32 { x as ((i32)) + y }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (trait_item
+    (type_identifier)
+    (declaration_list))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (primitive_type)
+      (type_identifier)))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (tuple_type
+        (primitive_type))
+      (type_identifier)))
+  (type_item
+    (type_identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))))
+    (reference_type
+      (lifetime
+        (identifier))
+      (tuple_type
+        (bounded_type
+          (primitive_type)
+          (type_identifier)))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (primitive_type)
+    (block
+      (binary_expression
+        (type_cast_expression
+          (identifier)
+          (tuple_type
+            (tuple_type
+              (primitive_type))))
+        (identifier)))))
+
+================================================================================
+Primitive-spelled condition names retain their following bodies
+================================================================================
+
+fn conditions(f16: bool, u8: bool, f128: [u8; 1], x: ()) {
+    if f16 { x } {}
+    while u8 { x } {}
+    for i in f128 { x } {}
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        pattern: (identifier)
+        type: (primitive_type))
+      (parameter
+        pattern: (identifier)
+        type: (primitive_type))
+      (parameter
+        pattern: (identifier)
+        type: (array_type
+          element: (primitive_type)
+          length: (integer_literal)))
+      (parameter
+        pattern: (identifier)
+        type: (unit_type)))
+    body: (block
+      (expression_statement
+        (if_expression
+          condition: (identifier)
+          consequence: (block
+            (identifier))))
+      (expression_statement
+        (block))
+      (expression_statement
+        (while_expression
+          condition: (identifier)
+          body: (block
+            (identifier))))
+      (expression_statement
+        (block))
+      (expression_statement
+        (for_expression
+          pattern: (identifier)
+          value: (identifier)
+          body: (block
+            (identifier))))
+      (expression_statement
+        (block)))))
