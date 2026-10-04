@@ -103,6 +103,7 @@ test('retains multiple attributes through prefix edits and unchanged declaration
       'fn f() { #[a] let x = 1; #[b] g(); }',
       'fn f() { let x = [#[a] 1, #[b] 2]; }',
       'fn f() { let x = (#[a] 1, 2); }',
+      'fn f() { let x = (#[a] 1, #[b] 2, #[c] 3); }',
       'fn f() { g(#[a] 1); }',
     ]) {
       const tree = parser.parse(source)!;

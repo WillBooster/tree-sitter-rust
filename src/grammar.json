@@ -8689,6 +8689,17 @@
             "type": "SEQ",
             "members": [
               {
+                "type": "REPEAT",
+                "content": {
+                  "type": "PREC",
+                  "value": 15,
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "attribute_item"
+                  }
+                }
+              },
+              {
                 "type": "SYMBOL",
                 "name": "_expression"
               },
@@ -8703,8 +8714,24 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "_expression"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "PREC",
+                    "value": 15,
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "attribute_item"
+                    }
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_expression"
+                }
+              ]
             },
             {
               "type": "BLANK"

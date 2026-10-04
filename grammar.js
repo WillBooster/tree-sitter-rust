@@ -1083,8 +1083,8 @@ module.exports = grammar({
         '(',
         repeat(prec(PREC.call, $.attribute_item)),
         seq($._expression, ','),
-        repeat(seq($._expression, ',')),
-        optional($._expression),
+        repeat(seq(repeat(prec(PREC.call, $.attribute_item)), $._expression, ',')),
+        optional(seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)),
         ')'
       ),
 
