@@ -123,7 +123,7 @@ module.exports = grammar({
     $._error_sentinel,
   ],
 
-  supertypes: ($) => [$._expression, $._type, $._literal, $._literal_pattern, $._pattern],
+  supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
 
   inline: ($) => [
     $._path,
@@ -131,7 +131,6 @@ module.exports = grammar({
     $._tokens,
     $._field_identifier,
     $._non_special_token,
-    $._declaration_statement,
     $._reserved_identifier,
     $._expression_ending_with_block,
   ],
