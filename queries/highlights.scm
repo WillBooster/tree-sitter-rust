@@ -101,6 +101,7 @@
 
 "as" @keyword
 "async" @keyword
+"auto" @keyword
 "await" @keyword
 "break" @keyword
 "const" @keyword

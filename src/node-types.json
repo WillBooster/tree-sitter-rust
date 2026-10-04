@@ -5382,6 +5382,10 @@
     "named": false
   },
   {
+    "type": "auto",
+    "named": false
+  },
+  {
     "type": "await",
     "named": false
   },

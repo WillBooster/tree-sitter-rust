@@ -1,0 +1,67 @@
+==================
+Auto traits and negative implementations
+==================
+
+#![feature(auto_traits, negative_impls)]
+#![allow(dead_code)]
+auto trait Local {}
+pub auto trait Public {}
+pub(crate) unsafe auto trait Trusted {}
+struct Excluded;
+impl !Local for Excluded {}
+macro_rules! declare { ($($item:tt)*) => { $($item)* }; }
+declare! { auto trait Generated {} }
+fn main() {}
+
+---
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (trait_item
+    (type_identifier)
+    (declaration_list))
+  (trait_item
+    (visibility_modifier)
+    (type_identifier)
+    (declaration_list))
+  (trait_item
+    (visibility_modifier
+      (crate))
+    (type_identifier)
+    (declaration_list))
+  (struct_item
+    (type_identifier))
+  (impl_item
+    (type_identifier)
+    (type_identifier)
+    (declaration_list))
+  (macro_definition
+    (identifier)
+    (macro_rule
+      (token_tree_pattern
+        (token_repetition_pattern
+          (token_binding_pattern
+            (metavariable)
+            (fragment_specifier))))
+      (token_tree
+        (token_repetition
+          (metavariable)))))
+  (macro_invocation
+    (identifier)
+    (token_tree
+      (identifier)
+      (token_tree)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))

@@ -1146,6 +1146,10 @@
         },
         {
           "type": "STRING",
+          "value": "auto"
+        },
+        {
+          "type": "STRING",
           "value": "await"
         },
         {
@@ -3133,6 +3137,18 @@
             {
               "type": "STRING",
               "value": "unsafe"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "auto"
             },
             {
               "type": "BLANK"

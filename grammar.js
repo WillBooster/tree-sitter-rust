@@ -272,6 +272,7 @@ module.exports = grammar({
         "'",
         'as',
         'async',
+        'auto',
         'await',
         'break',
         'const',
@@ -535,6 +536,7 @@ module.exports = grammar({
       seq(
         optional($.visibility_modifier),
         optional('unsafe'),
+        optional('auto'),
         'trait',
         field('name', $._type_identifier),
         field('type_parameters', optional($.type_parameters)),
