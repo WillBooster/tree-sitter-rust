@@ -796,7 +796,13 @@ module.exports = grammar({
     type_arguments: ($) =>
       seq(
         token(prec(1, '<')),
-        sepBy1(',', seq(choice($._type, $.type_binding, $.lifetime, $._literal, $.block), optional($.trait_bounds))),
+        sepBy1(
+          ',',
+          choice(
+            seq(choice($._type, $.type_binding, $.lifetime, $._literal, $.block), optional($.trait_bounds)),
+            prec(1, seq(alias(choice(...primitiveTypes), $.type_identifier), $.trait_bounds))
+          )
+        ),
         optional(','),
         '>'
       ),

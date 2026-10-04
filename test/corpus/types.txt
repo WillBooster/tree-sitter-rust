@@ -458,6 +458,10 @@ mod trait_bound_names {
     fn opaque() -> impl (f16) { S }
     fn wide_opaque() -> impl (f128) { S }
     fn combined() -> impl f16 + f128 { S }
+    mod associated_bounds {
+        trait Trait { type f16; type f128; }
+        fn read(_: impl Trait<f16: Sized, f128: Clone>) {}
+    }
     mod object_bounds {
         trait f16 {}
         use std::marker::Send as f128;
@@ -901,6 +905,31 @@ mod trait_bound_names {
           (type_identifier))
         (block
           (identifier)))
+      (mod_item
+        (identifier)
+        (declaration_list
+          (trait_item
+            (type_identifier)
+            (declaration_list
+              (associated_type
+                (type_identifier))
+              (associated_type
+                (type_identifier))))
+          (function_item
+            (identifier)
+            (parameters
+              (parameter
+                (abstract_type
+                  (generic_type
+                    (type_identifier)
+                    (type_arguments
+                      (type_identifier)
+                      (trait_bounds
+                        (type_identifier))
+                      (type_identifier)
+                      (trait_bounds
+                        (type_identifier)))))))
+            (block))))
       (mod_item
         (identifier)
         (declaration_list
