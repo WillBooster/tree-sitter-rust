@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, Parser, Query, type Node } from '@willbooster/web-tree-sitter';
+import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { position, snapshot } from '../helpers/treeSnapshot.js';
 
 test('exposes trait aliases and declarative macros through public fields and shipped queries', async () => {
   await Parser.init();
@@ -107,20 +109,3 @@ test('exposes trait aliases and declarative macros through public fields and shi
     parser.delete();
   }
 });
-
-function position(source: string, index: number): { row: number; column: number } {
-  const prefix = source.slice(0, index);
-  return { row: prefix.split('\n').length - 1, column: index - prefix.lastIndexOf('\n') - 1 };
-}
-
-function snapshot(node: Node): unknown {
-  return {
-    type: node.type,
-    named: node.isNamed,
-    missing: node.isMissing,
-    start: node.startIndex,
-    end: node.endIndex,
-    fields: node.children.map((_, index) => node.fieldNameForChild(index)),
-    children: node.children.map(snapshot),
-  };
-}
