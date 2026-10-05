@@ -1,5 +1,7 @@
-import { Edit, Language, Parser, Query, type Node, type Point, type Tree } from '@willbooster/web-tree-sitter';
+import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { position, snapshot } from '../helpers/treeSnapshot.js';
 
 test('preserves expression supertype captures for unary range endpoints', async () => {
   await Parser.init();
@@ -113,24 +115,3 @@ test('keeps bounded unary endpoints and following loop bodies through comment ed
     expect(nodes.filter(({ name }) => name === 'body').map(({ node }) => node.text)).toEqual(['{ if i>3 { break; } }']);
   }
 });
-
-function position(source: string, index: number): Point {
-  const lines = source.slice(0, index).split('\n');
-  return { row: lines.length - 1, column: lines.at(-1)!.length };
-}
-
-function snapshot(node: Node): unknown {
-  return [
-    node.type,
-    node.isNamed,
-    node.isExtra,
-    node.isMissing,
-    node.hasError,
-    node.startIndex,
-    node.endIndex,
-    node.startPosition,
-    node.endPosition,
-    node.children.map((_, i) => node.fieldNameForChild(i)),
-    node.children.map(snapshot),
-  ];
-}
