@@ -992,6 +992,10 @@ module.exports = grammar({
         prec.left(PREC.range, seq($._expression, choice('..', '...', '..='), $._expression)),
         prec.left(PREC.range, seq($._expression, '..')),
         prec.left(PREC.range, seq(choice('..', '..='), $._expression)),
+        prec.right(
+          PREC.range + 1,
+          seq($._expression, choice('..', '..='), $._range_unary_endpoint_start, $._expression)
+        ),
         prec.right(PREC.range + 1, seq(choice('..', '..='), $._range_unary_endpoint_start, $._expression)),
         prec.left(PREC.range, '..')
       ),
