@@ -1593,7 +1593,7 @@ module.exports = grammar({
  */
 function macroRepetitionSeparator(start, content, end) {
   return choice(
-    /[^\s/+*?$"][^+*?$"]*|\/(?:[^/*+*?$"][^+*?$"]*)?|\$/,
+    /[^\s/+*?$"][^/+*?$"]*|\/(?:[^/*+*?$"][^/+*?$"]*)?|\$/,
     /[bc]?"(?:[^"\\]|\\[\s\S])*"/,
     /b?'(?:\\(?:[^xu]|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F]+\}|x[0-9a-fA-F]{2})|[^\\'])'/,
     seq(start, content, end)

@@ -328,6 +328,67 @@ test('retains repetition nodes and separators through surrounding trivia edits',
   }
 });
 
+test('preserves repetition separators and following comment captures through edits', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(
+    language,
+    '(token_repetition_pattern) @pattern (token_repetition) @repetition (block_comment) @comment (line_comment) @comment'
+  );
+  const configured = ['highlights', 'tags', 'injections'].map(
+    (name) => new Query(language, readFileSync(new URL(`../../queries/${name}.scm`, import.meta.url), 'utf8'))
+  );
+  try {
+    for (const operator of ['*', '+']) {
+      for (const separator of [',', 'foo', ';', '=>', '::', '$', '/', '/=']) {
+        for (const comment of ['/* after */', '// after\n']) {
+          const gap = separator === '/' ? ` ${comment}` : comment;
+          for (const matcher of [true, false]) {
+            const pattern = matcher ? `$($a:tt)${separator}${gap}${operator}` : `$($a:tt),${operator}`;
+            const reference = matcher ? `$($a)${operator}` : `$($a)${separator}${gap}${operator}`;
+            const source = `macro_rules! m { (${pattern}) => { stringify!(${reference}) }; } fn main() { assert!(!m!(a ${matcher ? separator : ','} b).is_empty()); }`;
+            const edited = separator === '/' ? ' /* edited */ ' : '/* edited */';
+            checkEdits(parser, query, source, gap, edited, check, configured);
+
+            function check(text: string, tree: Tree): void {
+              const expected = [pattern, reference].map((value) => {
+                const current = value.includes(gap) ? value.replace(gap, text.includes(edited) ? edited : gap) : value;
+                const start = text.indexOf(current);
+                return [current, start, start + current.length];
+              });
+              const captures = query.captures(tree.rootNode);
+              expect(
+                captures
+                  .filter(({ name }) => name !== 'comment')
+                  .map(({ node }) => [node.text, node.startIndex, node.endIndex])
+              ).toEqual(expected);
+              const currentComment = text.includes(edited) ? '/* edited */' : comment.trim();
+              const start = text.indexOf(currentComment);
+              const expectedComment = [[currentComment, start, start + currentComment.length]];
+              expect(
+                captures
+                  .filter(({ name }) => name === 'comment')
+                  .map(({ node }) => [node.text, node.startIndex, node.endIndex])
+              ).toEqual(expectedComment);
+              expect(
+                configured[0]!
+                  .captures(tree.rootNode)
+                  .filter(({ name }) => name === 'comment')
+                  .map(({ node }) => [node.text, node.startIndex, node.endIndex])
+              ).toEqual(expectedComment);
+            }
+          }
+        }
+      }
+    }
+  } finally {
+    query.delete();
+    for (const current of configured) current.delete();
+    parser.delete();
+  }
+});
+
 function checkEdits(
   parser: Parser,
   query: Query,
