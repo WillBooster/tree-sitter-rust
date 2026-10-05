@@ -215,7 +215,7 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
   const parser = new Parser().setLanguage(language);
   const query = new Query(
     language,
-    '(metavariable) @variable (string_literal) @literal (raw_string_literal) @literal (char_literal) @literal'
+    '(metavariable) @variable (string_literal) @literal (raw_string_literal) @literal (char_literal) @literal (float_literal) @literal'
   );
   try {
     for (const literal of [
@@ -229,6 +229,7 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
       'cr#"abc"#',
       "b'a'",
       '"abc"',
+      '1.',
     ]) {
       for (const source of [
         `macro_rules! m { ($ ${literal}) => {}; }`,

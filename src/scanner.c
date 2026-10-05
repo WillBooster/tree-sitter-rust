@@ -324,7 +324,9 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_foreign_declaration_start(lexer);
     }
 
-    if (valid_symbols[MACRO_METAVARIABLE_NAME]) {
+    if (valid_symbols[MACRO_METAVARIABLE_NAME] &&
+        (lexer->lookahead == '_' || (lexer->lookahead >= 'a' && lexer->lookahead <= 'z') ||
+         (lexer->lookahead >= 'A' && lexer->lookahead <= 'Z'))) {
         return scan_macro_metavariable_name(scanner, lexer, valid_symbols[RAW_STRING_LITERAL_START]);
     }
 
@@ -352,7 +354,6 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
 
 static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool raw_string_valid) {
     int32_t c = lexer->lookahead;
-    if (c != '_' && !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z')) return false;
     char prefix[2] = {0};
     unsigned length = 0;
     do {
