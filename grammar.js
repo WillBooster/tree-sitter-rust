@@ -255,7 +255,10 @@ module.exports = grammar({
       prec(1, seq(field('name', $._macro_metavariable), ':', field('type', $.fragment_specifier))),
 
     token_repetition_pattern: ($) =>
-      prec.dynamic(2, seq('$', '(', repeat($._token_pattern), ')', optional(/[^+*?]+/), choice('+', '*', '?'))),
+      prec.dynamic(
+        2,
+        seq('$', '(', repeat($._token_pattern), ')', optional(choice(/[^+*?$]+/, /\$/)), choice('+', '*', '?'))
+      ),
 
     fragment_specifier: () =>
       choice(
@@ -282,7 +285,7 @@ module.exports = grammar({
       choice(seq('(', repeat($._tokens), ')'), seq('[', repeat($._tokens), ']'), seq('{', repeat($._tokens), '}')),
 
     token_repetition: ($) =>
-      prec.dynamic(2, seq('$', '(', repeat($._tokens), ')', optional(/[^+*?]+/), choice('+', '*', '?'))),
+      prec.dynamic(2, seq('$', '(', repeat($._tokens), ')', optional(choice(/[^+*?$]+/, /\$/)), choice('+', '*', '?'))),
 
     _non_special_token: ($) =>
       choice(

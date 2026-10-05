@@ -257,32 +257,34 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
   }
 });
 
-test('retains repetition nodes before comment tails through edits', async () => {
+test('retains repetition nodes and dollar separators before comment tails through edits', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
   const query = new Query(language, '(token_repetition_pattern) @pattern (token_repetition) @repetition');
   try {
     for (const operator of ['*', '+', '?']) {
-      for (const matcher of [true, false]) {
-        const pattern = `$($a:tt)${operator}`;
-        const reference = `$($a)${operator}`;
-        const source = matcher
-          ? `macro_rules! m { (${pattern} // c\n#[allow(x)]) => { 1 }; }`
-          : `macro_rules! m { (${pattern}) => { ${reference} // c\n#[allow(x)] }; }`;
-        checkEdits(parser, query, source, '// c\n', '/* c */ ', (text, tree) => {
-          const expected = [['pattern', pattern, text.indexOf(pattern), text.indexOf(pattern) + pattern.length]];
-          if (!matcher)
-            expected.push([
-              'repetition',
-              reference,
-              text.indexOf(reference),
-              text.indexOf(reference) + reference.length,
-            ]);
-          expect(
-            query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-          ).toEqual(expected);
-        });
+      for (const separator of operator === '?' ? [''] : ['', '$']) {
+        for (const matcher of [true, false]) {
+          const pattern = `$($a:tt)${separator}${operator}`;
+          const reference = `$($a)${separator}${operator}`;
+          const source = matcher
+            ? `macro_rules! m { (${pattern} // c\n#[allow(x)]) => { 1 }; }`
+            : `macro_rules! m { (${pattern}) => { ${reference} // c\n#[allow(x)] }; }`;
+          checkEdits(parser, query, source, '// c\n', '/* c */ ', (text, tree) => {
+            const expected = [['pattern', pattern, text.indexOf(pattern), text.indexOf(pattern) + pattern.length]];
+            if (!matcher)
+              expected.push([
+                'repetition',
+                reference,
+                text.indexOf(reference),
+                text.indexOf(reference) + reference.length,
+              ]);
+            expect(
+              query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
+            ).toEqual(expected);
+          });
+        }
       }
     }
   } finally {
