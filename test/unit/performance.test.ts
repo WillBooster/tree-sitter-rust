@@ -29,6 +29,7 @@ test.each([
   ['line errors', '', '$ a\n', '', true],
   ['malformed foreign visibility', 'extern "C" { ', 'pub(in x fn f;\n', ' }', true],
   ['macro dollar groups', 'macro_rules! m { (', '$( a )', '*) => {}; }', false],
+  ['macro dollar groups with literal gaps', 'macro_rules! m { (', '$( a ) foo ', '*) => {}; }', false],
 ] as const)('parses %s with bounded CPU growth', { timeout: 60_000 }, (_, prefix, line, suffix, expectedError) => {
   const small = prefix + line.repeat(2000) + suffix;
   const large = prefix + line.repeat(20_000) + suffix;

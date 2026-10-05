@@ -257,38 +257,73 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
   }
 });
 
-test('retains repetition nodes and dollar separators before comment tails through edits', async () => {
+test('retains repetition nodes and separators through surrounding trivia edits', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
   const query = new Query(language, '(token_repetition_pattern) @pattern (token_repetition) @repetition');
+  const configured = ['highlights', 'tags', 'injections'].map(
+    (name) => new Query(language, readFileSync(new URL(`../../queries/${name}.scm`, import.meta.url), 'utf8'))
+  );
   try {
     for (const operator of ['*', '+', '?']) {
-      for (const separator of operator === '?' ? [''] : ['', '$']) {
-        for (const matcher of [true, false]) {
-          const pattern = `$($a:tt)${separator}${operator}`;
-          const reference = `$($a)${separator}${operator}`;
-          const source = matcher
-            ? `macro_rules! m { (${pattern} // c\n#[allow(x)]) => { 1 }; }`
-            : `macro_rules! m { (${pattern}) => { ${reference} // c\n#[allow(x)] }; }`;
-          checkEdits(parser, query, source, '// c\n', '/* c */ ', (text, tree) => {
-            const expected = [['pattern', pattern, text.indexOf(pattern), text.indexOf(pattern) + pattern.length]];
-            if (!matcher)
-              expected.push([
-                'repetition',
-                reference,
-                text.indexOf(reference),
-                text.indexOf(reference) + reference.length,
-              ]);
-            expect(
-              query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-            ).toEqual(expected);
-          });
+      for (const separator of operator === '?'
+        ? ['']
+        : [
+            '',
+            '$',
+            '"x$y"',
+            '"x+y?"',
+            'b"x$y"',
+            'c"x$y"',
+            'r##"x"#y$z"##',
+            'br##"x"#y$z"##',
+            'cr##"x"#y$z"##',
+            "'$'",
+            "b'$'",
+          ]) {
+        for (const gap of separator ? ['', ' ', '/* before */', '// before\n'] : ['']) {
+          for (const matcher of [true, false]) {
+            const pattern = `$($a:tt)${gap}${separator}${operator}`;
+            const reference = `$($a)${gap}${separator}${operator}`;
+            const source = matcher
+              ? `macro_rules! m { (${pattern} /* pattern end */ // tail\n#[allow(x)]) => { 1 }; }`
+              : `macro_rules! m { (${pattern} /* pattern end */) => { ${reference} /* reference end */ // tail\n#[allow(x)] }; }`;
+            checkEdits(parser, query, source, '// tail\n', '/* tail */ ', check, configured);
+            if (separator)
+              checkEdits(
+                parser,
+                query,
+                source,
+                `)${gap}${separator}`,
+                `)${gap === '/* before */' ? '// edited\n' : '/* edited */'}${separator}`,
+                check,
+                configured
+              );
+
+            function check(text: string, tree: Tree): void {
+              const expected = [['pattern', '/* pattern end */']];
+              if (!matcher) expected.push(['repetition', '/* reference end */']);
+              let start = 0;
+              expect(
+                query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
+              ).toEqual(
+                expected.map(([name, marker]) => {
+                  start = text.indexOf('$(', start);
+                  const end = text.slice(0, text.indexOf(marker!, start)).trimEnd().length;
+                  const capture = [name, text.slice(start, end), start, end];
+                  start = end;
+                  return capture;
+                })
+              );
+            }
+          }
         }
       }
     }
   } finally {
     query.delete();
+    for (const current of configured) current.delete();
     parser.delete();
   }
 });
@@ -299,7 +334,8 @@ function checkEdits(
   initial: string,
   before: string,
   after: string,
-  check: (source: string, tree: Tree) => void
+  check: (source: string, tree: Tree) => void,
+  additionalQueries: readonly Query[] = []
 ): void {
   let source = initial;
   let tree: Tree | undefined;
@@ -333,8 +369,8 @@ function checkEdits(
         expect(tree.rootNode.hasError).toBe(false);
         expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
         const captures = (current: Tree): unknown =>
-          query
-            .captures(current.rootNode)
+          [query, ...additionalQueries]
+            .flatMap((currentQuery) => currentQuery.captures(current.rootNode))
             .map(({ name, node }) => [
               name,
               node.text,

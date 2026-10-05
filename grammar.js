@@ -122,7 +122,7 @@ module.exports = grammar({
     $.string_content,
     $.string_close,
     $._raw_string_literal_start,
-    $.raw_string_literal_content,
+    $._raw_string_literal_content,
     $._raw_string_literal_end,
     $._trailing_dot_float_literal,
     $._outer_block_doc_comment_marker,
@@ -257,7 +257,20 @@ module.exports = grammar({
     token_repetition_pattern: ($) =>
       prec.dynamic(
         2,
-        seq('$', '(', repeat($._token_pattern), ')', optional(choice(/[^+*?$]+/, /\$/)), choice('+', '*', '?'))
+        seq(
+          '$',
+          '(',
+          repeat($._token_pattern),
+          ')',
+          optional(
+            macroRepetitionSeparator(
+              $._raw_string_literal_start,
+              $._raw_string_literal_content,
+              $._raw_string_literal_end
+            )
+          ),
+          choice('+', '*', '?')
+        )
       ),
 
     fragment_specifier: () =>
@@ -285,7 +298,23 @@ module.exports = grammar({
       choice(seq('(', repeat($._tokens), ')'), seq('[', repeat($._tokens), ']'), seq('{', repeat($._tokens), '}')),
 
     token_repetition: ($) =>
-      prec.dynamic(2, seq('$', '(', repeat($._tokens), ')', optional(choice(/[^+*?$]+/, /\$/)), choice('+', '*', '?'))),
+      prec.dynamic(
+        2,
+        seq(
+          '$',
+          '(',
+          repeat($._tokens),
+          ')',
+          optional(
+            macroRepetitionSeparator(
+              $._raw_string_literal_start,
+              $._raw_string_literal_content,
+              $._raw_string_literal_end
+            )
+          ),
+          choice('+', '*', '?')
+        )
+      ),
 
     _non_special_token: ($) =>
       choice(
@@ -1464,7 +1493,7 @@ module.exports = grammar({
     raw_string_literal: ($) =>
       seq(
         $._raw_string_literal_start,
-        alias($.raw_string_literal_content, $.string_content),
+        alias($._raw_string_literal_content, $.string_content),
         $._raw_string_literal_end
       ),
 
@@ -1556,6 +1585,20 @@ module.exports = grammar({
     metavariable: () => /\$(r#)?[_\p{XID_Start}][_\p{XID_Continue}]*/u,
   },
 });
+
+/**
+ * @param {RuleOrLiteral} start
+ * @param {RuleOrLiteral} content
+ * @param {RuleOrLiteral} end
+ */
+function macroRepetitionSeparator(start, content, end) {
+  return choice(
+    /[^\s/+*?$"][^+*?$"]*|\/(?:[^/*+*?$"][^+*?$"]*)?|\$/,
+    /[bc]?"(?:[^"\\]|\\[\s\S])*"/,
+    /b?'(?:\\(?:[^xu]|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F]+\}|x[0-9a-fA-F]{2})|[^\\'])'/,
+    seq(start, content, end)
+  );
+}
 
 /**
  * @param {RuleOrLiteral} sep
