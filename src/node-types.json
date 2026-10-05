@@ -2675,6 +2675,11 @@
     "fields": {}
   },
   {
+    "type": "integer_literal",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "label",
     "named": true,
     "fields": {},
@@ -5594,10 +5599,6 @@
   {
     "type": "in",
     "named": false
-  },
-  {
-    "type": "integer_literal",
-    "named": true
   },
   {
     "type": "item",

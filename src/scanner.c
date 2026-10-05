@@ -17,7 +17,8 @@ enum TokenType {
     RANGE_UNARY_ENDPOINT_START,
     ERROR_SENTINEL,
     FOREIGN_DECLARATION_CONTEXT,
-    FOREIGN_DECLARATION_START
+    FOREIGN_DECLARATION_START,
+    MACRO_METAVARIABLE_NAME
 };
 
 typedef struct {
@@ -271,6 +272,7 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
     return false;
 }
 
+static bool scan_macro_metavariable_name(TSLexer *lexer);
 static bool scan_foreign_declaration_start(TSLexer *lexer);
 static bool foreign_restricted_visibility(TSLexer *lexer);
 static bool foreign_identifier(TSLexer *lexer);
@@ -316,6 +318,10 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_foreign_declaration_start(lexer);
     }
 
+    if (valid_symbols[MACRO_METAVARIABLE_NAME]) {
+        return scan_macro_metavariable_name(lexer);
+    }
+
     if (valid_symbols[RANGE_UNARY_ENDPOINT_START] &&
         (lexer->lookahead == '*' || lexer->lookahead == '-' || lexer->lookahead == '!' || lexer->lookahead == '&' ||
          lexer->lookahead == '/')) {
@@ -336,6 +342,18 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     }
 
     return false;
+}
+
+static bool scan_macro_metavariable_name(TSLexer *lexer) {
+    int32_t c = lexer->lookahead;
+    if (c != '_' && !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z')) return false;
+    do {
+        advance(lexer);
+        c = lexer->lookahead;
+    } while (c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
+    lexer->mark_end(lexer);
+    lexer->result_symbol = MACRO_METAVARIABLE_NAME;
+    return true;
 }
 
 static inline bool scan_range_unary_endpoint_start(TSLexer *lexer) {

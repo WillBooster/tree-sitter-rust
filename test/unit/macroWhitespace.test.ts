@@ -12,6 +12,17 @@ fn macro_rules() -> macro_rules { 3 }
 fn main() { let expected = macro_rules(); assert_eq!(add!(1, 2), expected); }
 `;
 
+const LiteralSource = `macro_rules! literal { ($) => { 1 }; }
+macro_rules! tagged { ($x:ident, $) => { stringify!($x) }; }
+macro_rules! keyword { ($ /* name */ fn:expr) => { $ /* reference */ fn }; }
+fn main() {
+    assert_eq!(literal!($), 1);
+    assert_eq!(tagged!(answer, $), "answer");
+    let value = keyword!(7);
+    assert_eq!(value, 7);
+}
+`;
+
 const Variables = ['$ /* left */ x', '$ y', '$ /* right */ x', '$\n        y'];
 
 test('preserves macro bindings, references and highlights through trivia edits', async () => {
@@ -106,6 +117,63 @@ test('preserves macro bindings, references and highlights through trivia edits',
     expect(tokens.filter(({ name }) => name === 'comment').map(({ node }) => node.text)).toEqual(
       ['/* keyword */', '/* left */', '/* binding */', '/* right */'].filter((text) => source.includes(text))
     );
+  }
+});
+
+test('keeps literal dollars separate from metavariables through error recovery', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(language, '(metavariable) @variable');
+  let source = LiteralSource;
+  let tree: Tree | undefined;
+  try {
+    tree = parser.parse(source)!;
+    expect(tree.rootNode.hasError).toBe(false);
+    const start = source.indexOf('keyword!(7)');
+    expect(start).toBeGreaterThanOrEqual(0);
+    for (const [before, after] of [
+      ['keyword!(7)', '$'],
+      ['$', 'keyword!(7)'],
+    ]) {
+      const next = source.slice(0, start) + after + source.slice(start + before!.length);
+      tree.edit(
+        new Edit({
+          startIndex: start,
+          oldEndIndex: start + before!.length,
+          newEndIndex: start + after!.length,
+          startPosition: position(source, start),
+          oldEndPosition: position(source, start + before!.length),
+          newEndPosition: position(next, start + after!.length),
+        })
+      );
+      const previous: Tree = tree;
+      tree = parser.parse(next, previous)!;
+      previous.delete();
+      source = next;
+      const fresh = parser.parse(source)!;
+      try {
+        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+        expect(tree.rootNode.hasError).toBe(after === '$');
+        for (const current of [tree, fresh]) {
+          const variables = query.captures(current.rootNode);
+          expect(variables.map(({ node }) => node.text)).toEqual([
+            '$x',
+            '$x',
+            '$ /* name */ fn',
+            '$ /* reference */ fn',
+          ]);
+          expect(variables.every(({ node }) => !node.hasError)).toBe(true);
+        }
+      } finally {
+        fresh.delete();
+      }
+    }
+    expect(source).toBe(LiteralSource);
+  } finally {
+    tree?.delete();
+    query.delete();
+    parser.delete();
   }
 });
 

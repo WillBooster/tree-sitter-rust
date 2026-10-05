@@ -105,6 +105,7 @@ const TOKEN_TREE_NON_SPECIAL_PUNCTUATION = [
 
 const primitiveTypes = [...numericTypes, 'bool', 'str', 'char'];
 const reservedIdentifiers = ['default', 'union', 'gen', 'raw'];
+const fieldIdentifierKeywords = [...reservedIdentifiers, ...primitiveTypes, 'auto'];
 
 // oxlint-disable-next-line unicorn/prefer-module -- This package is CommonJS, so tree-sitter loads grammar.js as CommonJS.
 module.exports = grammar({
@@ -127,6 +128,7 @@ module.exports = grammar({
     $._error_sentinel,
     $._foreign_declaration_context,
     $._foreign_declaration_start,
+    $._macro_metavariable_name,
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -142,6 +144,10 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$._token_pattern, $.token_repetition_pattern],
+    [$.token_tree, $.token_repetition],
+    [$.field_initializer_list, $.block],
+    [$._expression_except_range, $.shorthand_field_initializer],
     [$._declaration_statement, $.attributed_expression],
     [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
@@ -228,7 +234,8 @@ module.exports = grammar({
         $.token_tree_pattern,
         $.token_repetition_pattern,
         $.token_binding_pattern,
-        $.metavariable,
+        $._macro_metavariable,
+        '$',
         $._non_special_token
       ),
 
@@ -239,7 +246,8 @@ module.exports = grammar({
         seq('{', repeat($._token_pattern), '}')
       ),
 
-    token_binding_pattern: ($) => prec(1, seq(field('name', $.metavariable), ':', field('type', $.fragment_specifier))),
+    token_binding_pattern: ($) =>
+      prec(1, seq(field('name', $._macro_metavariable), ':', field('type', $.fragment_specifier))),
 
     token_repetition_pattern: ($) =>
       seq('$', '(', repeat($._token_pattern), ')', optional(/[^+*?]+/), choice('+', '*', '?')),
@@ -263,7 +271,7 @@ module.exports = grammar({
         'vis'
       ),
 
-    _tokens: ($) => choice($.token_tree, $.token_repetition, $.metavariable, $._non_special_token),
+    _tokens: ($) => choice($.token_tree, $.token_repetition, $._macro_metavariable, '$', $._non_special_token),
 
     token_tree: ($) =>
       choice(seq('(', repeat($._tokens), ')'), seq('[', repeat($._tokens), ']'), seq('{', repeat($._tokens), '}')),
@@ -1096,7 +1104,7 @@ module.exports = grammar({
           'name',
           choice(
             $._type_identifier,
-            prec.dynamic(-1, alias(choice(...primitiveTypes), $.type_identifier)),
+            prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier)),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
           )
@@ -1112,12 +1120,20 @@ module.exports = grammar({
         '}'
       ),
 
-    shorthand_field_initializer: ($) => seq(repeat($.attribute_item), $.identifier),
+    shorthand_field_initializer: ($) =>
+      seq(repeat($.attribute_item), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
 
     field_initializer: ($) =>
       seq(
         repeat($.attribute_item),
-        field('field', choice($._field_identifier, alias(/[0-9][0-9_]*/, $.integer_literal))),
+        field(
+          'field',
+          choice(
+            $._field_identifier,
+            alias(choice(...fieldIdentifierKeywords), $.field_identifier),
+            alias(/[0-9][0-9_]*/, $.integer_literal)
+          )
+        ),
         ':',
         field('value', $._expression)
       ),
@@ -1394,15 +1410,18 @@ module.exports = grammar({
     negative_literal: ($) => seq('-', choice($.integer_literal, $.float_literal)),
 
     integer_literal: () =>
-      token(
-        choice(
-          seq(
-            choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
-            optional(numericSuffixWithoutExponent)
-          ),
-          /0[box]_+/,
-          seq('0', optional(zeroNumericSuffix)),
-          seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
+      choice(
+        /[0-9][0-9_]*/,
+        token(
+          choice(
+            seq(
+              choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
+              optional(numericSuffixWithoutExponent)
+            ),
+            /0[box]_+/,
+            seq('0', optional(zeroNumericSuffix)),
+            seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
+          )
         )
       ),
 
@@ -1518,7 +1537,9 @@ module.exports = grammar({
     super: () => 'super',
     crate: () => 'crate',
 
-    metavariable: () => choice(/\$[a-zA-Z_]\w*/, seq('$', /[a-zA-Z_]\w*/)),
+    _macro_metavariable: ($) => choice($.metavariable, alias($._spaced_metavariable, $.metavariable)),
+    _spaced_metavariable: ($) => prec.dynamic(1, seq('$', $._macro_metavariable_name)),
+    metavariable: () => /\$[a-zA-Z_]\w*/,
   },
 });
 
