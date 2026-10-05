@@ -142,6 +142,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$._declaration_statement, $.attributed_expression],
     [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
@@ -912,7 +913,10 @@ module.exports = grammar({
         $._expression_ending_with_block
       ),
 
-    _expression: ($) => choice($._expression_except_range, $.range_expression),
+    _expression: ($) => choice($._expression_except_range, $.range_expression, $.attributed_expression),
+
+    attributed_expression: ($) =>
+      prec.dynamic(-1, prec.right(PREC.unary, seq(repeat1($.attribute_item), field('value', $._expression)))),
 
     _expression_ending_with_block: ($) =>
       choice(
@@ -1062,28 +1066,29 @@ module.exports = grammar({
     call_expression: ($) =>
       prec(PREC.call, seq(field('function', $._expression_except_range), field('arguments', $.arguments))),
 
-    arguments: ($) => seq('(', sepBy(',', seq(repeat($.attribute_item), $._expression)), optional(','), ')'),
+    arguments: ($) =>
+      seq('(', sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','), ')'),
 
     array_expression: ($) =>
       seq(
         '[',
-        repeat($.attribute_item),
+        repeat(prec(PREC.call, $.attribute_item)),
         choice(
           seq($._expression, ';', field('length', $._expression)),
-          seq(sepBy(',', seq(repeat($.attribute_item), $._expression)), optional(','))
+          seq(sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','))
         ),
         ']'
       ),
 
-    parenthesized_expression: ($) => seq('(', $._expression, ')'),
+    parenthesized_expression: ($) => seq('(', repeat(prec(PREC.call, $.attribute_item)), $._expression, ')'),
 
     tuple_expression: ($) =>
       seq(
         '(',
-        repeat($.attribute_item),
+        repeat(prec(PREC.call, $.attribute_item)),
         seq($._expression, ','),
-        repeat(seq($._expression, ',')),
-        optional($._expression),
+        repeat(seq(repeat(prec(PREC.call, $.attribute_item)), $._expression, ',')),
+        optional(seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)),
         ')'
       ),
 
