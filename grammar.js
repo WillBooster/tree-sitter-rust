@@ -1401,15 +1401,18 @@ module.exports = grammar({
     negative_literal: ($) => seq('-', choice($.integer_literal, $.float_literal)),
 
     integer_literal: () =>
-      token(
-        choice(
-          seq(
-            choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
-            optional(numericSuffixWithoutExponent)
-          ),
-          /0[box]_+/,
-          seq('0', optional(zeroNumericSuffix)),
-          seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
+      choice(
+        /[0-9][0-9_]*/,
+        token(
+          choice(
+            seq(
+              choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
+              optional(numericSuffixWithoutExponent)
+            ),
+            /0[box]_+/,
+            seq('0', optional(zeroNumericSuffix)),
+            seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
+          )
         )
       ),
 

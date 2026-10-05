@@ -55,7 +55,18 @@ test('preserves contextual struct construction names and initializer fields', ()
         }
       }
     }
-    for (const body of ['{}', '{ value }', '{ yield 1; }', 'move { yield 1; }']) {
+    for (const body of [
+      '{}',
+      '{ value }',
+      '{ 1 }',
+      '{ 0 }',
+      '{ 42; }',
+      '{ 1_000 + 2 }',
+      '{ 1 as u8 }',
+      '{ #[cfg(x)] 1 }',
+      '{ yield 1; }',
+      'move { yield 1; }',
+    ]) {
       const source = `fn f() { let value = gen ${body}; }`;
       const tree = parser.parse(source)!;
       try {
