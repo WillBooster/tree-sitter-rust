@@ -34,6 +34,11 @@ const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]]
 const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
 const hexadecimalSuffix = new RegExp(String.raw`[\p{XID_Start}--[a-fA-F]][_\p{XID_Continue}]*`, 'v');
 
+const nonAsciiOrRawMacroName = new RegExp(
+  String.raw`(?:[\p{XID_Start}--[\x00-\x7f]][_\p{XID_Continue}]*|[_a-zA-Z][_\p{XID_Continue}]*[\p{XID_Continue}--[\x00-\x7f]][_\p{XID_Continue}]*|r#[_\p{XID_Start}][_\p{XID_Continue}]*)`,
+  'v'
+);
+
 const extendedFloatTypes = ['f16', 'f128'];
 
 const numericTypes = [
@@ -250,7 +255,7 @@ module.exports = grammar({
       prec(1, seq(field('name', $._macro_metavariable), ':', field('type', $.fragment_specifier))),
 
     token_repetition_pattern: ($) =>
-      seq('$', '(', repeat($._token_pattern), ')', optional(/[^+*?]+/), choice('+', '*', '?')),
+      prec.dynamic(2, seq('$', '(', repeat($._token_pattern), ')', optional(/[^+*?]+/), choice('+', '*', '?'))),
 
     fragment_specifier: () =>
       choice(
@@ -276,7 +281,8 @@ module.exports = grammar({
     token_tree: ($) =>
       choice(seq('(', repeat($._tokens), ')'), seq('[', repeat($._tokens), ']'), seq('{', repeat($._tokens), '}')),
 
-    token_repetition: ($) => seq('$', '(', repeat($._tokens), ')', optional(/[^+*?]+/), choice('+', '*', '?')),
+    token_repetition: ($) =>
+      prec.dynamic(2, seq('$', '(', repeat($._tokens), ')', optional(/[^+*?]+/), choice('+', '*', '?'))),
 
     _non_special_token: ($) =>
       choice(
@@ -1542,8 +1548,9 @@ module.exports = grammar({
     crate: () => 'crate',
 
     _macro_metavariable: ($) => choice($.metavariable, alias($._spaced_metavariable, $.metavariable)),
-    _spaced_metavariable: ($) => prec.dynamic(1, seq('$', $._macro_metavariable_name)),
-    metavariable: () => /\$[a-zA-Z_]\w*/,
+    _spaced_metavariable: ($) =>
+      prec.dynamic(1, seq('$', choice($._macro_metavariable_name, token(prec(1, nonAsciiOrRawMacroName))))),
+    metavariable: () => /\$(r#)?[_\p{XID_Start}][_\p{XID_Continue}]*/u,
   },
 });
 

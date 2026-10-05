@@ -69,6 +69,8 @@ static inline bool process_string(TSLexer *lexer) {
     return has_content;
 }
 
+static inline bool scan_raw_string_start_rest(Scanner *scanner, TSLexer *lexer);
+
 static inline bool scan_raw_string_start(Scanner *scanner, TSLexer *lexer) {
     if (lexer->lookahead == 'b' || lexer->lookahead == 'c') {
         advance(lexer);
@@ -78,6 +80,10 @@ static inline bool scan_raw_string_start(Scanner *scanner, TSLexer *lexer) {
     }
     advance(lexer);
 
+    return scan_raw_string_start_rest(scanner, lexer);
+}
+
+static inline bool scan_raw_string_start_rest(Scanner *scanner, TSLexer *lexer) {
     uint8_t opening_hash_count = 0;
     while (lexer->lookahead == '#') {
         advance(lexer);
@@ -272,7 +278,7 @@ static inline bool process_block_comment(TSLexer *lexer, const bool *valid_symbo
     return false;
 }
 
-static bool scan_macro_metavariable_name(TSLexer *lexer);
+static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool raw_string_valid);
 static bool scan_foreign_declaration_start(TSLexer *lexer);
 static bool foreign_restricted_visibility(TSLexer *lexer);
 static bool foreign_identifier(TSLexer *lexer);
@@ -319,7 +325,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     }
 
     if (valid_symbols[MACRO_METAVARIABLE_NAME]) {
-        return scan_macro_metavariable_name(lexer);
+        return scan_macro_metavariable_name(scanner, lexer, valid_symbols[RAW_STRING_LITERAL_START]);
     }
 
     if (valid_symbols[RANGE_UNARY_ENDPOINT_START] &&
@@ -344,13 +350,26 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     return false;
 }
 
-static bool scan_macro_metavariable_name(TSLexer *lexer) {
+static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool raw_string_valid) {
     int32_t c = lexer->lookahead;
     if (c != '_' && !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z')) return false;
+    char prefix[2] = {0};
+    unsigned length = 0;
     do {
+        if (length < sizeof(prefix)) prefix[length] = (char)c;
+        length++;
         advance(lexer);
         c = lexer->lookahead;
     } while (c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
+    if (c >= 0x80) return false;
+    bool byte_prefix = length == 1 && prefix[0] == 'b';
+    bool string_prefix = length == 1 && (prefix[0] == 'r' || prefix[0] == 'c' || byte_prefix);
+    bool raw_prefix = (length == 1 && prefix[0] == 'r') ||
+        (length == 2 && (prefix[0] == 'b' || prefix[0] == 'c') && prefix[1] == 'r');
+    if (raw_prefix && (c == '"' || c == '#')) {
+        return raw_string_valid && scan_raw_string_start_rest(scanner, lexer);
+    }
+    if ((c == '"' && string_prefix) || (c == '\'' && byte_prefix)) return false;
     lexer->mark_end(lexer);
     lexer->result_symbol = MACRO_METAVARIABLE_NAME;
     return true;
