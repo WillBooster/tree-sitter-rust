@@ -205,7 +205,7 @@ module.exports = grammar({
       const rules = seq(repeat(seq($.macro_rule, ';')), optional($.macro_rule));
 
       return seq(
-        'macro_rules!',
+        choice('macro_rules!', seq(alias('macro_rules', 'macro_rules!'), '!')),
         field('name', choice($.identifier, $._reserved_identifier)),
         choice(seq('(', rules, ')', ';'), seq('[', rules, ']', ';'), seq('{', rules, '}'))
       );
@@ -1504,16 +1504,16 @@ module.exports = grammar({
     // oxlint-disable-next-line no-useless-escape -- tree-sitter's regex parser rejects an unescaped `[` in a character class.
     shebang: () => /#![\r\f\t\v ]*([^\[\n].*)?\n/,
 
-    _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto'), $.identifier),
+    _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto', 'macro_rules'), $.identifier),
 
-    _type_identifier: ($) => alias(choice($.identifier, 'auto'), $.type_identifier),
+    _type_identifier: ($) => alias(choice($.identifier, 'auto', 'macro_rules'), $.type_identifier),
     _field_identifier: ($) => alias($.identifier, $.field_identifier),
 
     self: () => 'self',
     super: () => 'super',
     crate: () => 'crate',
 
-    metavariable: () => /\$[a-zA-Z_]\w*/,
+    metavariable: () => choice(/\$[a-zA-Z_]\w*/, seq('$', /[a-zA-Z_]\w*/)),
   },
 });
 
