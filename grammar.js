@@ -105,6 +105,7 @@ const TOKEN_TREE_NON_SPECIAL_PUNCTUATION = [
 
 const primitiveTypes = [...numericTypes, 'bool', 'str', 'char'];
 const reservedIdentifiers = ['default', 'union', 'gen', 'raw'];
+const fieldIdentifierKeywords = [...reservedIdentifiers, ...primitiveTypes, 'auto'];
 
 // oxlint-disable-next-line unicorn/prefer-module -- This package is CommonJS, so tree-sitter loads grammar.js as CommonJS.
 module.exports = grammar({
@@ -142,6 +143,9 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.field_initializer_list, $.block],
+    [$._declaration_statement, $.shorthand_field_initializer, $.field_initializer],
+    [$._expression_except_range, $.shorthand_field_initializer],
     [$._declaration_statement, $.attributed_expression],
     [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
@@ -1096,7 +1100,7 @@ module.exports = grammar({
           'name',
           choice(
             $._type_identifier,
-            prec.dynamic(-1, alias(choice(...primitiveTypes), $.type_identifier)),
+            prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier)),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
           )
@@ -1112,12 +1116,20 @@ module.exports = grammar({
         '}'
       ),
 
-    shorthand_field_initializer: ($) => seq(repeat($.attribute_item), $.identifier),
+    shorthand_field_initializer: ($) =>
+      seq(repeat($.attribute_item), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
 
     field_initializer: ($) =>
       seq(
         repeat($.attribute_item),
-        field('field', choice($._field_identifier, alias(/[0-9][0-9_]*/, $.integer_literal))),
+        field(
+          'field',
+          choice(
+            $._field_identifier,
+            alias(choice(...fieldIdentifierKeywords), $.field_identifier),
+            alias(/[0-9][0-9_]*/, $.integer_literal)
+          )
+        ),
         ':',
         field('value', $._expression)
       ),
@@ -1394,15 +1406,18 @@ module.exports = grammar({
     negative_literal: ($) => seq('-', choice($.integer_literal, $.float_literal)),
 
     integer_literal: () =>
-      token(
-        choice(
-          seq(
-            choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
-            optional(numericSuffixWithoutExponent)
-          ),
-          /0[box]_+/,
-          seq('0', optional(zeroNumericSuffix)),
-          seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
+      choice(
+        /[0-9][0-9_]*/,
+        token(
+          choice(
+            seq(
+              choice(/[1-9][0-9_]*/, /0[0-9_]+/, /0b_*[01][01_]*/, /0o_*[0-7][0-7_]*/),
+              optional(numericSuffixWithoutExponent)
+            ),
+            /0[box]_+/,
+            seq('0', optional(zeroNumericSuffix)),
+            seq(/0x_*[0-9a-fA-F][0-9a-fA-F_]*/, optional(hexadecimalSuffix))
+          )
         )
       ),
 
