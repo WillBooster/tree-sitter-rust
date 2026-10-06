@@ -3097,6 +3097,11 @@
     }
   },
   {
+    "type": "metavariable",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "mod_item",
     "named": true,
     "fields": {
@@ -5630,10 +5635,6 @@
   {
     "type": "meta",
     "named": false
-  },
-  {
-    "type": "metavariable",
-    "named": true
   },
   {
     "type": "mod",

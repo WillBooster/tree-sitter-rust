@@ -34,6 +34,11 @@ const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]]
 const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
 const hexadecimalSuffix = new RegExp(String.raw`[\p{XID_Start}--[a-fA-F]][_\p{XID_Continue}]*`, 'v');
 
+const nonAsciiOrRawMacroName = new RegExp(
+  String.raw`(?:[\p{XID_Start}--[\x00-\x7f]][_\p{XID_Continue}]*|[_a-zA-Z][_\p{XID_Continue}]*[\p{XID_Continue}--[\x00-\x7f]][_\p{XID_Continue}]*|r#[_\p{XID_Start}][_\p{XID_Continue}]*)`,
+  'v'
+);
+
 const extendedFloatTypes = ['f16', 'f128'];
 
 const numericTypes = [
@@ -117,7 +122,7 @@ module.exports = grammar({
     $.string_content,
     $.string_close,
     $._raw_string_literal_start,
-    $.raw_string_literal_content,
+    $._raw_string_literal_content,
     $._raw_string_literal_end,
     $._trailing_dot_float_literal,
     $._outer_block_doc_comment_marker,
@@ -128,6 +133,7 @@ module.exports = grammar({
     $._error_sentinel,
     $._foreign_declaration_context,
     $._foreign_declaration_start,
+    $._macro_metavariable_name,
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -143,8 +149,9 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$._token_pattern, $.token_repetition_pattern],
+    [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
-    [$._declaration_statement, $.shorthand_field_initializer, $.field_initializer],
     [$._expression_except_range, $.shorthand_field_initializer],
     [$._declaration_statement, $.attributed_expression],
     [$._expression_except_range, $.struct_expression],
@@ -210,7 +217,7 @@ module.exports = grammar({
       const rules = seq(repeat(seq($.macro_rule, ';')), optional($.macro_rule));
 
       return seq(
-        'macro_rules!',
+        choice('macro_rules!', seq(alias('macro_rules', 'macro_rules!'), '!')),
         field('name', choice($.identifier, $._reserved_identifier)),
         choice(seq('(', rules, ')', ';'), seq('[', rules, ']', ';'), seq('{', rules, '}'))
       );
@@ -232,7 +239,8 @@ module.exports = grammar({
         $.token_tree_pattern,
         $.token_repetition_pattern,
         $.token_binding_pattern,
-        $.metavariable,
+        $._macro_metavariable,
+        '$',
         $._non_special_token
       ),
 
@@ -243,10 +251,27 @@ module.exports = grammar({
         seq('{', repeat($._token_pattern), '}')
       ),
 
-    token_binding_pattern: ($) => prec(1, seq(field('name', $.metavariable), ':', field('type', $.fragment_specifier))),
+    token_binding_pattern: ($) =>
+      prec(1, seq(field('name', $._macro_metavariable), ':', field('type', $.fragment_specifier))),
 
     token_repetition_pattern: ($) =>
-      seq('$', '(', repeat($._token_pattern), ')', optional(/[^+*?]+/), choice('+', '*', '?')),
+      prec.dynamic(
+        2,
+        seq(
+          '$',
+          '(',
+          repeat($._token_pattern),
+          ')',
+          optional(
+            macroRepetitionSeparator(
+              $._raw_string_literal_start,
+              $._raw_string_literal_content,
+              $._raw_string_literal_end
+            )
+          ),
+          choice('+', '*', '?')
+        )
+      ),
 
     fragment_specifier: () =>
       choice(
@@ -267,12 +292,29 @@ module.exports = grammar({
         'vis'
       ),
 
-    _tokens: ($) => choice($.token_tree, $.token_repetition, $.metavariable, $._non_special_token),
+    _tokens: ($) => choice($.token_tree, $.token_repetition, $._macro_metavariable, '$', $._non_special_token),
 
     token_tree: ($) =>
       choice(seq('(', repeat($._tokens), ')'), seq('[', repeat($._tokens), ']'), seq('{', repeat($._tokens), '}')),
 
-    token_repetition: ($) => seq('$', '(', repeat($._tokens), ')', optional(/[^+*?]+/), choice('+', '*', '?')),
+    token_repetition: ($) =>
+      prec.dynamic(
+        2,
+        seq(
+          '$',
+          '(',
+          repeat($._tokens),
+          ')',
+          optional(
+            macroRepetitionSeparator(
+              $._raw_string_literal_start,
+              $._raw_string_literal_content,
+              $._raw_string_literal_end
+            )
+          ),
+          choice('+', '*', '?')
+        )
+      ),
 
     _non_special_token: ($) =>
       choice(
@@ -1451,7 +1493,7 @@ module.exports = grammar({
     raw_string_literal: ($) =>
       seq(
         $._raw_string_literal_start,
-        alias($.raw_string_literal_content, $.string_content),
+        alias($._raw_string_literal_content, $.string_content),
         $._raw_string_literal_end
       ),
 
@@ -1528,18 +1570,35 @@ module.exports = grammar({
     // oxlint-disable-next-line no-useless-escape -- tree-sitter's regex parser rejects an unescaped `[` in a character class.
     shebang: () => /#![\r\f\t\v ]*([^\[\n].*)?\n/,
 
-    _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto'), $.identifier),
+    _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto', 'macro_rules'), $.identifier),
 
-    _type_identifier: ($) => alias(choice($.identifier, 'auto'), $.type_identifier),
+    _type_identifier: ($) => alias(choice($.identifier, 'auto', 'macro_rules'), $.type_identifier),
     _field_identifier: ($) => alias($.identifier, $.field_identifier),
 
     self: () => 'self',
     super: () => 'super',
     crate: () => 'crate',
 
-    metavariable: () => /\$[a-zA-Z_]\w*/,
+    _macro_metavariable: ($) => choice($.metavariable, alias($._spaced_metavariable, $.metavariable)),
+    _spaced_metavariable: ($) =>
+      prec.dynamic(1, seq('$', choice($._macro_metavariable_name, token(prec(1, nonAsciiOrRawMacroName))))),
+    metavariable: () => /\$(r#)?[_\p{XID_Start}][_\p{XID_Continue}]*/u,
   },
 });
+
+/**
+ * @param {RuleOrLiteral} start
+ * @param {RuleOrLiteral} content
+ * @param {RuleOrLiteral} end
+ */
+function macroRepetitionSeparator(start, content, end) {
+  return choice(
+    /[^\s/+*?$"][^/+*?$"]*|\/(?:[^/*+*?$"][^/+*?$"]*)?|\$/,
+    /[bc]?"(?:[^"\\]|\\[\s\S])*"/,
+    /b?'(?:\\(?:[^xu]|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F]+\}|x[0-9a-fA-F]{2})|[^\\'])'/,
+    seq(start, content, end)
+  );
+}
 
 /**
  * @param {RuleOrLiteral} sep
