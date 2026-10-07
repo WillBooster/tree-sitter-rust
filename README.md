@@ -18,7 +18,7 @@ This fork fixes parsing bugs and raises conformance with [The Rust Reference](ht
 
 The npm package ships `tree-sitter-rust.wasm` for
 [@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter), which runs in Node.js, Bun,
-browsers, and Cloudflare Workers.
+browsers, and Cloudflare Workers. The compact ABI 16 parser requires runtime 1.3.0 or later.
 
 In Node.js and Bun, load the grammar from its path:
 
@@ -61,13 +61,12 @@ The package also ships the queries in `queries/` and the node types in `src/node
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
-fuzzed with (the grammar also loads in the upstream `tree-sitter` crate 0.27, whose error recovery never ends on some
-malformed input):
+fuzzed with. The compact ABI 16 parser requires runtime 1.3.0 or later:
 
 ```toml
 [dependencies]
-tree-sitter = { package = "willbooster-tree-sitter", version = "1" }
-tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "1" }
+tree-sitter = { package = "willbooster-tree-sitter", version = "1.3.0" }
+tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "2" }
 ```
 
 ```rust
