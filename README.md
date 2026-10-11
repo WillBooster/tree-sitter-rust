@@ -18,7 +18,8 @@ This fork fixes parsing bugs and raises conformance with [The Rust Reference](ht
 
 The npm package ships `tree-sitter-rust.wasm` for
 [@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter), which runs in Node.js, Bun,
-browsers, and Cloudflare Workers. The compact ABI 16 parser requires runtime 1.3.0 or later.
+browsers, and Cloudflare Workers. The parser loads only with that runtime, version 2.0.0 or later: it carries the
+WillBooster ABI number, which upstream's `web-tree-sitter` rejects.
 
 In Node.js and Bun, load the grammar from its path:
 
@@ -61,12 +62,12 @@ The package also ships the queries in `queries/` and the node types in `src/node
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
-fuzzed with. The compact ABI 16 parser requires runtime 1.3.0 or later:
+fuzzed with. The parser loads only with that runtime, version 2.0.0 or later; upstream's `tree-sitter` crate rejects it:
 
 ```toml
 [dependencies]
-tree-sitter = { package = "willbooster-tree-sitter", version = "1.3.0" }
-tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "2" }
+tree-sitter = { package = "willbooster-tree-sitter", version = "2" }
+tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "3" }
 ```
 
 ```rust
@@ -102,7 +103,7 @@ not the ones this package ships with. Its first run downloads that CLI from the 
 with `cargo` (whose build runs the CMake that `mise.toml` pins) when the download fails or the release has no binary that runs here. Run other CLI
 commands through it as well (e.g. `script/tree-sitter parse file.rs`).
 
-`bun run generate` records a fresh ABI 16 generation profile from the applicable `test/corpus` cases and Git-tracked
+`bun run generate` records a fresh generation profile from the applicable `test/corpus` cases and Git-tracked
 files in `examples/`, then generates compact parser tables. The parser also embeds metadata from `tree-sitter.json`. After changing a grammar,
 `tree-sitter.json`, a corpus case, or a tracked example,
 regenerate and commit `src/`. Stage added or removed examples with `git add -A examples` before generation so the profile uses the intended file list.
