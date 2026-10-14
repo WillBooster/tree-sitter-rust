@@ -257,16 +257,17 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
   }
 });
 
-test('retains repetition nodes and separators through surrounding trivia edits', async () => {
-  await Parser.init();
-  const language = await Language.load('tree-sitter-rust.wasm');
-  const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(token_repetition_pattern) @pattern (token_repetition) @repetition');
-  const configured = ['highlights', 'tags', 'injections'].map(
-    (name) => new Query(language, readFileSync(new URL(`../../queries/${name}.scm`, import.meta.url), 'utf8'))
-  );
-  try {
-    for (const operator of ['*', '+', '?']) {
+test.each(['*', '+', '?'].flatMap((operator) => [true, false].map((matcher) => ({ operator, matcher }))))(
+  'retains $operator repetition nodes and separators through surrounding trivia edits (matcher: $matcher)',
+  async ({ operator, matcher }) => {
+    await Parser.init();
+    const language = await Language.load('tree-sitter-rust.wasm');
+    const parser = new Parser().setLanguage(language);
+    const query = new Query(language, '(token_repetition_pattern) @pattern (token_repetition) @repetition');
+    const configured = ['highlights', 'tags', 'injections'].map(
+      (name) => new Query(language, readFileSync(new URL(`../../queries/${name}.scm`, import.meta.url), 'utf8'))
+    );
+    try {
       for (const separator of operator === '?'
         ? ['']
         : [
@@ -283,50 +284,48 @@ test('retains repetition nodes and separators through surrounding trivia edits',
             "b'$'",
           ]) {
         for (const gap of separator ? ['', ' ', '/* before */', '// before\n'] : ['']) {
-          for (const matcher of [true, false]) {
-            const pattern = `$($a:tt)${gap}${separator}${operator}`;
-            const reference = `$($a)${gap}${separator}${operator}`;
-            const source = matcher
-              ? `macro_rules! m { (${pattern} /* pattern end */ // tail\n#[allow(x)]) => { 1 }; }`
-              : `macro_rules! m { (${pattern} /* pattern end */) => { ${reference} /* reference end */ // tail\n#[allow(x)] }; }`;
-            checkEdits(parser, query, source, '// tail\n', '/* tail */ ', check, configured);
-            if (separator)
-              checkEdits(
-                parser,
-                query,
-                source,
-                `)${gap}${separator}`,
-                `)${gap === '/* before */' ? '// edited\n' : '/* edited */'}${separator}`,
-                check,
-                configured
-              );
+          const pattern = `$($a:tt)${gap}${separator}${operator}`;
+          const reference = `$($a)${gap}${separator}${operator}`;
+          const source = matcher
+            ? `macro_rules! m { (${pattern} /* pattern end */ // tail\n#[allow(x)]) => { 1 }; }`
+            : `macro_rules! m { (${pattern} /* pattern end */) => { ${reference} /* reference end */ // tail\n#[allow(x)] }; }`;
+          checkEdits(parser, query, source, '// tail\n', '/* tail */ ', check, configured);
+          if (separator)
+            checkEdits(
+              parser,
+              query,
+              source,
+              `)${gap}${separator}`,
+              `)${gap === '/* before */' ? '// edited\n' : '/* edited */'}${separator}`,
+              check,
+              configured
+            );
 
-            function check(text: string, tree: Tree): void {
-              const expected = [['pattern', '/* pattern end */']];
-              if (!matcher) expected.push(['repetition', '/* reference end */']);
-              let start = 0;
-              expect(
-                query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-              ).toEqual(
-                expected.map(([name, marker]) => {
-                  start = text.indexOf('$(', start);
-                  const end = text.slice(0, text.indexOf(marker!, start)).trimEnd().length;
-                  const capture = [name, text.slice(start, end), start, end];
-                  start = end;
-                  return capture;
-                })
-              );
-            }
+          function check(text: string, tree: Tree): void {
+            const expected = [['pattern', '/* pattern end */']];
+            if (!matcher) expected.push(['repetition', '/* reference end */']);
+            let start = 0;
+            expect(
+              query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
+            ).toEqual(
+              expected.map(([name, marker]) => {
+                start = text.indexOf('$(', start);
+                const end = text.slice(0, text.indexOf(marker!, start)).trimEnd().length;
+                const capture = [name, text.slice(start, end), start, end];
+                start = end;
+                return capture;
+              })
+            );
           }
         }
       }
+    } finally {
+      query.delete();
+      for (const current of configured) current.delete();
+      parser.delete();
     }
-  } finally {
-    query.delete();
-    for (const current of configured) current.delete();
-    parser.delete();
   }
-});
+);
 
 test('preserves repetition separators and following comment captures through edits', async () => {
   await Parser.init();
