@@ -12209,11 +12209,11 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
+              "type": "SEQ",
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_raw_prefix_suffix"
+                  "name": "_literal_suffix_start"
                 },
                 {
                   "type": "IMMEDIATE_TOKEN",
@@ -12260,11 +12260,11 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
+              "type": "SEQ",
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_raw_prefix_suffix"
+                  "name": "_literal_suffix_start"
                 },
                 {
                   "type": "IMMEDIATE_TOKEN",
@@ -13069,7 +13069,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_raw_prefix_suffix"
+      "name": "_literal_suffix_start"
     }
   ],
   "inline": [

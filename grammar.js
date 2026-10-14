@@ -138,7 +138,7 @@ module.exports = grammar({
     sym('_foreign_declaration_context'),
     sym('_foreign_declaration_start'),
     sym('_macro_metavariable_name'),
-    sym('_raw_prefix_suffix'),
+    sym('_literal_suffix_start'),
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -1496,7 +1496,7 @@ module.exports = grammar({
         alias(/[bc]?"/, '"'),
         repeat(choice($.escape_sequence, sym('string_content'))),
         alias(sym('string_close'), '"'),
-        optional(choice(sym('_raw_prefix_suffix'), token.immediate(prec(1, literalSuffix))))
+        optional(seq(sym('_literal_suffix_start'), token.immediate(prec(1, literalSuffix))))
       ),
 
     raw_string_literal: () =>
@@ -1504,7 +1504,7 @@ module.exports = grammar({
         sym('_raw_string_literal_start'),
         alias(sym('_raw_string_literal_content'), sym('string_content')),
         sym('_raw_string_literal_end'),
-        optional(choice(sym('_raw_prefix_suffix'), token.immediate(prec(1, literalSuffix))))
+        optional(seq(sym('_literal_suffix_start'), token.immediate(prec(1, literalSuffix))))
       ),
 
     char_literal: () =>

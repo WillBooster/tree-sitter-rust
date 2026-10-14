@@ -55,3 +55,23 @@ tokens!("a"r"b", b"a"br#"b"#, c"a"cr"b",
         (string_literal (string_content))
         (raw_string_literal (string_content))
         (string_literal (string_content))))))
+
+================================================================================
+Comments separate strings from identifiers without surrounding spaces
+================================================================================
+
+tokens!("text"/*gap*/suffix, r#"raw"#/*gap*/r#identifier);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (macro_invocation
+      macro: (identifier)
+      (token_tree
+        (string_literal (string_content))
+        (block_comment)
+        (identifier)
+        (raw_string_literal (string_content))
+        (block_comment)
+        (identifier)))))

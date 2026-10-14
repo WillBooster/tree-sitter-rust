@@ -20,7 +20,7 @@ test('keeps non-numeric suffixes in literal tokens without consuming separated i
     "'x'类型",
     'r##"raw"##r#identifier',
   ];
-  const source = `tokens!(${literals.join(', ')}, "separate" suffix, 'x' /* gap */ other);`;
+  const source = `tokens!(${literals.join(', ')}, "separate" suffix, 'x' /* gap */ other, "close"/*gap*/suffix2, r"raw"/*gap*/rawSuffix, "raw-id"/*gap*/r#identifier);`;
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
@@ -29,12 +29,18 @@ test('keeps non-numeric suffixes in literal tokens without consuming separated i
       'r##"raw"##r',
       '"separate"',
       "'x'",
+      '"close"',
+      'r"raw"',
+      '"raw-id"',
     ]);
     expect(tree.rootNode.descendantsOfType('identifier').map((node) => node.text)).toEqual([
       'tokens',
       'identifier',
       'suffix',
       'other',
+      'suffix2',
+      'rawSuffix',
+      'r#identifier',
     ]);
     expect(tree.rootNode.descendantsOfType('string_content').map((node) => node.text)).toEqual([
       'text',
@@ -46,6 +52,9 @@ test('keeps non-numeric suffixes in literal tokens without consuming separated i
       'text',
       'raw',
       'separate',
+      'close',
+      'raw',
+      'raw-id',
     ]);
   } finally {
     tree.delete();
@@ -70,7 +79,7 @@ test('keeps raw-string prefixes in adjacent suffixes through incremental trivia 
           try {
             expect(tree.rootNode.hasError, source).toBe(false);
             expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([first + prefix, '"b"']);
-            for (const gap of [' ', '/* gap */', '\n']) {
+            for (const gap of [' ', '/* gap */', '\n', '\u0085', '\u2028', '\u2029']) {
               tree.edit(
                 new Edit({
                   startIndex: boundary,
