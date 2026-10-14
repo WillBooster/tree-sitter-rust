@@ -1508,14 +1508,19 @@ module.exports = grammar({
           optional('b'),
           "'",
           optional(
-            choice(seq('\\', choice(/[^xu]/, /u[0-9a-fA-F]{4}/, /u\{[0-9a-fA-F]+\}/, /x[0-9a-fA-F]{2}/)), /[^\\']/)
+            choice(
+              seq('\\', choice(/[^xu]/, /u[0-9a-fA-F]{4}/, /u\{[0-9a-fA-F][0-9a-fA-F_]*\}/, /x[0-9a-fA-F]{2}/)),
+              /[^\\']/
+            )
           ),
           "'"
         )
       ),
 
     escape_sequence: () =>
-      token.immediate(seq('\\', choice(/[^xu]/, /u[0-9a-fA-F]{4}/, /u\{[0-9a-fA-F]+\}/, /x[0-9a-fA-F]{2}/))),
+      token.immediate(
+        seq('\\', choice(/[^xu]/, /u[0-9a-fA-F]{4}/, /u\{[0-9a-fA-F][0-9a-fA-F_]*\}/, /x[0-9a-fA-F]{2}/))
+      ),
 
     boolean_literal: () => choice('true', 'false'),
 
@@ -1603,7 +1608,7 @@ function macroRepetitionSeparator(start, content, end) {
   return choice(
     /[^\s/+*?$"][^/+*?$"]*|\/(?:[^/*+*?$"][^/+*?$"]*)?|\$/,
     /[bc]?"(?:[^"\\]|\\[\s\S])*"/,
-    /b?'(?:\\(?:[^xu]|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F]+\}|x[0-9a-fA-F]{2})|[^\\'])'/,
+    /b?'(?:\\(?:[^xu]|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F][0-9a-fA-F_]*\}|x[0-9a-fA-F]{2})|[^\\'])'/,
     seq(start, content, end)
   );
 }

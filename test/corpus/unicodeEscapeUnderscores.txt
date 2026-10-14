@@ -1,0 +1,76 @@
+================================================================================
+Unicode escapes with underscore separators
+================================================================================
+
+'\u{10__FFFF}';
+'\u{0_}';
+'\u{4_1___}';
+"before\u{10__FFFF}\u{0_}after";
+c"\u{4_1___}";
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement (char_literal))
+  (expression_statement (char_literal))
+  (expression_statement (char_literal))
+  (expression_statement
+    (string_literal
+      (string_content)
+      (escape_sequence)
+      (escape_sequence)
+      (string_content)))
+  (expression_statement
+    (string_literal (escape_sequence))))
+
+================================================================================
+Unicode escapes in macro tokens and repetition separators
+================================================================================
+
+macro_rules! chars {
+    ($($value:tt)'\u{4_1_}'*) => { $($value)'\u{4_1_}'* };
+}
+chars!('\u{10__FFFF}' "\u{4_1_}");
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (macro_definition
+    name: (identifier)
+    (macro_rule
+      left: (token_tree_pattern
+        (token_repetition_pattern
+          (token_binding_pattern
+            name: (metavariable)
+            type: (fragment_specifier))))
+      right: (token_tree
+        (token_repetition
+          (metavariable)))))
+  (expression_statement
+    (macro_invocation
+      macro: (identifier)
+      (token_tree
+        (char_literal)
+        (string_literal (escape_sequence))))))
+
+================================================================================
+Unicode character escapes cannot start with an underscore
+:error
+================================================================================
+
+'\u{_41}';
+
+--------------------------------------------------------------------------------
+
+(ERROR)
+
+================================================================================
+Unicode string escapes require a hexadecimal digit
+:error
+================================================================================
+
+"\u{___}";
+
+--------------------------------------------------------------------------------
+
+(ERROR)
