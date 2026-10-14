@@ -1,0 +1,30 @@
+================================================================================
+Non-numeric literal suffixes in macro tokens
+================================================================================
+
+tokens!("text"custom, r#"raw"#custom, 'x'custom, b'x'custom,
+        b"bytes"custom, br"raw bytes"custom, c"cstring"custom, cr"raw c"custom,
+        "text"_unit, 'x'类型, "separate" suffix, 'x' /* gap */ other);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (macro_invocation
+      macro: (identifier)
+      (token_tree
+        (string_literal (string_content))
+        (raw_string_literal (string_content))
+        (char_literal)
+        (char_literal)
+        (string_literal (string_content))
+        (raw_string_literal (string_content))
+        (string_literal (string_content))
+        (raw_string_literal (string_content))
+        (string_literal (string_content))
+        (char_literal)
+        (string_literal (string_content))
+        (identifier)
+        (char_literal)
+        (block_comment)
+        (identifier)))))
