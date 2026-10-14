@@ -1753,12 +1753,21 @@
                   ]
                 },
                 {
-                  "type": "FIELD",
-                  "name": "body",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "field_declaration_list"
-                  }
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "body",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "field_declaration_list"
+                      }
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
                 }
               ]
             },
@@ -1790,10 +1799,6 @@
                   "value": ";"
                 }
               ]
-            },
-            {
-              "type": "STRING",
-              "value": ";"
             }
           ]
         }
