@@ -6,8 +6,10 @@
  * @license MIT
  */
 
-/// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
+
+const { alias, choice, field, grammar, optional, prec, repeat, repeat1, seq, sym, token } =
+  /** @type {typeof globalThis & import('@willbooster/web-tree-sitter/dsl').DSL} */ (globalThis);
 
 // https://doc.rust-lang.org/reference/expressions.html#expression-precedence
 const PREC = {
@@ -118,22 +120,22 @@ module.exports = grammar({
 
   extras: ($) => [/\s/, $.line_comment, $.block_comment],
 
-  externals: ($) => [
-    $.string_content,
-    $.string_close,
-    $._raw_string_literal_start,
-    $._raw_string_literal_content,
-    $._raw_string_literal_end,
-    $._trailing_dot_float_literal,
-    $._outer_block_doc_comment_marker,
-    $._inner_block_doc_comment_marker,
-    $._block_comment_content,
-    $._line_doc_content,
-    $._range_unary_endpoint_start,
-    $._error_sentinel,
-    $._foreign_declaration_context,
-    $._foreign_declaration_start,
-    $._macro_metavariable_name,
+  externals: () => [
+    sym('string_content'),
+    sym('string_close'),
+    sym('_raw_string_literal_start'),
+    sym('_raw_string_literal_content'),
+    sym('_raw_string_literal_end'),
+    sym('_trailing_dot_float_literal'),
+    sym('_outer_block_doc_comment_marker'),
+    sym('_inner_block_doc_comment_marker'),
+    sym('_block_comment_content'),
+    sym('_line_doc_content'),
+    sym('_range_unary_endpoint_start'),
+    sym('_error_sentinel'),
+    sym('_foreign_declaration_context'),
+    sym('_foreign_declaration_start'),
+    sym('_macro_metavariable_name'),
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -264,9 +266,9 @@ module.exports = grammar({
           ')',
           optional(
             macroRepetitionSeparator(
-              $._raw_string_literal_start,
-              $._raw_string_literal_content,
-              $._raw_string_literal_end
+              sym('_raw_string_literal_start'),
+              sym('_raw_string_literal_content'),
+              sym('_raw_string_literal_end')
             )
           ),
           choice('+', '*', '?')
@@ -307,9 +309,9 @@ module.exports = grammar({
           ')',
           optional(
             macroRepetitionSeparator(
-              $._raw_string_literal_start,
-              $._raw_string_literal_content,
-              $._raw_string_literal_end
+              sym('_raw_string_literal_start'),
+              sym('_raw_string_literal_content'),
+              sym('_raw_string_literal_end')
             )
           ),
           choice('+', '*', '?')
@@ -324,7 +326,7 @@ module.exports = grammar({
         $.self,
         $.super,
         $.crate,
-        alias(choice(...primitiveTypes.filter((type) => !extendedFloatTypes.includes(type))), $.primitive_type),
+        alias(choice(...primitiveTypes.filter((type) => !extendedFloatTypes.includes(type))), sym('primitive_type')),
         alias(choice(...extendedFloatTypes), $.identifier),
         prec.right(repeat1(choice(...TOKEN_TREE_NON_SPECIAL_PUNCTUATION))),
         "'",
@@ -392,11 +394,11 @@ module.exports = grammar({
     // `_foreign_declaration_start` required by qualified extern items. Keep this context marker so `safe` remains
     // an identifier outside extern blocks while qualified items still participate in declaration supertype queries.
     _foreign_declaration_list: ($) =>
-      seq('{', repeat(seq(optional($._foreign_declaration_context), $._declaration_statement)), '}'),
+      seq('{', repeat(seq(optional(sym('_foreign_declaration_context')), $._declaration_statement)), '}'),
 
     _safe_function_signature_item: ($) =>
       seq(
-        $._foreign_declaration_start,
+        sym('_foreign_declaration_start'),
         optional($.visibility_modifier),
         alias($._safe_modifier, $.function_modifiers),
         $._function_signature
@@ -408,7 +410,7 @@ module.exports = grammar({
 
     _qualified_static_item: ($) =>
       seq(
-        $._foreign_declaration_start,
+        sym('_foreign_declaration_start'),
         optional($.visibility_modifier),
         choice('safe', 'unsafe'),
         $._static_declaration
@@ -567,7 +569,7 @@ module.exports = grammar({
             $.tuple_type,
             $.array_type,
             $.higher_ranked_trait_bound,
-            alias(choice(...primitiveTypes), $.primitive_type)
+            alias(choice(...primitiveTypes), sym('primitive_type'))
           )
         ),
         field('bounds', $.trait_bounds)
@@ -586,7 +588,7 @@ module.exports = grammar({
               'trait',
               choice(
                 $._type_identifier,
-                alias(choice(...primitiveTypes), $.type_identifier),
+                alias(choice(...primitiveTypes), sym('type_identifier')),
                 $.scoped_type_identifier,
                 $.generic_type
               )
@@ -682,7 +684,7 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field('name', choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier))),
+          field('name', choice($._type_identifier, alias(choice(...primitiveTypes), sym('type_identifier')))),
           optional(field('bounds', $.trait_bounds)),
           optional(seq('=', field('default_type', $._type)))
         )
@@ -756,7 +758,7 @@ module.exports = grammar({
         $.bounded_type,
         $.removed_trait_bound,
         $.modified_trait_bound,
-        alias(choice(...primitiveTypes), $.primitive_type)
+        alias(choice(...primitiveTypes), sym('primitive_type'))
       ),
 
     bracketed_type: ($) => seq('<', choice($._type, $.qualified_type), '>'),
@@ -781,7 +783,7 @@ module.exports = grammar({
                 choice(
                   $._type_identifier,
                   $.scoped_type_identifier,
-                  alias(choice(...primitiveTypes), $.type_identifier)
+                  alias(choice(...primitiveTypes), sym('type_identifier'))
                 )
               ),
               seq(optional($.function_modifiers), 'fn')
@@ -823,7 +825,7 @@ module.exports = grammar({
             'type',
             choice(
               $._type_identifier,
-              alias(choice(...primitiveTypes), $.type_identifier),
+              alias(choice(...primitiveTypes), sym('type_identifier')),
               alias(choice(...reservedIdentifiers), $.identifier),
               $.scoped_type_identifier
             )
@@ -838,7 +840,7 @@ module.exports = grammar({
           'type',
           choice(
             $._type_identifier,
-            alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier),
+            alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier')),
             $.scoped_identifier
           )
         ),
@@ -859,7 +861,7 @@ module.exports = grammar({
           ',',
           choice(
             seq(choice($._type, $.type_binding, $.lifetime, $._literal, $.block), optional($.trait_bounds)),
-            prec(1, seq(alias(choice(...primitiveTypes), $.type_identifier), $.trait_bounds))
+            prec(1, seq(alias(choice(...primitiveTypes), sym('type_identifier')), $.trait_bounds))
           )
         ),
         optional(','),
@@ -868,7 +870,7 @@ module.exports = grammar({
 
     type_binding: ($) =>
       seq(
-        field('name', choice($._type_identifier, alias(choice(...primitiveTypes), $.type_identifier))),
+        field('name', choice($._type_identifier, alias(choice(...primitiveTypes), sym('type_identifier')))),
         field('type_arguments', optional($.type_arguments)),
         '=',
         field('type', $._type)
@@ -890,7 +892,7 @@ module.exports = grammar({
             1,
             choice(
               $._type_identifier,
-              alias(choice(...primitiveTypes), $.type_identifier),
+              alias(choice(...primitiveTypes), sym('type_identifier')),
               $.scoped_type_identifier,
               $.removed_trait_bound,
               $.modified_trait_bound,
@@ -912,7 +914,7 @@ module.exports = grammar({
             $.higher_ranked_trait_bound,
             $.modified_trait_bound,
             $._type_identifier,
-            alias(choice(...primitiveTypes), $.type_identifier),
+            alias(choice(...primitiveTypes), sym('type_identifier')),
             $.scoped_type_identifier,
             $.generic_type,
             $.function_type,
@@ -1021,7 +1023,7 @@ module.exports = grammar({
         seq(
           field('path', optional(choice($._path, alias($.generic_type_with_turbofish, $.generic_type)))),
           '::',
-          field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), $.type_identifier)))
+          field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), sym('type_identifier'))))
         )
       ),
 
@@ -1034,7 +1036,7 @@ module.exports = grammar({
           )
         ),
         '::',
-        field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), $.type_identifier)))
+        field('name', choice($._type_identifier, alias(choice(...reservedIdentifiers), sym('type_identifier'))))
       ),
 
     range_expression: ($) =>
@@ -1044,9 +1046,9 @@ module.exports = grammar({
         prec.left(PREC.range, seq(choice('..', '..='), $._expression)),
         prec.right(
           PREC.range + 1,
-          seq($._expression, choice('..', '..='), $._range_unary_endpoint_start, $._expression)
+          seq($._expression, choice('..', '..='), sym('_range_unary_endpoint_start'), $._expression)
         ),
-        prec.right(PREC.range + 1, seq(choice('..', '..='), $._range_unary_endpoint_start, $._expression)),
+        prec.right(PREC.range + 1, seq(choice('..', '..='), sym('_range_unary_endpoint_start'), $._expression)),
         prec.left(PREC.range, '..')
       ),
 
@@ -1065,7 +1067,7 @@ module.exports = grammar({
       ),
 
     binary_expression: ($) => {
-      /** @type {[number, RuleOrLiteral][]} */
+      /** @type {[number, import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral][]} */
       const table = [
         [PREC.and, '&&'],
         [PREC.or, '||'],
@@ -1146,7 +1148,7 @@ module.exports = grammar({
           'name',
           choice(
             $._type_identifier,
-            prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier)),
+            prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
           )
@@ -1172,7 +1174,7 @@ module.exports = grammar({
           'field',
           choice(
             $._field_identifier,
-            alias(choice(...fieldIdentifierKeywords), $.field_identifier),
+            alias(choice(...fieldIdentifierKeywords), sym('field_identifier')),
             alias(/[0-9][0-9_]*/, $.integer_literal)
           )
         ),
@@ -1207,7 +1209,7 @@ module.exports = grammar({
         )
       ),
 
-    _condition: ($) => choice($._expression, $.let_condition, alias($._let_chain, $.let_chain)),
+    _condition: ($) => choice($._expression, $.let_condition, alias($._let_chain, sym('let_chain'))),
 
     else_clause: ($) => seq('else', choice($.block, $.if_expression)),
 
@@ -1366,7 +1368,7 @@ module.exports = grammar({
           'type',
           choice(
             $._type_identifier,
-            alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier),
+            alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier')),
             $.scoped_type_identifier,
             alias($._generic_struct_pattern_type, $.generic_type)
           )
@@ -1383,7 +1385,7 @@ module.exports = grammar({
           'type',
           choice(
             $._type_identifier,
-            alias(choice(...primitiveTypes, ...reservedIdentifiers), $.type_identifier),
+            alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier')),
             $.scoped_type_identifier
           )
         ),
@@ -1397,7 +1399,7 @@ module.exports = grammar({
         optional('ref'),
         optional($.mutable_specifier),
         choice(
-          field('name', alias($.identifier, $.shorthand_field_identifier)),
+          field('name', alias($.identifier, sym('shorthand_field_identifier'))),
           seq(field('name', $._field_identifier), ':', field('pattern', $._pattern))
         )
       ),
@@ -1467,9 +1469,9 @@ module.exports = grammar({
         )
       ),
 
-    float_literal: ($) =>
+    float_literal: () =>
       choice(
-        $._trailing_dot_float_literal,
+        sym('_trailing_dot_float_literal'),
         token(
           prec(
             1,
@@ -1488,13 +1490,17 @@ module.exports = grammar({
       ),
 
     string_literal: ($) =>
-      seq(alias(/[bc]?"/, '"'), repeat(choice($.escape_sequence, $.string_content)), alias($.string_close, '"')),
-
-    raw_string_literal: ($) =>
       seq(
-        $._raw_string_literal_start,
-        alias($._raw_string_literal_content, $.string_content),
-        $._raw_string_literal_end
+        alias(/[bc]?"/, '"'),
+        repeat(choice($.escape_sequence, sym('string_content'))),
+        alias(sym('string_close'), '"')
+      ),
+
+    raw_string_literal: () =>
+      seq(
+        sym('_raw_string_literal_start'),
+        alias(sym('_raw_string_literal_content'), sym('string_content')),
+        sym('_raw_string_literal_end')
       ),
 
     char_literal: () =>
@@ -1521,15 +1527,15 @@ module.exports = grammar({
         '//',
         choice(
           seq(token.immediate(prec(2, /\/\//)), /.*/),
-          seq($._line_doc_comment_marker, field('doc', alias($._line_doc_content, $.doc_comment))),
+          seq($._line_doc_comment_marker, field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))),
           token.immediate(prec(1, /.*/))
         )
       ),
 
     _line_doc_comment_marker: ($) =>
       choice(
-        field('outer', alias($._outer_line_doc_comment_marker, $.outer_doc_comment_marker)),
-        field('inner', alias($._inner_line_doc_comment_marker, $.inner_doc_comment_marker))
+        field('outer', alias($._outer_line_doc_comment_marker, sym('outer_doc_comment_marker'))),
+        field('inner', alias($._inner_line_doc_comment_marker, sym('inner_doc_comment_marker')))
       ),
 
     _inner_line_doc_comment_marker: () => token.immediate(prec(2, '!')),
@@ -1540,17 +1546,20 @@ module.exports = grammar({
         '/*',
         optional(
           choice(
-            seq($._block_doc_comment_marker, optional(field('doc', alias($._block_comment_content, $.doc_comment)))),
-            $._block_comment_content
+            seq(
+              $._block_doc_comment_marker,
+              optional(field('doc', alias(sym('_block_comment_content'), sym('doc_comment'))))
+            ),
+            sym('_block_comment_content')
           )
         ),
         '*/'
       ),
 
-    _block_doc_comment_marker: ($) =>
+    _block_doc_comment_marker: () =>
       choice(
-        field('outer', alias($._outer_block_doc_comment_marker, $.outer_doc_comment_marker)),
-        field('inner', alias($._inner_block_doc_comment_marker, $.inner_doc_comment_marker))
+        field('outer', alias(sym('_outer_block_doc_comment_marker'), sym('outer_doc_comment_marker'))),
+        field('inner', alias(sym('_inner_block_doc_comment_marker'), sym('inner_doc_comment_marker')))
       ),
 
     _path: ($) =>
@@ -1572,24 +1581,24 @@ module.exports = grammar({
 
     _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto', 'macro_rules'), $.identifier),
 
-    _type_identifier: ($) => alias(choice($.identifier, 'auto', 'macro_rules'), $.type_identifier),
-    _field_identifier: ($) => alias($.identifier, $.field_identifier),
+    _type_identifier: ($) => alias(choice($.identifier, 'auto', 'macro_rules'), sym('type_identifier')),
+    _field_identifier: ($) => alias($.identifier, sym('field_identifier')),
 
     self: () => 'self',
     super: () => 'super',
     crate: () => 'crate',
 
     _macro_metavariable: ($) => choice($.metavariable, alias($._spaced_metavariable, $.metavariable)),
-    _spaced_metavariable: ($) =>
-      prec.dynamic(1, seq('$', choice($._macro_metavariable_name, token(prec(1, nonAsciiOrRawMacroName))))),
+    _spaced_metavariable: () =>
+      prec.dynamic(1, seq('$', choice(sym('_macro_metavariable_name'), token(prec(1, nonAsciiOrRawMacroName))))),
     metavariable: () => /\$(r#)?[_\p{XID_Start}][_\p{XID_Continue}]*/u,
   },
 });
 
 /**
- * @param {RuleOrLiteral} start
- * @param {RuleOrLiteral} content
- * @param {RuleOrLiteral} end
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} start
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} content
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} end
  */
 function macroRepetitionSeparator(start, content, end) {
   return choice(
@@ -1601,20 +1610,20 @@ function macroRepetitionSeparator(start, content, end) {
 }
 
 /**
- * @param {RuleOrLiteral} sep
- * @param {RuleOrLiteral} rule
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} sep
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} rule
  *
- * @returns {SeqRule}
+ * @returns {import('@willbooster/web-tree-sitter/dsl').SeqRule}
  */
 function sepBy1(sep, rule) {
   return seq(rule, repeat(seq(sep, rule)));
 }
 
 /**
- * @param {RuleOrLiteral} sep
- * @param {RuleOrLiteral} rule
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} sep
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} rule
  *
- * @returns {ChoiceRule}
+ * @returns {import('@willbooster/web-tree-sitter/dsl').ChoiceRule}
  */
 function sepBy(sep, rule) {
   return optional(sepBy1(sep, rule));
