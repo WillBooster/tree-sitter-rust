@@ -1,0 +1,133 @@
+================================================================================
+Empty generic declaration and argument lists
+================================================================================
+
+struct S<>;
+trait T<> {}
+enum E<> { V }
+impl<> T<> for S<> {}
+fn foo<>() {}
+fn main() {
+    let _ = S::<>;
+    let _ = E::<>::V;
+    foo::<>();
+    let _: i32<>;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (struct_item
+    (type_identifier)
+    (type_parameters))
+  (trait_item
+    (type_identifier)
+    (type_parameters)
+    (declaration_list))
+  (enum_item
+    (type_identifier)
+    (type_parameters)
+    (enum_variant_list
+      (enum_variant
+        (identifier))))
+  (impl_item
+    (type_parameters)
+    (generic_type
+      (type_identifier)
+      (type_arguments))
+    (generic_type
+      (type_identifier)
+      (type_arguments))
+    (declaration_list))
+  (function_item
+    (identifier)
+    (type_parameters)
+    (parameters)
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (generic_function
+          (identifier)
+          (type_arguments)))
+      (let_declaration
+        (scoped_identifier
+          (generic_type
+            (type_identifier)
+            (type_arguments))
+          (identifier)))
+      (expression_statement
+        (call_expression
+          (generic_function
+            (identifier)
+            (type_arguments))
+          (arguments)))
+      (let_declaration
+        (generic_type
+          (type_identifier)
+          (type_arguments))))))
+
+================================================================================
+Empty higher ranked lifetime binder
+================================================================================
+
+type Callback = for<> fn();
+fn higher<T>() where for<> T: Copy {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_item
+    (type_identifier)
+    (function_type
+      (for_lifetimes)
+      (parameters)))
+  (function_item
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (parameters)
+    (where_clause
+      (where_predicate
+        (higher_ranked_trait_bound
+          (type_parameters)
+          (type_identifier))
+        (trait_bounds
+          (type_identifier))))
+    (block)))
+
+================================================================================
+Generic parameter lists reject a comma without an element
+:error
+================================================================================
+
+struct S<,>;
+
+--------------------------------------------------------------------------------
+
+(ERROR)
+
+================================================================================
+Generic argument lists reject a comma without an element
+:error
+================================================================================
+
+fn main() { foo::<,>(); }
+
+--------------------------------------------------------------------------------
+
+(ERROR)
+
+================================================================================
+Lifetime binders reject a comma without an element
+:error
+================================================================================
+
+type Callback = for<,> fn();
+
+--------------------------------------------------------------------------------
+
+(ERROR)
