@@ -32,6 +32,8 @@ const PREC = {
   closure: -1,
 };
 
+const literalSuffix = /[_\p{XID_Start}][_\p{XID_Continue}]*/u;
+
 const numericSuffixWithoutExponent = new RegExp(String.raw`[\p{XID_Start}--[eE]][_\p{XID_Continue}]*`, 'v');
 const zeroNumericSuffix = new RegExp(String.raw`[\p{XID_Start}--[eEbox]][_\p{XID_Continue}]*`, 'v');
 const hexadecimalSuffix = new RegExp(String.raw`[\p{XID_Start}--[a-fA-F]][_\p{XID_Continue}]*`, 'v');
@@ -136,6 +138,7 @@ module.exports = grammar({
     sym('_foreign_declaration_context'),
     sym('_foreign_declaration_start'),
     sym('_macro_metavariable_name'),
+    sym('_literal_suffix_start'),
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -1492,14 +1495,16 @@ module.exports = grammar({
       seq(
         alias(/[bc]?"/, '"'),
         repeat(choice($.escape_sequence, sym('string_content'))),
-        alias(sym('string_close'), '"')
+        alias(sym('string_close'), '"'),
+        optional(seq(sym('_literal_suffix_start'), token.immediate(prec(1, literalSuffix))))
       ),
 
     raw_string_literal: () =>
       seq(
         sym('_raw_string_literal_start'),
         alias(sym('_raw_string_literal_content'), sym('string_content')),
-        sym('_raw_string_literal_end')
+        sym('_raw_string_literal_end'),
+        optional(seq(sym('_literal_suffix_start'), token.immediate(prec(1, literalSuffix))))
       ),
 
     char_literal: () =>
@@ -1513,7 +1518,8 @@ module.exports = grammar({
               /[^\\']/
             )
           ),
-          "'"
+          "'",
+          optional(literalSuffix)
         )
       ),
 

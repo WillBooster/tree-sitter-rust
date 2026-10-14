@@ -18,11 +18,13 @@ enum TokenType {
     ERROR_SENTINEL,
     FOREIGN_DECLARATION_CONTEXT,
     FOREIGN_DECLARATION_START,
-    MACRO_METAVARIABLE_NAME
+    MACRO_METAVARIABLE_NAME,
+    LITERAL_SUFFIX_START
 };
 
 typedef struct {
     uint8_t opening_hash_count;
+    uint8_t literal_suffix_pending;
 } Scanner;
 
 void *tree_sitter_rust_external_scanner_create() { return ts_calloc(1, sizeof(Scanner)); }
@@ -32,16 +34,16 @@ void tree_sitter_rust_external_scanner_destroy(void *payload) { ts_free((Scanner
 unsigned tree_sitter_rust_external_scanner_serialize(void *payload, char *buffer) {
     Scanner *scanner = (Scanner *)payload;
     buffer[0] = (char)scanner->opening_hash_count;
-    return 1;
+    buffer[1] = (char)scanner->literal_suffix_pending;
+    return 2;
 }
 
 void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *scanner = (Scanner *)payload;
     scanner->opening_hash_count = 0;
-    if (length == 1) {
-        Scanner *scanner = (Scanner *)payload;
-        scanner->opening_hash_count = buffer[0];
-    }
+    scanner->literal_suffix_pending = 0;
+    if (length > 0) scanner->opening_hash_count = (uint8_t)buffer[0];
+    if (length > 1) scanner->literal_suffix_pending = (uint8_t)buffer[1];
 }
 
 static inline bool is_num_char(int32_t c) { return c == '_' || iswdigit(c); }
@@ -123,13 +125,52 @@ static inline bool scan_raw_string_content(Scanner *scanner, TSLexer *lexer) {
     }
 }
 
+static void mark_string_end(Scanner *scanner, TSLexer *lexer);
+
 static inline bool scan_raw_string_end(Scanner *scanner, TSLexer *lexer) {
     advance(lexer);
     for (unsigned i = 0; i < scanner->opening_hash_count; i++) {
         advance(lexer);
     }
     lexer->result_symbol = RAW_STRING_LITERAL_END;
+    mark_string_end(scanner, lexer);
     return true;
+}
+
+static bool scan_string_tokens(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
+    if (valid_symbols[LITERAL_SUFFIX_START] && scanner->literal_suffix_pending) {
+        scanner->literal_suffix_pending = 0;
+        lexer->result_symbol = LITERAL_SUFFIX_START;
+        return true;
+    }
+    if (valid_symbols[STRING_CONTENT] && !valid_symbols[TRAILING_DOT_FLOAT_LITERAL] && process_string(lexer)) return true;
+    if (!valid_symbols[STRING_CLOSE] || lexer->lookahead != '"') return false;
+    advance(lexer);
+    lexer->result_symbol = STRING_CLOSE;
+    mark_string_end(scanner, lexer);
+    return true;
+}
+
+static bool is_literal_suffix_candidate(int32_t c);
+
+// The zero-width marker gates the internal suffix token: token.immediate alone still permits comment extras.
+static void mark_string_end(Scanner *scanner, TSLexer *lexer) {
+    lexer->mark_end(lexer);
+    scanner->literal_suffix_pending = is_literal_suffix_candidate(lexer->lookahead);
+}
+
+static bool is_literal_suffix_candidate(int32_t c) {
+    // Unicode validity is checked by the internal lexer after the marker. Exclude whitespace here so it cannot
+    // create a suffix path after trivia, including characters that the Wasm C locale does not classify as spaces.
+    if (c >= 0x2000 && c <= 0x200a) return false;
+    switch (c) {
+        case 0x85: case 0xa0: case 0x1680:
+        case 0x200e: case 0x200f:
+        case 0x2028: case 0x2029: case 0x202f: case 0x205f: case 0x3000: case 0xfeff:
+            return false;
+        default:
+            return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c >= 0x80;
+    }
 }
 
 static inline bool process_trailing_dot_float_literal(TSLexer *lexer) {
@@ -298,16 +339,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return process_block_comment(lexer, valid_symbols);
     }
 
-    if (valid_symbols[STRING_CONTENT] && !valid_symbols[TRAILING_DOT_FLOAT_LITERAL]) {
-        if (process_string(lexer)) return true;
-    }
-
-    if (valid_symbols[STRING_CLOSE] && lexer->lookahead == '"') {
-        advance(lexer);
-        lexer->result_symbol = STRING_CLOSE;
-        lexer->mark_end(lexer);
-        return true;
-    }
+    if (scan_string_tokens(scanner, lexer, valid_symbols)) return true;
 
     if (valid_symbols[LINE_DOC_CONTENT]) {
         return process_line_doc_content(lexer);
