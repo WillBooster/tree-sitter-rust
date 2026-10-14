@@ -572,6 +572,7 @@ module.exports = grammar({
             $._type_identifier,
             $.scoped_type_identifier,
             $.generic_type,
+            alias($._generic_type_turbofish, $.generic_type),
             $.reference_type,
             $.pointer_type,
             $.tuple_type,
@@ -604,7 +605,8 @@ module.exports = grammar({
                 $._type_identifier,
                 alias(choice(...primitiveTypes), sym('type_identifier')),
                 $.scoped_type_identifier,
-                $.generic_type
+                $.generic_type,
+                alias($._generic_type_turbofish, $.generic_type)
               )
             ),
             'for'
@@ -767,6 +769,7 @@ module.exports = grammar({
         $.metavariable,
         $.pointer_type,
         $.generic_type,
+        alias($._generic_type_turbofish, $.generic_type),
         $.scoped_type_identifier,
         $.tuple_type,
         $.unit_type,
@@ -851,7 +854,6 @@ module.exports = grammar({
               $.scoped_type_identifier
             )
           ),
-          optional('::'),
           field('type_arguments', $.type_arguments)
         )
       ),
@@ -923,6 +925,7 @@ module.exports = grammar({
               $.removed_trait_bound,
               $.modified_trait_bound,
               $.generic_type,
+              alias($._generic_type_turbofish, $.generic_type),
               $.function_type,
               $.tuple_type,
               $.bounded_type
@@ -943,6 +946,7 @@ module.exports = grammar({
             alias(choice(...primitiveTypes), sym('type_identifier')),
             $.scoped_type_identifier,
             $.generic_type,
+            alias($._generic_type_turbofish, $.generic_type),
             $.function_type,
             $.tuple_type
           )
@@ -1637,6 +1641,23 @@ module.exports = grammar({
       ),
 
     frontmatter_info_string: () => token.immediate(/[_\p{XID_Start}][_.\p{XID_Continue}-]*/u),
+    _generic_type_turbofish: ($) =>
+      prec(
+        1,
+        seq(
+          field(
+            'type',
+            choice(
+              $._type_identifier,
+              alias(choice(...primitiveTypes), sym('type_identifier')),
+              alias(choice(...reservedIdentifiers), $.identifier),
+              $.scoped_type_identifier
+            )
+          ),
+          '::',
+          field('type_arguments', $.type_arguments)
+        )
+      ),
   },
 });
 
