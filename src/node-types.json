@@ -4391,7 +4391,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "_type",
@@ -5201,6 +5201,18 @@
             "named": true
           },
           {
+            "type": "bounded_type",
+            "named": true
+          },
+          {
+            "type": "dynamic_type",
+            "named": true
+          },
+          {
+            "type": "function_type",
+            "named": true
+          },
+          {
             "type": "generic_type",
             "named": true
           },
@@ -5210,6 +5222,14 @@
           },
           {
             "type": "lifetime",
+            "named": true
+          },
+          {
+            "type": "macro_invocation",
+            "named": true
+          },
+          {
+            "type": "never_type",
             "named": true
           },
           {
@@ -5234,6 +5254,10 @@
           },
           {
             "type": "type_identifier",
+            "named": true
+          },
+          {
+            "type": "unit_type",
             "named": true
           }
         ]

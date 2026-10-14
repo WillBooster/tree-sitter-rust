@@ -575,6 +575,12 @@ module.exports = grammar({
             $.reference_type,
             $.pointer_type,
             $.tuple_type,
+            $.unit_type,
+            $.function_type,
+            $.dynamic_type,
+            $.bounded_type,
+            $.macro_invocation,
+            $.never_type,
             $.array_type,
             $.higher_ranked_trait_bound,
             alias(choice(...primitiveTypes), sym('primitive_type'))
@@ -650,7 +656,10 @@ module.exports = grammar({
         ';'
       ),
 
-    trait_bounds: ($) => seq(':', sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound))),
+    trait_bounds: ($) =>
+      prec.right(
+        seq(':', optional(seq(sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound)), optional('+'))))
+      ),
 
     higher_ranked_trait_bound: ($) => seq('for', field('type_parameters', $.type_parameters), field('type', $._type)),
 

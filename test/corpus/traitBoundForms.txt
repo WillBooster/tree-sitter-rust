@@ -1,0 +1,192 @@
+================================================================================
+Empty type and lifetime bounds
+================================================================================
+
+trait Empty<'a:, T:>: {
+    type Item:;
+    fn call<U:>();
+}
+fn empty<'a:, T:>() where 'a:, T: {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (trait_item
+    (type_identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))
+        (trait_bounds))
+      (type_parameter
+        (type_identifier)
+        (trait_bounds)))
+    (trait_bounds)
+    (declaration_list
+      (associated_type
+        (type_identifier)
+        (trait_bounds))
+      (function_signature_item
+        (identifier)
+        (type_parameters
+          (type_parameter
+            (type_identifier)
+            (trait_bounds)))
+        (parameters))))
+  (function_item
+    (identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))
+        (trait_bounds))
+      (type_parameter
+        (type_identifier)
+        (trait_bounds)))
+    (parameters)
+    (where_clause
+      (where_predicate
+        (lifetime
+          (identifier))
+        (trait_bounds))
+      (where_predicate
+        (type_identifier)
+        (trait_bounds)))
+    (block)))
+
+================================================================================
+Trailing plus in trait and lifetime bounds
+================================================================================
+
+struct WithDefault<T: Copy += u8> { value: T }
+fn trailing<'a: 'static +, T: Copy +>() where T: Copy +, 'a: 'static + {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (struct_item
+    (type_identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (type_identifier))
+        (primitive_type)))
+    (field_declaration_list
+      (field_declaration
+        (field_identifier)
+        (type_identifier))))
+  (function_item
+    (identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))
+        (trait_bounds
+          (lifetime
+            (identifier))))
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (type_identifier))))
+    (parameters)
+    (where_clause
+      (where_predicate
+        (type_identifier)
+        (trait_bounds
+          (type_identifier)))
+      (where_predicate
+        (lifetime
+          (identifier))
+        (trait_bounds
+          (lifetime
+            (identifier)))))
+    (block)))
+
+================================================================================
+Additional types on the left of where predicates
+================================================================================
+
+fn unit() where (): Copy {}
+fn function() where fn(): Copy {}
+fn dynamic() where dyn Marker: Marker {}
+fn bounded() where dyn Marker + 'static: Marker {}
+fn selected() where selected_type!(): Copy {}
+fn never() where !: Marker {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (where_clause
+      (where_predicate
+        (unit_type)
+        (trait_bounds
+          (type_identifier))))
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (where_clause
+      (where_predicate
+        (function_type
+          (parameters))
+        (trait_bounds
+          (type_identifier))))
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (where_clause
+      (where_predicate
+        (dynamic_type
+          (type_identifier))
+        (trait_bounds
+          (type_identifier))))
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (where_clause
+      (where_predicate
+        (bounded_type
+          (dynamic_type
+            (type_identifier))
+          (lifetime
+            (identifier)))
+        (trait_bounds
+          (type_identifier))))
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (where_clause
+      (where_predicate
+        (macro_invocation
+          (identifier)
+          (token_tree))
+        (trait_bounds
+          (type_identifier))))
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (where_clause
+      (where_predicate
+        (never_type)
+        (trait_bounds
+          (type_identifier))))
+    (block)))
+
+================================================================================
+A bound cannot contain repeated trailing plus signs
+:error
+================================================================================
+
+fn invalid<T: Copy ++>() {}
+
+--------------------------------------------------------------------------------
+
+(ERROR)
