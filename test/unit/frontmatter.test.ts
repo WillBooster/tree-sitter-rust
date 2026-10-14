@@ -115,3 +115,62 @@ test('handles CRLF headers and closing fences at end of input', async () => {
     parser.delete();
   }
 });
+
+test('does not recognize frontmatter after a comment', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  try {
+    for (const prefix of ['// comment\n', '/* comment */\n', '/// docs\n', '#!/usr/bin/env cargo\n// comment\n']) {
+      const tree = parser.parse(`${prefix}---\nx\n---\nfn main() {}`)!;
+      try {
+        expect(tree.rootNode.hasError, prefix).toBe(true);
+        expect(tree.rootNode.descendantsOfType('frontmatter')).toHaveLength(0);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
+test('rechecks frontmatter placement after incremental prefix edits', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  let source = '---\nx\n---\nfn main() {}';
+  let tree = parser.parse(source)!;
+  const comment = '// comment\n';
+  try {
+    for (const inserting of [true, false]) {
+      tree.edit(
+        new Edit({
+          startIndex: 0,
+          oldEndIndex: inserting ? 0 : comment.length,
+          newEndIndex: inserting ? comment.length : 0,
+          startPosition: { row: 0, column: 0 },
+          oldEndPosition: { row: inserting ? 0 : 1, column: 0 },
+          newEndPosition: { row: inserting ? 1 : 0, column: 0 },
+        })
+      );
+      source = inserting ? comment + source : source.slice(comment.length);
+      const next = parser.parse(source, tree)!;
+      tree.delete();
+      tree = next;
+      const fresh = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.toString()).toBe(fresh.rootNode.toString());
+        expect(tree.rootNode.hasError).toBe(inserting);
+        expect(tree.rootNode.descendantsOfType('frontmatter')).toHaveLength(inserting ? 0 : 1);
+      } finally {
+        fresh.delete();
+      }
+    }
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});

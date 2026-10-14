@@ -143,6 +143,7 @@ module.exports = grammar({
     sym('_frontmatter_header_end'),
     sym('frontmatter_content'),
     sym('_frontmatter_end'),
+    sym('_frontmatter_context'),
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -185,7 +186,8 @@ module.exports = grammar({
   word: ($) => $.identifier,
 
   rules: {
-    source_file: ($) => seq(optional($.shebang), optional($.frontmatter), repeat($._statement)),
+    source_file: ($) =>
+      seq(sym('_frontmatter_context'), optional($.shebang), optional($.frontmatter), repeat($._statement)),
 
     _statement: ($) => choice($.expression_statement, $._declaration_statement),
 

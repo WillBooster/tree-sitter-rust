@@ -6,13 +6,29 @@
 
 typedef struct {
     uint32_t fence_length;
+    bool allowed;
 } Frontmatter;
 
 static bool frontmatter_space(int32_t c);
 static bool frontmatter_header_valid(TSLexer *lexer);
 
+static bool scan_frontmatter_context(Frontmatter *state, TSLexer *lexer) {
+    lexer->mark_end(lexer);
+    while (iswspace(lexer->lookahead)) lexer->advance(lexer, false);
+    if (lexer->lookahead == '#') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '!') {
+            while (lexer->lookahead != '\n' && !lexer->eof(lexer)) lexer->advance(lexer, false);
+            while (iswspace(lexer->lookahead)) lexer->advance(lexer, false);
+        }
+    }
+    state->allowed = lexer->lookahead == '-';
+    lexer->result_symbol = FRONTMATTER_CONTEXT;
+    return true;
+}
+
 static bool scan_frontmatter_start(Frontmatter *state, TSLexer *lexer) {
-    if (lexer->get_column(lexer) != 0) return false;
+    if (!state->allowed || lexer->get_column(lexer) != 0) return false;
     uint32_t length = 0;
     while (lexer->lookahead == '-') {
         if (length == UINT32_MAX) return false;

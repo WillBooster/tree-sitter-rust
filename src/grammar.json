@@ -7,6 +7,10 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "_frontmatter_context"
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
@@ -13139,6 +13143,10 @@
     {
       "type": "SYMBOL",
       "name": "_frontmatter_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_frontmatter_context"
     }
   ],
   "inline": [
