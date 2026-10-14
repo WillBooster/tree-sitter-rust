@@ -1,0 +1,67 @@
+================================================================================
+Raw ABI strings in declarations and function types
+================================================================================
+
+extern r"C" fn function() {}
+pub unsafe extern r#"C"# fn public_function() {}
+unsafe extern r##"C"## { fn imported_function(); }
+type Callback = unsafe extern r###"C"### fn();
+trait Interface { extern r#"C"# fn function(); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (function_modifiers
+      (extern_modifier
+        (raw_string_literal
+          (string_content))))
+    (identifier)
+    (parameters)
+    (block))
+  (function_item
+    (visibility_modifier)
+    (function_modifiers
+      (extern_modifier
+        (raw_string_literal
+          (string_content))))
+    (identifier)
+    (parameters)
+    (block))
+  (foreign_mod_item
+    (extern_modifier
+      (raw_string_literal
+        (string_content)))
+    (declaration_list
+      (function_signature_item
+        (identifier)
+        (parameters))))
+  (type_item
+    (type_identifier)
+    (function_type
+      (function_modifiers
+        (extern_modifier
+          (raw_string_literal
+            (string_content))))
+      (parameters)))
+  (trait_item
+    (type_identifier)
+    (declaration_list
+      (function_signature_item
+        (function_modifiers
+          (extern_modifier
+            (raw_string_literal
+              (string_content))))
+        (identifier)
+        (parameters)))))
+
+================================================================================
+Raw ABI strings require matching closing hashes
+:error
+================================================================================
+
+extern r##"C"# fn function() {}
+
+--------------------------------------------------------------------------------
+
+(ERROR)
