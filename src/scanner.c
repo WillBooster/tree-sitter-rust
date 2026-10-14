@@ -19,10 +19,17 @@ enum TokenType {
     FOREIGN_DECLARATION_CONTEXT,
     FOREIGN_DECLARATION_START,
     MACRO_METAVARIABLE_NAME,
-    LITERAL_SUFFIX_START
+    LITERAL_SUFFIX_START,
+    FRONTMATTER_START,
+    FRONTMATTER_HEADER_END,
+    FRONTMATTER_CONTENT,
+    FRONTMATTER_END
 };
 
+#include "frontmatter.h"
+
 typedef struct {
+    Frontmatter frontmatter;
     uint8_t opening_hash_count;
     uint8_t literal_suffix_pending;
 } Scanner;
@@ -35,15 +42,20 @@ unsigned tree_sitter_rust_external_scanner_serialize(void *payload, char *buffer
     Scanner *scanner = (Scanner *)payload;
     buffer[0] = (char)scanner->opening_hash_count;
     buffer[1] = (char)scanner->literal_suffix_pending;
-    return 2;
+    for (unsigned i = 0; i < 4; i++) buffer[2 + i] = (char)(scanner->frontmatter.fence_length >> (8 * i));
+    return 6;
 }
 
 void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *scanner = (Scanner *)payload;
+    scanner->frontmatter.fence_length = 0;
     scanner->opening_hash_count = 0;
     scanner->literal_suffix_pending = 0;
     if (length > 0) scanner->opening_hash_count = (uint8_t)buffer[0];
     if (length > 1) scanner->literal_suffix_pending = (uint8_t)buffer[1];
+    if (length == 6) {
+        for (unsigned i = 0; i < 4; i++) scanner->frontmatter.fence_length |= (uint32_t)(uint8_t)buffer[2 + i] << (8 * i);
+    }
 }
 
 static inline bool is_num_char(int32_t c) { return c == '_' || iswdigit(c); }
@@ -333,6 +345,9 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     }
 
     Scanner *scanner = (Scanner *)payload;
+    if (valid_symbols[FRONTMATTER_CONTENT]) return scan_frontmatter_content(&scanner->frontmatter, lexer);
+    if (valid_symbols[FRONTMATTER_HEADER_END]) return scan_frontmatter_header_end(lexer);
+    if (valid_symbols[FRONTMATTER_END]) return scan_frontmatter_end(&scanner->frontmatter, lexer);
 
     if (valid_symbols[BLOCK_COMMENT_CONTENT] || valid_symbols[BLOCK_INNER_DOC_MARKER] ||
         valid_symbols[BLOCK_OUTER_DOC_MARKER]) {
@@ -351,6 +366,9 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
 
     while (iswspace(lexer->lookahead)) {
         skip(lexer);
+    }
+    if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
+        return scan_frontmatter_start(&scanner->frontmatter, lexer);
     }
     if (valid_symbols[FOREIGN_DECLARATION_CONTEXT] && valid_symbols[FOREIGN_DECLARATION_START]) {
         return scan_foreign_declaration_start(lexer);
