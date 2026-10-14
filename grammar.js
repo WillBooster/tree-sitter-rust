@@ -676,14 +676,18 @@ module.exports = grammar({
         1,
         seq(
           '<',
-          sepBy1(
-            ',',
+          optional(
             seq(
-              repeat($.attribute_item),
-              choice($.metavariable, $.type_parameter, $.lifetime_parameter, $.const_parameter)
+              sepBy1(
+                ',',
+                seq(
+                  repeat($.attribute_item),
+                  choice($.metavariable, $.type_parameter, $.lifetime_parameter, $.const_parameter)
+                )
+              ),
+              optional(',')
             )
           ),
-          optional(','),
           '>'
         )
       ),
@@ -786,7 +790,7 @@ module.exports = grammar({
 
     array_type: ($) => seq('[', field('element', $._type), optional(seq(';', field('length', $._expression))), ']'),
 
-    for_lifetimes: ($) => seq('for', '<', sepBy1(',', $.lifetime), optional(','), '>'),
+    for_lifetimes: ($) => seq('for', '<', optional(seq(sepBy1(',', $.lifetime), optional(','))), '>'),
 
     function_type: ($) =>
       seq(
@@ -874,14 +878,18 @@ module.exports = grammar({
     type_arguments: ($) =>
       seq(
         token(prec(1, '<')),
-        sepBy1(
-          ',',
-          choice(
-            seq(choice($._type, $.type_binding, $.lifetime, $._literal, $.block), optional($.trait_bounds)),
-            prec(1, seq(alias(choice(...primitiveTypes), sym('type_identifier')), $.trait_bounds))
+        optional(
+          seq(
+            sepBy1(
+              ',',
+              choice(
+                seq(choice($._type, $.type_binding, $.lifetime, $._literal, $.block), optional($.trait_bounds)),
+                prec(1, seq(alias(choice(...primitiveTypes), sym('type_identifier')), $.trait_bounds))
+              )
+            ),
+            optional(',')
           )
         ),
-        optional(','),
         '>'
       ),
 

@@ -3972,94 +3972,107 @@
             "value": "<"
           },
           {
-            "type": "SEQ",
+            "type": "CHOICE",
             "members": [
               {
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "attribute_item"
-                    }
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "REPEAT",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "attribute_item"
+                            }
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "metavariable"
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "type_parameter"
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "lifetime_parameter"
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "const_parameter"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "REPEAT",
+                        "content": {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "STRING",
+                              "value": ","
+                            },
+                            {
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "REPEAT",
+                                  "content": {
+                                    "type": "SYMBOL",
+                                    "name": "attribute_item"
+                                  }
+                                },
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "metavariable"
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "type_parameter"
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "lifetime_parameter"
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "const_parameter"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    ]
                   },
                   {
                     "type": "CHOICE",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "metavariable"
+                        "type": "STRING",
+                        "value": ","
                       },
                       {
-                        "type": "SYMBOL",
-                        "name": "type_parameter"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "lifetime_parameter"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "const_parameter"
+                        "type": "BLANK"
                       }
                     ]
                   }
                 ]
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": ","
-                    },
-                    {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "REPEAT",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "attribute_item"
-                          }
-                        },
-                        {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "metavariable"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "type_parameter"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "lifetime_parameter"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "const_parameter"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "STRING",
-                "value": ","
               },
               {
                 "type": "BLANK"
@@ -5292,36 +5305,49 @@
           "value": "<"
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "lifetime"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": ","
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "lifetime"
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
           "type": "CHOICE",
           "members": [
             {
-              "type": "STRING",
-              "value": ","
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "lifetime"
+                    },
+                    {
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "STRING",
+                            "value": ","
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "lifetime"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": ","
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "BLANK"
@@ -6148,10 +6174,10 @@
           }
         },
         {
-          "type": "SEQ",
+          "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
+              "type": "SEQ",
               "members": [
                 {
                   "type": "SEQ",
@@ -6160,308 +6186,321 @@
                       "type": "CHOICE",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "_type"
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "_type"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "type_binding"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "lifetime"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "_literal"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "block"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "trait_bounds"
+                                },
+                                {
+                                  "type": "BLANK"
+                                }
+                              ]
+                            }
+                          ]
                         },
                         {
-                          "type": "SYMBOL",
-                          "name": "type_binding"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "lifetime"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "_literal"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "block"
+                          "type": "PREC",
+                          "value": 1,
+                          "content": {
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "STRING",
+                                      "value": "u8"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "i8"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "u16"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "i16"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "u32"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "i32"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "u64"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "i64"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "u128"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "i128"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "isize"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "usize"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "f32"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "f64"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "f16"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "f128"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "bool"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "str"
+                                    },
+                                    {
+                                      "type": "STRING",
+                                      "value": "char"
+                                    }
+                                  ]
+                                },
+                                "named": true,
+                                "value": "type_identifier"
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "trait_bounds"
+                              }
+                            ]
+                          }
                         }
                       ]
                     },
                     {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "trait_bounds"
-                        },
-                        {
-                          "type": "BLANK"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "PREC",
-                  "value": 1,
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "ALIAS",
-                        "content": {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "STRING",
-                              "value": "u8"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "i8"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "u16"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "i16"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "u32"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "i32"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "u64"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "i64"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "u128"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "i128"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "isize"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "usize"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "f32"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "f64"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "f16"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "f128"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "bool"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "str"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "char"
-                            }
-                          ]
-                        },
-                        "named": true,
-                        "value": "type_identifier"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "trait_bounds"
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": ","
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
+                      "type": "REPEAT",
+                      "content": {
                         "type": "SEQ",
                         "members": [
                           {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "SYMBOL",
-                                "name": "_type"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "type_binding"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "lifetime"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "_literal"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "block"
-                              }
-                            ]
+                            "type": "STRING",
+                            "value": ","
                           },
                           {
                             "type": "CHOICE",
                             "members": [
                               {
-                                "type": "SYMBOL",
-                                "name": "trait_bounds"
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "CHOICE",
+                                    "members": [
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "_type"
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "type_binding"
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "lifetime"
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "_literal"
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "block"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "CHOICE",
+                                    "members": [
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "trait_bounds"
+                                      },
+                                      {
+                                        "type": "BLANK"
+                                      }
+                                    ]
+                                  }
+                                ]
                               },
                               {
-                                "type": "BLANK"
+                                "type": "PREC",
+                                "value": 1,
+                                "content": {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "ALIAS",
+                                      "content": {
+                                        "type": "CHOICE",
+                                        "members": [
+                                          {
+                                            "type": "STRING",
+                                            "value": "u8"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "i8"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "u16"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "i16"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "u32"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "i32"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "u64"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "i64"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "u128"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "i128"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "isize"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "usize"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "f32"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "f64"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "f16"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "f128"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "bool"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "str"
+                                          },
+                                          {
+                                            "type": "STRING",
+                                            "value": "char"
+                                          }
+                                        ]
+                                      },
+                                      "named": true,
+                                      "value": "type_identifier"
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "trait_bounds"
+                                    }
+                                  ]
+                                }
                               }
                             ]
                           }
                         ]
-                      },
-                      {
-                        "type": "PREC",
-                        "value": 1,
-                        "content": {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "CHOICE",
-                                "members": [
-                                  {
-                                    "type": "STRING",
-                                    "value": "u8"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "i8"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "u16"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "i16"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "u32"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "i32"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "u64"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "i64"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "u128"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "i128"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "isize"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "usize"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "f32"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "f64"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "f16"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "f128"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "bool"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "str"
-                                  },
-                                  {
-                                    "type": "STRING",
-                                    "value": "char"
-                                  }
-                                ]
-                              },
-                              "named": true,
-                              "value": "type_identifier"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "trait_bounds"
-                            }
-                          ]
-                        }
                       }
-                    ]
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": ","
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": ","
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "BLANK"
