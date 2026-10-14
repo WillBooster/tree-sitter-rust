@@ -98,18 +98,22 @@ test('handles CRLF headers and closing fences at end of input', async () => {
   const parser = new Parser();
   parser.setLanguage(language);
   try {
-    const source = '---\t工具.file-name\r\n \tvalue = 1\r\n---\t';
-    const tree = parser.parse(source)!;
-    try {
-      expect(tree.rootNode.hasError).toBe(false);
-      expect(tree.rootNode.descendantsOfType('frontmatter_content').map((node) => node.text)).toEqual([
-        ' \tvalue = 1\r\n',
-      ]);
-      expect(tree.rootNode.descendantsOfType('frontmatter_info_string').map((node) => node.text)).toEqual([
-        '工具.file-name',
-      ]);
-    } finally {
-      tree.delete();
+    const block = '---\t工具.file-name\r\n \tvalue = 1\r\n---\t';
+    for (const ending of ['', '\r\nfn main() {}']) {
+      const source = block + ending;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(false);
+        expect(tree.rootNode.descendantsOfType('frontmatter').map((node) => node.text)).toEqual([block]);
+        expect(tree.rootNode.descendantsOfType('frontmatter_content').map((node) => node.text)).toEqual([
+          ' \tvalue = 1\r\n',
+        ]);
+        expect(tree.rootNode.descendantsOfType('frontmatter_info_string').map((node) => node.text)).toEqual([
+          '工具.file-name',
+        ]);
+      } finally {
+        tree.delete();
+      }
     }
   } finally {
     parser.delete();
