@@ -1,0 +1,115 @@
+================================================================================
+Turbofish in type annotations and declarations
+================================================================================
+
+type Values = Vec::<u8>;
+struct Container(std::vec::Vec::<u8>);
+fn take(value: Vec::<u8>) -> Vec::<u8> { value }
+fn main() {
+    let _: Vec::<u8>;
+    let _ = value as Pointer::<u8>;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_item
+    (type_identifier)
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (primitive_type))))
+  (struct_item
+    (type_identifier)
+    (ordered_field_declaration_list
+      (generic_type
+        (scoped_type_identifier
+          (scoped_identifier
+            (identifier)
+            (identifier))
+          (type_identifier))
+        (type_arguments
+          (primitive_type)))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type)))))
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (primitive_type)))
+    (block
+      (identifier)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type))))
+      (let_declaration
+        (type_cast_expression
+          (identifier)
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (primitive_type))))))))
+
+================================================================================
+Turbofish in trait and associated types
+================================================================================
+
+fn check<T>() where Vec::<T>: Clone {}
+impl<T> Trait::<T> for Container::<T> {}
+type Value<T> = T::Item::<'static>;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (parameters)
+    (where_clause
+      (where_predicate
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (type_identifier)))
+        (trait_bounds
+          (type_identifier))))
+    (block))
+  (impl_item
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (type_identifier)))
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (type_identifier)))
+    (declaration_list))
+  (type_item
+    (type_identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (generic_type
+      (scoped_type_identifier
+        (identifier)
+        (type_identifier))
+      (type_arguments
+        (lifetime
+          (identifier))))))

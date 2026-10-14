@@ -851,6 +851,7 @@ module.exports = grammar({
               $.scoped_type_identifier
             )
           ),
+          optional('::'),
           field('type_arguments', $.type_arguments)
         )
       ),
