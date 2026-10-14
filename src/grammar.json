@@ -3033,6 +3033,15 @@
                 "name": "generic_type"
               },
               {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_generic_type_turbofish"
+                },
+                "named": true,
+                "value": "generic_type"
+              },
+              {
                 "type": "SYMBOL",
                 "name": "reference_type"
               },
@@ -3365,6 +3374,15 @@
                       {
                         "type": "SYMBOL",
                         "name": "generic_type"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_generic_type_turbofish"
+                        },
+                        "named": true,
+                        "value": "generic_type"
                       }
                     ]
                   }
@@ -5042,6 +5060,15 @@
         {
           "type": "SYMBOL",
           "name": "generic_type"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_generic_type_turbofish"
+          },
+          "named": true,
+          "value": "generic_type"
         },
         {
           "type": "SYMBOL",
@@ -6864,6 +6891,15 @@
                   "name": "generic_type"
                 },
                 {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_generic_type_turbofish"
+                  },
+                  "named": true,
+                  "value": "generic_type"
+                },
+                {
                   "type": "SYMBOL",
                   "name": "function_type"
                 },
@@ -6999,6 +7035,15 @@
               {
                 "type": "SYMBOL",
                 "name": "generic_type"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_generic_type_turbofish"
+                },
+                "named": true,
+                "value": "generic_type"
               },
               {
                 "type": "SYMBOL",
@@ -13054,6 +13099,156 @@
         "type": "PATTERN",
         "value": "[_\\p{XID_Start}][_.\\p{XID_Continue}-]*",
         "flags": "u"
+      }
+    },
+    "_generic_type_turbofish": {
+      "type": "PREC",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "type",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_type_identifier"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": "u8"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "i8"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "u16"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "i16"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "u32"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "i32"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "u64"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "i64"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "u128"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "i128"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "isize"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "usize"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "f32"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "f64"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "f16"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "f128"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "bool"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "str"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "char"
+                      }
+                    ]
+                  },
+                  "named": true,
+                  "value": "type_identifier"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": "default"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "union"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "gen"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "raw"
+                      }
+                    ]
+                  },
+                  "named": true,
+                  "value": "identifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "scoped_type_identifier"
+                }
+              ]
+            }
+          },
+          {
+            "type": "STRING",
+            "value": "::"
+          },
+          {
+            "type": "FIELD",
+            "name": "type_arguments",
+            "content": {
+              "type": "SYMBOL",
+              "name": "type_arguments"
+            }
+          }
+        ]
       }
     }
   },
