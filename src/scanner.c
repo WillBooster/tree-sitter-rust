@@ -349,10 +349,10 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     }
 
     Scanner *scanner = (Scanner *)payload;
-    if (valid_symbols[FRONTMATTER_CONTEXT]) return scan_frontmatter_context(&scanner->frontmatter, lexer);
-    if (valid_symbols[FRONTMATTER_CONTENT]) return scan_frontmatter_content(&scanner->frontmatter, lexer);
-    if (valid_symbols[FRONTMATTER_HEADER_END]) return scan_frontmatter_header_end(lexer);
-    if (valid_symbols[FRONTMATTER_END]) return scan_frontmatter_end(&scanner->frontmatter, lexer);
+    if (valid_symbols[FRONTMATTER_CONTEXT] || valid_symbols[FRONTMATTER_CONTENT] ||
+        valid_symbols[FRONTMATTER_HEADER_END] || valid_symbols[FRONTMATTER_END]) {
+        return scan_frontmatter_token(&scanner->frontmatter, lexer, valid_symbols);
+    }
 
     if (valid_symbols[BLOCK_COMMENT_CONTENT] || valid_symbols[BLOCK_INNER_DOC_MARKER] ||
         valid_symbols[BLOCK_OUTER_DOC_MARKER]) {
@@ -369,7 +369,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_raw_string_content(scanner, lexer);
     }
 
-    while (iswspace(lexer->lookahead)) {
+    while (valid_symbols[FRONTMATTER_START] ? frontmatter_whitespace(lexer->lookahead) : iswspace(lexer->lookahead)) {
         skip(lexer);
     }
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {

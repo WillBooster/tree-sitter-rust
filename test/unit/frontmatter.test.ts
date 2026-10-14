@@ -137,6 +137,11 @@ test('does not recognize frontmatter after an invalid prefix', async () => {
       '#!\r[\n',
       '#!\v[\n',
       '#!\f[\n',
+      '#!\u0085[\n',
+      '#!\u200E[\n',
+      '#!\u200F[\n',
+      '#!\u2028[\n',
+      '#!\u2029[\n',
       '#!/*c*/[\n',
       '#!/* outer /* nested */ */[\n',
       '#!/**/[\n',
@@ -239,7 +244,15 @@ test('preserves shebang commands containing comment-shaped text', async () => {
   const parser = new Parser();
   parser.setLanguage(language);
   try {
-    for (const prefix of ['#!/*c*/cmd\n', '#!/**doc*/[\n', '#!/*!doc*/[\n', '#!//comment\n', '#!/*\n']) {
+    for (const prefix of [
+      '#!/*c*/cmd\n',
+      '#!/**doc*/[\n',
+      '#!/*!doc*/[\n',
+      '#!//comment\n',
+      '#!/*\n',
+      '#!\u00A0[\n',
+      '#!\u2000[\n',
+    ]) {
       const tree = parser.parse(`${prefix}---\nvalue\n---\nfn main() {}`)!;
       try {
         expect(tree.rootNode.hasError, prefix).toBe(false);
@@ -247,6 +260,28 @@ test('preserves shebang commands containing comment-shaped text', async () => {
         expect(tree.rootNode.descendantsOfType('frontmatter_content').map((node) => node.text)).toEqual(['value\n']);
       } finally {
         tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
+test('accepts Rust Unicode whitespace on blank lines before frontmatter', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  try {
+    for (const space of ['\u0085', '\u200E', '\u200F', '\u2028', '\u2029']) {
+      for (const shebang of ['', '#!/usr/bin/env cargo\n']) {
+        const tree = parser.parse(`${shebang}${space}\n---\nvalue\n---\nfn main() {}`)!;
+        try {
+          expect(tree.rootNode.hasError, JSON.stringify({ space, shebang })).toBe(false);
+          expect(tree.rootNode.descendantsOfType('frontmatter_content').map((node) => node.text)).toEqual(['value\n']);
+        } finally {
+          tree.delete();
+        }
       }
     }
   } finally {

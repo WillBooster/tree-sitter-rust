@@ -10,6 +10,7 @@ typedef struct {
 } Frontmatter;
 
 static bool frontmatter_space(int32_t c);
+static bool frontmatter_whitespace(int32_t c);
 static bool frontmatter_header_valid(TSLexer *lexer);
 
 typedef struct {
@@ -22,12 +23,25 @@ static bool frontmatter_shebang_attribute(ShebangProbe *probe, TSLexer *lexer);
 static bool skip_frontmatter_shebang_block(ShebangProbe *probe, TSLexer *lexer);
 static void frontmatter_shebang_advance(ShebangProbe *probe, TSLexer *lexer);
 
+static bool scan_frontmatter_context(Frontmatter *state, TSLexer *lexer);
+static bool scan_frontmatter_content(Frontmatter *state, TSLexer *lexer);
+static bool scan_frontmatter_header_end(TSLexer *lexer);
+static bool scan_frontmatter_end(Frontmatter *state, TSLexer *lexer);
+
+static bool scan_frontmatter_token(Frontmatter *state, TSLexer *lexer, const bool *valid_symbols) {
+    if (valid_symbols[FRONTMATTER_CONTEXT]) return scan_frontmatter_context(state, lexer);
+    if (valid_symbols[FRONTMATTER_CONTENT]) return scan_frontmatter_content(state, lexer);
+    if (valid_symbols[FRONTMATTER_HEADER_END]) return scan_frontmatter_header_end(lexer);
+    if (valid_symbols[FRONTMATTER_END]) return scan_frontmatter_end(state, lexer);
+    return false;
+}
+
 static bool scan_frontmatter_context(Frontmatter *state, TSLexer *lexer) {
     lexer->mark_end(lexer);
     if (lexer->lookahead == '#') {
         state->allowed = frontmatter_shebang_prefix(lexer);
     } else {
-        while (iswspace(lexer->lookahead)) lexer->advance(lexer, false);
+        while (frontmatter_whitespace(lexer->lookahead)) lexer->advance(lexer, false);
         state->allowed = lexer->lookahead == '-';
     }
     lexer->result_symbol = FRONTMATTER_CONTEXT;
@@ -46,7 +60,7 @@ static bool frontmatter_shebang_prefix(TSLexer *lexer) {
 
 static bool frontmatter_shebang_attribute(ShebangProbe *probe, TSLexer *lexer) {
     for (;;) {
-        while (iswspace(lexer->lookahead)) frontmatter_shebang_advance(probe, lexer);
+        while (frontmatter_whitespace(lexer->lookahead)) frontmatter_shebang_advance(probe, lexer);
         if (lexer->lookahead != '/') return lexer->lookahead == '[';
         frontmatter_shebang_advance(probe, lexer);
         if (lexer->lookahead == '/') {
@@ -79,7 +93,7 @@ static bool skip_frontmatter_shebang_block(ShebangProbe *probe, TSLexer *lexer) 
 
 static void frontmatter_shebang_advance(ShebangProbe *probe, TSLexer *lexer) {
     int32_t current = lexer->lookahead;
-    if (probe->after_first_line && probe->next_line_start < 0 && !iswspace(current)) probe->next_line_start = current;
+    if (probe->after_first_line && probe->next_line_start < 0 && !frontmatter_whitespace(current)) probe->next_line_start = current;
     if (current == '\n') probe->after_first_line = true;
     lexer->advance(lexer, false);
 }
@@ -164,6 +178,10 @@ static bool frontmatter_header_valid(TSLexer *lexer) {
     }
     if (lexer->lookahead == '\r') lexer->advance(lexer, false);
     return lexer->lookahead == '\n';
+}
+
+static bool frontmatter_whitespace(int32_t c) {
+    return (c >= '\t' && c <= '\r') || c == ' ' || c == 0x85 || c == 0x200e || c == 0x200f || c == 0x2028 || c == 0x2029;
 }
 
 static bool frontmatter_space(int32_t c) { return c == ' ' || c == '\t'; }
