@@ -9,7 +9,7 @@ test('preserves frontmatter content and the following Rust declaration', async (
   parser.setLanguage(language);
   const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
-    for (const fence of ['---', '-----', '-'.repeat(256)]) {
+    for (const fence of ['---', '-----', '-'.repeat(255)]) {
       for (const body of ['', ' \t\n[dependencies]\n', '  ---\nvalue = "---"\n', 'before\0after\n']) {
         const source = `#!/usr/bin/env cargo\n\n${fence} Cargo.toml\n${body}${fence}\nfn main() {}`;
         const tree = parser.parse(source)!;
@@ -120,13 +120,21 @@ test('handles CRLF headers and closing fences at end of input', async () => {
   }
 });
 
-test('does not recognize frontmatter after a comment', async () => {
+test('does not recognize frontmatter after an invalid prefix', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
   try {
-    for (const prefix of ['// comment\n', '/* comment */\n', '/// docs\n', '#!/usr/bin/env cargo\n// comment\n']) {
+    for (const prefix of [
+      '// comment\n',
+      '/* comment */\n',
+      '/// docs\n',
+      '#!/usr/bin/env cargo\n// comment\n',
+      '\n#!x\n',
+      ' #!x\n',
+      '#! [\n',
+    ]) {
       const tree = parser.parse(`${prefix}---\nx\n---\nfn main() {}`)!;
       try {
         expect(tree.rootNode.hasError, prefix).toBe(true);
@@ -175,6 +183,27 @@ test('rechecks frontmatter placement after incremental prefix edits', async () =
     }
   } finally {
     tree.delete();
+    parser.delete();
+  }
+});
+
+test('rejects frontmatter fences beyond the compiler limit', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  try {
+    for (const count of [256, 257, 512]) {
+      const fence = '-'.repeat(count);
+      const tree = parser.parse(`${fence}\nvalue\n${fence}\nfn main() {}`)!;
+      try {
+        expect(tree.rootNode.hasError, String(count)).toBe(true);
+        expect(tree.rootNode.descendantsOfType('frontmatter')).toHaveLength(0);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
     parser.delete();
   }
 });

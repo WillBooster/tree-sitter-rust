@@ -14,14 +14,20 @@ static bool frontmatter_header_valid(TSLexer *lexer);
 
 static bool scan_frontmatter_context(Frontmatter *state, TSLexer *lexer) {
     lexer->mark_end(lexer);
-    while (iswspace(lexer->lookahead)) lexer->advance(lexer, false);
     if (lexer->lookahead == '#') {
         lexer->advance(lexer, false);
         if (lexer->lookahead == '!') {
+            lexer->advance(lexer, false);
+            while (frontmatter_space(lexer->lookahead)) lexer->advance(lexer, false);
+            if (lexer->lookahead == '[') {
+                state->allowed = false;
+                lexer->result_symbol = FRONTMATTER_CONTEXT;
+                return true;
+            }
             while (lexer->lookahead != '\n' && !lexer->eof(lexer)) lexer->advance(lexer, false);
-            while (iswspace(lexer->lookahead)) lexer->advance(lexer, false);
         }
     }
+    while (iswspace(lexer->lookahead)) lexer->advance(lexer, false);
     state->allowed = lexer->lookahead == '-';
     lexer->result_symbol = FRONTMATTER_CONTEXT;
     return true;
@@ -31,7 +37,7 @@ static bool scan_frontmatter_start(Frontmatter *state, TSLexer *lexer) {
     if (!state->allowed || lexer->get_column(lexer) != 0) return false;
     uint32_t length = 0;
     while (lexer->lookahead == '-') {
-        if (length == UINT32_MAX) return false;
+        if (length == 255) return false;
         length++;
         lexer->advance(lexer, false);
     }
