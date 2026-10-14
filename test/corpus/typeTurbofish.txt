@@ -113,3 +113,81 @@ type Value<T> = T::Item::<'static>;
       (type_arguments
         (lifetime
           (identifier))))))
+
+================================================================================
+Existing turbofish paths in patterns
+================================================================================
+
+fn main() {
+    if let E::<A>::V = v {}
+    while let E::<A>::V = v {}
+    let E::<A>::V = v;
+    match x { E::<A>::V => {} _ => {} }
+}
+fn take(E::<A>::V: T) {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (if_expression
+          (let_condition
+            (scoped_identifier
+              (generic_type
+                (type_identifier)
+                (type_arguments
+                  (type_identifier)))
+              (identifier))
+            (identifier))
+          (block)))
+      (expression_statement
+        (while_expression
+          (let_condition
+            (scoped_identifier
+              (generic_type
+                (type_identifier)
+                (type_arguments
+                  (type_identifier)))
+              (identifier))
+            (identifier))
+          (block)))
+      (let_declaration
+        (scoped_identifier
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (type_identifier)))
+          (identifier))
+        (identifier))
+      (expression_statement
+        (match_expression
+          (identifier)
+          (match_block
+            (match_arm
+              (match_pattern
+                (scoped_identifier
+                  (generic_type
+                    (type_identifier)
+                    (type_arguments
+                      (type_identifier)))
+                  (identifier)))
+              (block))
+            (match_arm
+              (match_pattern)
+              (block)))))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (scoped_identifier
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (type_identifier)))
+          (identifier))
+        (type_identifier)))
+    (block)))
