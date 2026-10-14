@@ -207,3 +207,22 @@ test('rejects frontmatter fences beyond the compiler limit', async () => {
     parser.delete();
   }
 });
+
+test('rejects a truncated CRLF after the closing fence', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  try {
+    for (const space of ['', ' ', '\t']) {
+      const tree = parser.parse(`---\nvalue\n---${space}\r`)!;
+      try {
+        expect(tree.rootNode.hasError, JSON.stringify(space)).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});

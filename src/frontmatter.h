@@ -87,8 +87,10 @@ static bool scan_frontmatter_end(Frontmatter *state, TSLexer *lexer) {
     }
     while (frontmatter_space(lexer->lookahead)) lexer->advance(lexer, false);
     lexer->mark_end(lexer);
-    if (lexer->lookahead == '\r') lexer->advance(lexer, false);
-    if (lexer->lookahead != '\n' && !lexer->eof(lexer)) return false;
+    if (lexer->lookahead == '\r') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead != '\n') return false;
+    } else if (lexer->lookahead != '\n' && !lexer->eof(lexer)) return false;
     lexer->result_symbol = FRONTMATTER_END;
     return true;
 }
