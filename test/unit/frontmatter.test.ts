@@ -134,6 +134,12 @@ test('does not recognize frontmatter after an invalid prefix', async () => {
       '\n#!x\n',
       ' #!x\n',
       '#! [\n',
+      '#!\r[\n',
+      '#!\v[\n',
+      '#!\f[\n',
+      '#!/*c*/[\n',
+      '#!/* outer /* nested */ */[\n',
+      '#!/**/[\n',
     ]) {
       const tree = parser.parse(`${prefix}---\nx\n---\nfn main() {}`)!;
       try {
@@ -218,6 +224,27 @@ test('rejects a truncated CRLF after the closing fence', async () => {
       const tree = parser.parse(`---\nvalue\n---${space}\r`)!;
       try {
         expect(tree.rootNode.hasError, JSON.stringify(space)).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
+test('preserves shebang commands containing comment-shaped text', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  try {
+    for (const prefix of ['#!/*c*/cmd\n', '#!/**doc*/[\n', '#!/*!doc*/[\n', '#!//comment\n', '#!/*\n']) {
+      const tree = parser.parse(`${prefix}---\nvalue\n---\nfn main() {}`)!;
+      try {
+        expect(tree.rootNode.hasError, prefix).toBe(false);
+        expect(tree.rootNode.descendantsOfType('shebang').map((node) => node.text)).toEqual([prefix]);
+        expect(tree.rootNode.descendantsOfType('frontmatter_content').map((node) => node.text)).toEqual(['value\n']);
       } finally {
         tree.delete();
       }
