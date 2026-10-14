@@ -1,0 +1,53 @@
+================================================================================
+Unit structs with where clauses
+================================================================================
+
+struct Unit where i32: Copy;
+pub struct Generic<const N: usize> where [u8; N]: Copy;
+struct Empty where;
+struct Plain;
+struct Tuple(i32) where i32: Copy;
+struct Record where i32: Copy { value: i32 }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (struct_item
+    name: (type_identifier)
+    (where_clause
+      (where_predicate
+        left: (primitive_type)
+        bounds: (trait_bounds (type_identifier)))))
+  (struct_item
+    (visibility_modifier)
+    name: (type_identifier)
+    type_parameters: (type_parameters
+      (const_parameter
+        name: (identifier)
+        type: (primitive_type)))
+    (where_clause
+      (where_predicate
+        left: (array_type
+          element: (primitive_type)
+          length: (identifier))
+        bounds: (trait_bounds (type_identifier)))))
+  (struct_item
+    name: (type_identifier)
+    (where_clause))
+  (struct_item
+    name: (type_identifier))
+  (struct_item
+    name: (type_identifier)
+    body: (ordered_field_declaration_list type: (primitive_type))
+    (where_clause
+      (where_predicate
+        left: (primitive_type)
+        bounds: (trait_bounds (type_identifier)))))
+  (struct_item
+    name: (type_identifier)
+    (where_clause
+      (where_predicate
+        left: (primitive_type)
+        bounds: (trait_bounds (type_identifier))))
+    body: (field_declaration_list
+      (field_declaration name: (field_identifier) type: (primitive_type)))))

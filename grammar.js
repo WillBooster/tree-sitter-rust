@@ -423,9 +423,8 @@ module.exports = grammar({
         field('name', $._type_identifier),
         field('type_parameters', optional($.type_parameters)),
         choice(
-          seq(optional($.where_clause), field('body', $.field_declaration_list)),
-          seq(field('body', $.ordered_field_declaration_list), optional($.where_clause), ';'),
-          ';'
+          seq(optional($.where_clause), choice(field('body', $.field_declaration_list), ';')),
+          seq(field('body', $.ordered_field_declaration_list), optional($.where_clause), ';')
         )
       ),
 
