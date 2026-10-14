@@ -757,7 +757,7 @@ module.exports = grammar({
     parameter: ($) =>
       seq(optional($.mutable_specifier), field('pattern', choice($._pattern, $.self)), ':', field('type', $._type)),
 
-    extern_modifier: ($) => seq('extern', optional($.string_literal)),
+    extern_modifier: ($) => seq('extern', optional(choice($.string_literal, $.raw_string_literal))),
 
     visibility_modifier: ($) =>
       choice($.crate, seq('pub', optional(seq('(', choice($.self, $.super, $.crate, seq('in', $._path)), ')')))),
