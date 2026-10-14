@@ -12209,16 +12209,25 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "IMMEDIATE_TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "[_\\p{XID_Start}][_\\p{XID_Continue}]*",
-                  "flags": "u"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_raw_prefix_suffix"
+                },
+                {
+                  "type": "IMMEDIATE_TOKEN",
+                  "content": {
+                    "type": "PREC",
+                    "value": 1,
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[_\\p{XID_Start}][_\\p{XID_Continue}]*",
+                      "flags": "u"
+                    }
+                  }
                 }
-              }
+              ]
             },
             {
               "type": "BLANK"
@@ -12251,16 +12260,25 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "IMMEDIATE_TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "[_\\p{XID_Start}][_\\p{XID_Continue}]*",
-                  "flags": "u"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_raw_prefix_suffix"
+                },
+                {
+                  "type": "IMMEDIATE_TOKEN",
+                  "content": {
+                    "type": "PREC",
+                    "value": 1,
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[_\\p{XID_Start}][_\\p{XID_Continue}]*",
+                      "flags": "u"
+                    }
+                  }
                 }
-              }
+              ]
             },
             {
               "type": "BLANK"
@@ -13048,6 +13066,10 @@
     {
       "type": "SYMBOL",
       "name": "_macro_metavariable_name"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_raw_prefix_suffix"
     }
   ],
   "inline": [

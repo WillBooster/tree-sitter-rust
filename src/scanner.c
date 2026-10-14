@@ -18,11 +18,13 @@ enum TokenType {
     ERROR_SENTINEL,
     FOREIGN_DECLARATION_CONTEXT,
     FOREIGN_DECLARATION_START,
-    MACRO_METAVARIABLE_NAME
+    MACRO_METAVARIABLE_NAME,
+    RAW_PREFIX_SUFFIX
 };
 
 typedef struct {
     uint8_t opening_hash_count;
+    uint8_t raw_prefix_suffix_length;
 } Scanner;
 
 void *tree_sitter_rust_external_scanner_create() { return ts_calloc(1, sizeof(Scanner)); }
@@ -32,16 +34,16 @@ void tree_sitter_rust_external_scanner_destroy(void *payload) { ts_free((Scanner
 unsigned tree_sitter_rust_external_scanner_serialize(void *payload, char *buffer) {
     Scanner *scanner = (Scanner *)payload;
     buffer[0] = (char)scanner->opening_hash_count;
-    return 1;
+    buffer[1] = (char)scanner->raw_prefix_suffix_length;
+    return 2;
 }
 
 void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *scanner = (Scanner *)payload;
     scanner->opening_hash_count = 0;
-    if (length == 1) {
-        Scanner *scanner = (Scanner *)payload;
-        scanner->opening_hash_count = buffer[0];
-    }
+    scanner->raw_prefix_suffix_length = 0;
+    if (length > 0) scanner->opening_hash_count = (uint8_t)buffer[0];
+    if (length > 1) scanner->raw_prefix_suffix_length = (uint8_t)buffer[1];
 }
 
 static inline bool is_num_char(int32_t c) { return c == '_' || iswdigit(c); }
@@ -123,13 +125,46 @@ static inline bool scan_raw_string_content(Scanner *scanner, TSLexer *lexer) {
     }
 }
 
+static void mark_string_end(Scanner *scanner, TSLexer *lexer);
+
 static inline bool scan_raw_string_end(Scanner *scanner, TSLexer *lexer) {
     advance(lexer);
     for (unsigned i = 0; i < scanner->opening_hash_count; i++) {
         advance(lexer);
     }
     lexer->result_symbol = RAW_STRING_LITERAL_END;
+    mark_string_end(scanner, lexer);
     return true;
+}
+
+static bool scan_string_tokens(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
+    if (valid_symbols[RAW_PREFIX_SUFFIX] && scanner->raw_prefix_suffix_length) {
+        for (unsigned i = 0; i < scanner->raw_prefix_suffix_length; i++) advance(lexer);
+        scanner->raw_prefix_suffix_length = 0;
+        lexer->result_symbol = RAW_PREFIX_SUFFIX;
+        return true;
+    }
+    if (valid_symbols[STRING_CONTENT] && !valid_symbols[TRAILING_DOT_FLOAT_LITERAL] && process_string(lexer)) return true;
+    if (!valid_symbols[STRING_CLOSE] || lexer->lookahead != '"') return false;
+    advance(lexer);
+    lexer->result_symbol = STRING_CLOSE;
+    mark_string_end(scanner, lexer);
+    return true;
+}
+
+// Probe past the marked delimiter so adjacent r/br/cr suffixes win over the external raw-string start.
+// The lookahead also makes incremental edits to the suffix invalidate this delimiter token.
+static void mark_string_end(Scanner *scanner, TSLexer *lexer) {
+    lexer->mark_end(lexer);
+    scanner->raw_prefix_suffix_length = 0;
+    uint8_t length = 1;
+    if (lexer->lookahead == 'b' || lexer->lookahead == 'c') {
+        length++;
+        advance(lexer);
+    }
+    if (lexer->lookahead != 'r') return;
+    advance(lexer);
+    if (lexer->lookahead == '"' || lexer->lookahead == '#') scanner->raw_prefix_suffix_length = length;
 }
 
 static inline bool process_trailing_dot_float_literal(TSLexer *lexer) {
@@ -298,16 +333,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return process_block_comment(lexer, valid_symbols);
     }
 
-    if (valid_symbols[STRING_CONTENT] && !valid_symbols[TRAILING_DOT_FLOAT_LITERAL]) {
-        if (process_string(lexer)) return true;
-    }
-
-    if (valid_symbols[STRING_CLOSE] && lexer->lookahead == '"') {
-        advance(lexer);
-        lexer->result_symbol = STRING_CLOSE;
-        lexer->mark_end(lexer);
-        return true;
-    }
+    if (scan_string_tokens(scanner, lexer, valid_symbols)) return true;
 
     if (valid_symbols[LINE_DOC_CONTENT]) {
         return process_line_doc_content(lexer);
