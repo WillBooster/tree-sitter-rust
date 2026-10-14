@@ -2144,6 +2144,25 @@
     "fields": {}
   },
   {
+    "type": "frontmatter",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "frontmatter_content",
+          "named": true
+        },
+        {
+          "type": "frontmatter_info_string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "function_item",
     "named": true,
     "fields": {
@@ -3847,6 +3866,10 @@
         },
         {
           "type": "expression_statement",
+          "named": true
+        },
+        {
+          "type": "frontmatter",
           "named": true
         },
         {
@@ -5575,6 +5598,14 @@
   {
     "type": "for",
     "named": false
+  },
+  {
+    "type": "frontmatter_content",
+    "named": true
+  },
+  {
+    "type": "frontmatter_info_string",
+    "named": true
   },
   {
     "type": "gen",

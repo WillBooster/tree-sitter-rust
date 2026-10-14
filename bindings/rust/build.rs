@@ -27,5 +27,7 @@ fn main() {
         println!("cargo:rerun-if-changed={}", scanner_path.to_str().unwrap());
     }
 
+    println!("cargo:rerun-if-changed=src/frontmatter.h");
+
     c_config.compile("tree-sitter-rust");
 }

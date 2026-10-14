@@ -139,6 +139,11 @@ module.exports = grammar({
     sym('_foreign_declaration_start'),
     sym('_macro_metavariable_name'),
     sym('_literal_suffix_start'),
+    sym('_frontmatter_start'),
+    sym('_frontmatter_header_end'),
+    sym('frontmatter_content'),
+    sym('_frontmatter_end'),
+    sym('_frontmatter_context'),
   ],
 
   supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
@@ -181,7 +186,8 @@ module.exports = grammar({
   word: ($) => $.identifier,
 
   rules: {
-    source_file: ($) => seq(optional($.shebang), repeat($._statement)),
+    source_file: ($) =>
+      seq(sym('_frontmatter_context'), optional($.shebang), optional($.frontmatter), repeat($._statement)),
 
     _statement: ($) => choice($.expression_statement, $._declaration_statement),
 
@@ -1602,6 +1608,17 @@ module.exports = grammar({
     _spaced_metavariable: () =>
       prec.dynamic(1, seq('$', choice(sym('_macro_metavariable_name'), token(prec(1, nonAsciiOrRawMacroName))))),
     metavariable: () => /\$(r#)?[_\p{XID_Start}][_\p{XID_Continue}]*/u,
+
+    frontmatter: ($) =>
+      seq(
+        sym('_frontmatter_start'),
+        optional($.frontmatter_info_string),
+        sym('_frontmatter_header_end'),
+        sym('frontmatter_content'),
+        sym('_frontmatter_end')
+      ),
+
+    frontmatter_info_string: () => token.immediate(/[_\p{XID_Start}][_.\p{XID_Continue}-]*/u),
   },
 });
 

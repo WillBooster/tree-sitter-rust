@@ -7,11 +7,27 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "_frontmatter_context"
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
               "type": "SYMBOL",
               "name": "shebang"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "frontmatter"
             },
             {
               "type": "BLANK"
@@ -12906,6 +12922,47 @@
       "type": "PATTERN",
       "value": "\\$(r#)?[_\\p{XID_Start}][_\\p{XID_Continue}]*",
       "flags": "u"
+    },
+    "frontmatter": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_frontmatter_start"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "frontmatter_info_string"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_frontmatter_header_end"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "frontmatter_content"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_frontmatter_end"
+        }
+      ]
+    },
+    "frontmatter_info_string": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[_\\p{XID_Start}][_.\\p{XID_Continue}-]*",
+        "flags": "u"
+      }
     }
   },
   "extras": [
@@ -13070,6 +13127,26 @@
     {
       "type": "SYMBOL",
       "name": "_literal_suffix_start"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_frontmatter_start"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_frontmatter_header_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "frontmatter_content"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_frontmatter_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_frontmatter_context"
     }
   ],
   "inline": [
