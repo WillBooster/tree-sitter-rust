@@ -151,6 +151,7 @@ module.exports = grammar({
   inline: ($) => [
     $._path,
     $._type_identifier,
+    $._type_identifier_in_type_position,
     $._tokens,
     $._field_identifier,
     $._non_special_token,
@@ -569,7 +570,7 @@ module.exports = grammar({
           'left',
           choice(
             $.lifetime,
-            $._type_identifier,
+            $._type_identifier_in_type_position,
             $.scoped_type_identifier,
             $.generic_type,
             alias($._generic_type_turbofish, $.generic_type),
@@ -602,7 +603,7 @@ module.exports = grammar({
             field(
               'trait',
               choice(
-                $._type_identifier,
+                $._type_identifier_in_type_position,
                 alias(choice(...primitiveTypes), sym('type_identifier')),
                 $.scoped_type_identifier,
                 $.generic_type,
@@ -775,7 +776,7 @@ module.exports = grammar({
         $.unit_type,
         $.array_type,
         $.function_type,
-        $._type_identifier,
+        $._type_identifier_in_type_position,
         $.macro_invocation,
         $.never_type,
         $.dynamic_type,
@@ -805,7 +806,7 @@ module.exports = grammar({
               field(
                 'trait',
                 choice(
-                  $._type_identifier,
+                  $._type_identifier_in_type_position,
                   $.scoped_type_identifier,
                   alias(choice(...primitiveTypes), sym('type_identifier'))
                 )
@@ -898,7 +899,10 @@ module.exports = grammar({
 
     type_binding: ($) =>
       seq(
-        field('name', choice($._type_identifier, alias(choice(...primitiveTypes), sym('type_identifier')))),
+        field(
+          'name',
+          choice($._type_identifier_in_type_position, alias(choice(...primitiveTypes), sym('type_identifier')))
+        ),
         field('type_arguments', optional($.type_arguments)),
         '=',
         field('type', $._type)
@@ -919,7 +923,7 @@ module.exports = grammar({
           prec(
             1,
             choice(
-              $._type_identifier,
+              $._type_identifier_in_type_position,
               alias(choice(...primitiveTypes), sym('type_identifier')),
               $.scoped_type_identifier,
               $.removed_trait_bound,
@@ -942,7 +946,7 @@ module.exports = grammar({
           choice(
             $.higher_ranked_trait_bound,
             $.modified_trait_bound,
-            $._type_identifier,
+            $._type_identifier_in_type_position,
             alias(choice(...primitiveTypes), sym('type_identifier')),
             $.scoped_type_identifier,
             $.generic_type,
@@ -1636,6 +1640,8 @@ module.exports = grammar({
     _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto', 'macro_rules'), $.identifier),
 
     _type_identifier: ($) => alias(choice($.identifier, 'auto', 'macro_rules'), sym('type_identifier')),
+    _type_identifier_in_type_position: ($) =>
+      choice($._type_identifier, alias(choice(...reservedIdentifiers), sym('type_identifier'))),
     _field_identifier: ($) => alias($.identifier, sym('field_identifier')),
 
     self: () => 'self',

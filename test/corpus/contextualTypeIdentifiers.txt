@@ -1,0 +1,139 @@
+==================
+Contextual words in type positions
+==================
+
+type Alias = union;
+struct Holder { value: raw }
+fn identity(value: default) -> default { value }
+impl union {}
+impl Trait for union {}
+type Nested = Vec<gen>;
+type Applied = union<u8>;
+type UnionMacro = union!();
+type DefaultMacro = default!();
+type RawMacro = raw!();
+type GenMacro = gen!();
+
+---
+
+(source_file
+  (type_item
+    (type_identifier)
+    (type_identifier))
+  (struct_item
+    (type_identifier)
+    (field_declaration_list
+      (field_declaration
+        (field_identifier)
+        (type_identifier))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (type_identifier)
+    (block
+      (identifier)))
+  (impl_item
+    (type_identifier)
+    (declaration_list))
+  (impl_item
+    (type_identifier)
+    (type_identifier)
+    (declaration_list))
+  (type_item
+    (type_identifier)
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (type_identifier))))
+  (type_item
+    (type_identifier)
+    (generic_type
+      (identifier)
+      (type_arguments
+        (primitive_type))))
+  (type_item
+    (type_identifier)
+    (macro_invocation
+      (identifier)
+      (token_tree)))
+  (type_item
+    (type_identifier)
+    (macro_invocation
+      (identifier)
+      (token_tree)))
+  (type_item
+    (type_identifier)
+    (macro_invocation
+      (identifier)
+      (token_tree)))
+  (type_item
+    (type_identifier)
+    (macro_invocation
+      (identifier)
+      (token_tree))))
+
+==================
+Contextual words in trait and bound positions
+==================
+
+fn bounded<T>() where union: Trait {}
+impl raw for Holder {}
+fn object(_: &dyn default) {}
+fn opaque() -> impl gen { loop {} }
+type Associated = Trait<union = u8>;
+type Callable = raw(u8) -> u8;
+
+---
+
+(source_file
+  (function_item
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (parameters)
+    (where_clause
+      (where_predicate
+        (type_identifier)
+        (trait_bounds
+          (type_identifier))))
+    (block))
+  (impl_item
+    (type_identifier)
+    (type_identifier)
+    (declaration_list))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (reference_type
+          (dynamic_type
+            (type_identifier)))))
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (abstract_type
+      (type_identifier))
+    (block
+      (expression_statement
+        (loop_expression
+          (block)))))
+  (type_item
+    (type_identifier)
+    (generic_type
+      (type_identifier)
+      (type_arguments
+        (type_binding
+          (type_identifier)
+          (primitive_type)))))
+  (type_item
+    (type_identifier)
+    (function_type
+      (type_identifier)
+      (parameters
+        (primitive_type))
+      (primitive_type))))
