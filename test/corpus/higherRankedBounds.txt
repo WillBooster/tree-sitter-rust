@@ -1,0 +1,83 @@
+==================
+Higher-ranked bounds after plus
+==================
+
+type Object = dyn Send + for<'a> Trait<'a>;
+fn make() -> impl Send + for<'a> Trait<'a> { Value }
+type Multiple = dyn Send + for<'a, 'b> Trait<'a, 'b> + Sync;
+type Callable = dyn Send + for<'a> Fn(&'a str) -> bool;
+
+---
+
+(source_file
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (dynamic_type
+        (type_identifier))
+      (higher_ranked_trait_bound
+        (type_parameters
+          (lifetime_parameter
+            (lifetime
+              (identifier))))
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (lifetime
+              (identifier)))))))
+  (function_item
+    (identifier)
+    (parameters)
+    (bounded_type
+      (abstract_type
+        (type_identifier))
+      (higher_ranked_trait_bound
+        (type_parameters
+          (lifetime_parameter
+            (lifetime
+              (identifier))))
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (lifetime
+              (identifier))))))
+    (block
+      (identifier)))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (bounded_type
+        (dynamic_type
+          (type_identifier))
+        (higher_ranked_trait_bound
+          (type_parameters
+            (lifetime_parameter
+              (lifetime
+                (identifier)))
+            (lifetime_parameter
+              (lifetime
+                (identifier))))
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (lifetime
+                (identifier))
+              (lifetime
+                (identifier))))))
+      (type_identifier)))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (dynamic_type
+        (type_identifier))
+      (function_type
+        (for_lifetimes
+          (lifetime
+            (identifier)))
+        (type_identifier)
+        (parameters
+          (reference_type
+            (lifetime
+              (identifier))
+            (primitive_type)))
+        (primitive_type)))))

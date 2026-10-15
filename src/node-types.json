@@ -1039,6 +1039,10 @@
           "named": true
         },
         {
+          "type": "higher_ranked_trait_bound",
+          "named": true
+        },
+        {
           "type": "lifetime",
           "named": true
         },
