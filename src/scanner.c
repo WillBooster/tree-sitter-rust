@@ -340,7 +340,10 @@ static bool scan_foreign_declaration_start(TSLexer *lexer);
 static bool foreign_restricted_visibility(TSLexer *lexer);
 static bool foreign_identifier(TSLexer *lexer);
 static bool foreign_word(TSLexer *lexer, const char *word);
+static bool foreign_identifier_continue(int32_t c);
 static bool skip_trivia(TSLexer *lexer);
+static bool skip_block_trivia(TSLexer *lexer);
+static bool scanner_whitespace(int32_t c);
 
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     // Tree-sitter enables every external token during recovery; the unused sentinel suppresses normal scans.
@@ -369,7 +372,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_raw_string_content(scanner, lexer);
     }
 
-    while (valid_symbols[FRONTMATTER_START] ? frontmatter_whitespace(lexer->lookahead) : iswspace(lexer->lookahead)) {
+    while (valid_symbols[FRONTMATTER_START] ? rust_whitespace(lexer->lookahead) : scanner_whitespace(lexer->lookahead)) {
         skip(lexer);
     }
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
@@ -400,11 +403,8 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_raw_string_end(scanner, lexer);
     }
 
-    if (valid_symbols[TRAILING_DOT_FLOAT_LITERAL] && iswdigit(lexer->lookahead)) {
-        return process_trailing_dot_float_literal(lexer);
-    }
-
-    return false;
+    return valid_symbols[TRAILING_DOT_FLOAT_LITERAL] && iswdigit(lexer->lookahead) &&
+        process_trailing_dot_float_literal(lexer);
 }
 
 static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool raw_string_valid) {
@@ -417,7 +417,7 @@ static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool 
         advance(lexer);
         c = lexer->lookahead;
     } while (c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
-    if (c >= 0x80) return false;
+    if (c >= 0x80 && !rust_whitespace(c)) return false;
     bool byte_prefix = length == 1 && prefix[0] == 'b';
     bool string_prefix = length == 1 && (prefix[0] == 'r' || prefix[0] == 'c' || byte_prefix);
     bool raw_prefix = (length == 1 && prefix[0] == 'r') ||
@@ -502,10 +502,11 @@ static bool foreign_identifier(TSLexer *lexer) {
         if (lexer->lookahead == '#') { advance(lexer); started = false; }
     }
     if (!started) {
-        if (!(lexer->lookahead == '_' || iswalpha(lexer->lookahead) || lexer->lookahead >= 0x80)) return false;
+        int32_t c = lexer->lookahead;
+        if (!(c == '_' || iswalpha(c) || (c >= 0x80 && !rust_whitespace(c)))) return false;
         advance(lexer);
     }
-    while (lexer->lookahead == '_' || iswalnum(lexer->lookahead) || lexer->lookahead >= 0x80) advance(lexer);
+    while (foreign_identifier_continue(lexer->lookahead)) advance(lexer);
     return true;
 }
 
@@ -514,26 +515,36 @@ static bool foreign_word(TSLexer *lexer, const char *word) {
         if (lexer->lookahead != *word) return false;
         advance(lexer);
     }
-    return !(lexer->lookahead == '_' || iswalnum(lexer->lookahead) || lexer->lookahead >= 0x80);
+    return !foreign_identifier_continue(lexer->lookahead);
+}
+
+static bool foreign_identifier_continue(int32_t c) {
+    return c == '_' || iswalnum(c) || (c >= 0x80 && !rust_whitespace(c));
 }
 
 static bool skip_trivia(TSLexer *lexer) {
     for (;;) {
-        while (iswspace(lexer->lookahead)) advance(lexer);
+        while (scanner_whitespace(lexer->lookahead)) advance(lexer);
         if (lexer->lookahead != '/') return true;
         advance(lexer);
         if (lexer->lookahead == '/') {
             while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
-        } else if (lexer->lookahead == '*') {
-            advance(lexer);
-            unsigned depth = 1;
-            while (depth > 0 && !lexer->eof(lexer)) {
-                int32_t previous = lexer->lookahead;
-                advance(lexer);
-                if (previous == '/' && lexer->lookahead == '*') { advance(lexer); depth++; }
-                else if (previous == '*' && lexer->lookahead == '/') { advance(lexer); depth--; }
-            }
-            if (depth > 0) return false;
-        } else return false;
+            continue;
+        }
+        if (lexer->lookahead != '*' || !skip_block_trivia(lexer)) return false;
     }
 }
+
+static bool skip_block_trivia(TSLexer *lexer) {
+    advance(lexer);
+    unsigned depth = 1;
+    while (depth > 0 && !lexer->eof(lexer)) {
+        int32_t previous = lexer->lookahead;
+        advance(lexer);
+        if (previous == '/' && lexer->lookahead == '*') { advance(lexer); depth++; }
+        else if (previous == '*' && lexer->lookahead == '/') { advance(lexer); depth--; }
+    }
+    return depth == 0;
+}
+
+static bool scanner_whitespace(int32_t c) { return rust_whitespace(c) || iswspace(c); }
