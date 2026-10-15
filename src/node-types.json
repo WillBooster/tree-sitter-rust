@@ -2019,6 +2019,10 @@
             "named": true
           },
           {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
             "type": "shorthand_field_identifier",
             "named": true
           }

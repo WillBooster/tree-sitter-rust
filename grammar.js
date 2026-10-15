@@ -1426,11 +1426,23 @@ module.exports = grammar({
     field_pattern: ($) =>
       seq(
         repeat($.attribute_item),
-        optional('ref'),
-        optional($.mutable_specifier),
         choice(
-          field('name', alias($.identifier, sym('shorthand_field_identifier'))),
-          seq(field('name', $._field_identifier), ':', field('pattern', $._pattern))
+          seq(
+            optional('ref'),
+            optional($.mutable_specifier),
+            choice(
+              field('name', alias($.identifier, sym('shorthand_field_identifier'))),
+              seq(field('name', $._field_identifier), ':', field('pattern', $._pattern))
+            )
+          ),
+          seq(
+            field(
+              'name',
+              alias(/([0-9][0-9_]*|0b_*[01][01_]*|0o_*[0-7][0-7_]*|0x_*[0-9a-fA-F][0-9a-fA-F_]*)/, $.integer_literal)
+            ),
+            ':',
+            field('pattern', $._pattern)
+          )
         )
       ),
 
