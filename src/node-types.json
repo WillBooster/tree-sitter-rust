@@ -1337,6 +1337,10 @@
           "named": true
         },
         {
+          "type": "attribute_item",
+          "named": true
+        },
+        {
           "type": "parameter",
           "named": true
         }

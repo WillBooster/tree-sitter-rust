@@ -1,0 +1,88 @@
+==================
+Outer attributes on closure parameters
+==================
+
+fn main() {
+  let typed = |#[allow(unused)] value: u32| 1;
+  let inferred = |#[allow(unused)] value| value;
+  let tuple = |#[allow(unused)] (left, right): (u8, u8)| left + right;
+  let multiple = |#[allow(unused)] #[allow(unused_mut)] mut value: u32, #[allow(unused)] other: u32,| value;
+}
+
+---
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (closure_expression
+          (closure_parameters
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (parameter
+              (identifier)
+              (primitive_type)))
+          (integer_literal)))
+      (let_declaration
+        (identifier)
+        (closure_expression
+          (closure_parameters
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (identifier))
+          (identifier)))
+      (let_declaration
+        (identifier)
+        (closure_expression
+          (closure_parameters
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (parameter
+              (tuple_pattern
+                (identifier)
+                (identifier))
+              (tuple_type
+                (primitive_type)
+                (primitive_type))))
+          (binary_expression
+            (identifier)
+            (identifier))))
+      (let_declaration
+        (identifier)
+        (closure_expression
+          (closure_parameters
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (parameter
+              (mutable_specifier)
+              (identifier)
+              (primitive_type))
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (parameter
+              (identifier)
+              (primitive_type)))
+          (identifier))))))
