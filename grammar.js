@@ -1435,7 +1435,7 @@ module.exports = grammar({
               seq(field('name', $._field_identifier), ':', field('pattern', $._pattern))
             )
           ),
-          seq(field('name', alias(/[0-9][0-9_]*/, $.integer_literal)), ':', field('pattern', $._pattern))
+          seq(field('name', alias(/[0-9]+/, $.integer_literal)), ':', field('pattern', $._pattern))
         )
       ),
 
