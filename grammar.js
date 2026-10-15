@@ -160,6 +160,8 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.type_parameters, $.for_lifetimes],
+    [$.lifetime_parameter, $.for_lifetimes],
     [$._token_pattern, $.token_repetition_pattern],
     [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
@@ -664,7 +666,8 @@ module.exports = grammar({
         seq(':', optional(seq(sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound)), optional('+'))))
       ),
 
-    higher_ranked_trait_bound: ($) => seq('for', field('type_parameters', $.type_parameters), field('type', $._type)),
+    higher_ranked_trait_bound: ($) =>
+      prec.dynamic(1, seq('for', field('type_parameters', $.type_parameters), field('type', $._type))),
 
     removed_trait_bound: ($) => seq('?', $._type),
 
@@ -794,7 +797,7 @@ module.exports = grammar({
 
     array_type: ($) => seq('[', field('element', $._type), optional(seq(';', field('length', $._expression))), ']'),
 
-    for_lifetimes: ($) => seq('for', '<', optional(seq(sepBy1(',', $.lifetime), optional(','))), '>'),
+    for_lifetimes: ($) => prec(1, seq('for', '<', optional(seq(sepBy1(',', prec(1, $.lifetime)), optional(','))), '>')),
 
     function_type: ($) =>
       seq(
@@ -874,7 +877,14 @@ module.exports = grammar({
       ),
 
     bounded_type: ($) =>
-      prec.left(-1, seq(choice($.lifetime, $._type, $.use_bounds), '+', choice($.lifetime, $._type, $.use_bounds))),
+      prec.left(
+        -1,
+        seq(
+          choice($.lifetime, $._type, $.use_bounds),
+          '+',
+          choice($.lifetime, $._type, $.use_bounds, prec.dynamic(-2, $.higher_ranked_trait_bound))
+        )
+      ),
 
     use_bounds: ($) =>
       seq('use', token(prec(1, '<')), sepBy(',', choice($.lifetime, $._type_identifier)), optional(','), '>'),
@@ -917,7 +927,7 @@ module.exports = grammar({
     abstract_type: ($) =>
       seq(
         'impl',
-        optional(seq('for', $.type_parameters)),
+        optional(prec.dynamic(1, seq('for', $.type_parameters))),
         field(
           'trait',
           prec(
