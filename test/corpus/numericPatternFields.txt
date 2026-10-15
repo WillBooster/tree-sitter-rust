@@ -101,3 +101,72 @@ fn parameter(Pair { 0: first, 1: second }: Pair) {}
             (identifier)))
         (type_identifier)))
     (block)))
+
+==================
+Integer token spellings in pattern field names
+==================
+
+fn f() {
+  let Pair { 01: value, .. } = pair;
+  let Pair { 1_0: value, .. } = pair;
+  let Pair { 0_: value, .. } = pair;
+  let Pair { 0x0: value, .. } = pair;
+  let Pair { 0b1: value, .. } = pair;
+  let Pair { 0o7: value, .. } = pair;
+}
+
+---
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (remaining_field_pattern))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (remaining_field_pattern))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (remaining_field_pattern))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (remaining_field_pattern))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (remaining_field_pattern))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (remaining_field_pattern))
+        (identifier)))))

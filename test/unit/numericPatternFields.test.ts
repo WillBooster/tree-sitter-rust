@@ -50,7 +50,7 @@ test('distinguishes numbered field names from nested literal patterns in public 
   }
 });
 
-test('rejects numbered shorthand, prefixed modifiers, and non-decimal or suffixed field names', () => {
+test('rejects shorthand, prefixed modifiers, suffixes, and non-integer field names', () => {
   const parser = new Parser().setLanguage(language);
   try {
     for (const field of [
@@ -58,10 +58,10 @@ test('rejects numbered shorthand, prefixed modifiers, and non-decimal or suffixe
       '0u8: value',
       '0foo: value',
       '0.0: value',
-      '0x0: value',
-      '1_0: value',
-      '0_: value',
-      '1__0: value',
+      '1e5: value',
+      '0x0u8: value',
+      '0b1u8: value',
+      '0o7u8: value',
       'ref 0: value',
       'mut 0: value',
       'ref mut 0: value',
@@ -69,6 +69,27 @@ test('rejects numbered shorthand, prefixed modifiers, and non-decimal or suffixe
       const tree = parser.parse(`fn main() { let Pair { ${field} } = value; }`)!;
       try {
         expect(tree.rootNode.hasError, field).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
+test('preserves complete suffix-free integer field tokens before compiler field lookup', () => {
+  const parser = new Parser().setLanguage(language);
+  try {
+    for (const name of ['01', '1_0', '0_', '1__0', '0x0', '0b1', '0o7', '0x_a', '0b_1', '0o_7']) {
+      const tree = parser.parse(`fn f() { let Pair { ${name}: value, .. } = pair; }`)!;
+      try {
+        expect(tree.rootNode.hasError, name).toBe(false);
+        const fields = tree.rootNode.descendantsOfType('field_pattern');
+        expect(fields).toHaveLength(1);
+        expect(fields[0]?.childForFieldName('name')?.type).toBe('integer_literal');
+        expect(fields[0]?.childForFieldName('name')?.text).toBe(name);
+        expect(fields[0]?.childForFieldName('pattern')?.text).toBe('value');
       } finally {
         tree.delete();
       }
