@@ -941,6 +941,7 @@ module.exports = grammar({
     dynamic_type: ($) =>
       seq(
         'dyn',
+        repeat(seq($.lifetime, '+')),
         field(
           'trait',
           choice(

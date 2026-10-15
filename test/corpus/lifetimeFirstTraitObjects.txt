@@ -1,0 +1,80 @@
+==================
+Lifetime bounds before trait object traits
+==================
+
+type Static = dyn 'static + Display;
+type Borrowed<'a> = dyn 'a + Trait<'a>;
+type Higher<'a> = dyn 'a + for<'b> Trait<'b>;
+type Markers<'a> = dyn 'a + Send + Sync;
+fn f(value: &(dyn '_ + std::fmt::Display)) {}
+
+---
+
+(source_file
+  (type_item
+    (type_identifier)
+    (dynamic_type
+      (lifetime
+        (identifier))
+      (type_identifier)))
+  (type_item
+    (type_identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))))
+    (dynamic_type
+      (lifetime
+        (identifier))
+      (generic_type
+        (type_identifier)
+        (type_arguments
+          (lifetime
+            (identifier))))))
+  (type_item
+    (type_identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))))
+    (dynamic_type
+      (lifetime
+        (identifier))
+      (higher_ranked_trait_bound
+        (type_parameters
+          (lifetime_parameter
+            (lifetime
+              (identifier))))
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (lifetime
+              (identifier)))))))
+  (type_item
+    (type_identifier)
+    (type_parameters
+      (lifetime_parameter
+        (lifetime
+          (identifier))))
+    (bounded_type
+      (dynamic_type
+        (lifetime
+          (identifier))
+        (type_identifier))
+      (type_identifier)))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (reference_type
+          (tuple_type
+            (dynamic_type
+              (lifetime
+                (identifier))
+              (scoped_type_identifier
+                (scoped_identifier
+                  (identifier)
+                  (identifier))
+                (type_identifier)))))))
+    (block)))
