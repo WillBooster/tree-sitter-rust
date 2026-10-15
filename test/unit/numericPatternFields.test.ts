@@ -50,10 +50,19 @@ test('distinguishes numbered field names from nested literal patterns in public 
   }
 });
 
-test('rejects numbered shorthand and non-decimal or suffixed pattern field names', () => {
+test('rejects numbered shorthand, prefixed modifiers, and non-decimal or suffixed field names', () => {
   const parser = new Parser().setLanguage(language);
   try {
-    for (const field of ['0', '0u8: value', '0foo: value', '0.0: value', '0x0: value']) {
+    for (const field of [
+      '0',
+      '0u8: value',
+      '0foo: value',
+      '0.0: value',
+      '0x0: value',
+      'ref 0: value',
+      'mut 0: value',
+      'ref mut 0: value',
+    ]) {
       const tree = parser.parse(`fn main() { let Pair { ${field} } = value; }`)!;
       try {
         expect(tree.rootNode.hasError, field).toBe(true);
@@ -62,6 +71,30 @@ test('rejects numbered shorthand and non-decimal or suffixed pattern field names
       }
     }
   } finally {
+    parser.delete();
+  }
+});
+
+test('keeps binding modifiers inside numbered-field patterns and on named fields', () => {
+  const parser = new Parser().setLanguage(language);
+  const tree = parser.parse(
+    'fn f() { let Pair { 0: ref first, 1: ref mut second } = value; let Named { ref x, mut y, ref mut z, .. } = value; }'
+  )!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    const fields = tree.rootNode.descendantsOfType('field_pattern');
+    expect(fields.map((node) => node.childForFieldName('name')?.text)).toEqual(['0', '1', 'x', 'y', 'z']);
+    expect(fields.slice(0, 2).map((node) => node.childForFieldName('pattern')?.text)).toEqual([
+      'ref first',
+      'ref mut second',
+    ]);
+    expect(fields.slice(2).map((node) => node.childForFieldName('name')?.type)).toEqual([
+      'shorthand_field_identifier',
+      'shorthand_field_identifier',
+      'shorthand_field_identifier',
+    ]);
+  } finally {
+    tree.delete();
     parser.delete();
   }
 });
