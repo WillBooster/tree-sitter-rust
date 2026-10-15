@@ -1430,7 +1430,11 @@ module.exports = grammar({
         optional($.mutable_specifier),
         choice(
           field('name', alias($.identifier, sym('shorthand_field_identifier'))),
-          seq(field('name', $._field_identifier), ':', field('pattern', $._pattern))
+          seq(
+            field('name', choice($._field_identifier, alias(/[0-9][0-9_]*/, $.integer_literal))),
+            ':',
+            field('pattern', $._pattern)
+          )
         )
       ),
 

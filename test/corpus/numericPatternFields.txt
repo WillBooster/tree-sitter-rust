@@ -1,0 +1,103 @@
+==================
+Numbered struct pattern fields
+==================
+
+fn main() {
+  let Pair { 0: first, 1: second } = value;
+  match value { E::Pair { 0: ref first, 1: _, .. } => {} }
+  let Pair { #[allow(unused)] 0: first, 1: second } = value;
+  let Outer { 0: Inner { 1: 42, .. }, .. } = value;
+  let Pair::<u8> { 0: first, 1: second } = value;
+}
+fn parameter(Pair { 0: first, 1: second }: Pair) {}
+
+---
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (field_pattern
+            (integer_literal)
+            (identifier)))
+        (identifier))
+      (expression_statement
+        (match_expression
+          (identifier)
+          (match_block
+            (match_arm
+              (match_pattern
+                (struct_pattern
+                  (scoped_type_identifier
+                    (identifier)
+                    (type_identifier))
+                  (field_pattern
+                    (integer_literal)
+                    (ref_pattern
+                      (identifier)))
+                  (field_pattern
+                    (integer_literal))
+                  (remaining_field_pattern)))
+              (block)))))
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (attribute_item
+              (attribute
+                (identifier)
+                (token_tree
+                  (identifier))))
+            (integer_literal)
+            (identifier))
+          (field_pattern
+            (integer_literal)
+            (identifier)))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (struct_pattern
+              (type_identifier)
+              (field_pattern
+                (integer_literal)
+                (integer_literal))
+              (remaining_field_pattern)))
+          (remaining_field_pattern))
+        (identifier))
+      (let_declaration
+        (struct_pattern
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (primitive_type)))
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (field_pattern
+            (integer_literal)
+            (identifier)))
+        (identifier))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (struct_pattern
+          (type_identifier)
+          (field_pattern
+            (integer_literal)
+            (identifier))
+          (field_pattern
+            (integer_literal)
+            (identifier)))
+        (type_identifier)))
+    (block)))
