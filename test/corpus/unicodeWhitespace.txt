@@ -1,0 +1,75 @@
+================================================================================
+Rust Unicode whitespace between tokens
+================================================================================
+
+fnmain() { let‎value‏= 1 ; }
+unsafe extern "C" { pub(in‎crate)‏safe fn foreign(); }
+macro_rules! m { ($ name‎:tt) => {}; ($($x:tt)‏*) => {}; }
+mod inner { unsafe extern "C" { pub(in crate :: inner) safe fn function(); } }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (integer_literal))))
+  (foreign_mod_item
+    (extern_modifier
+      (string_literal
+        (string_content)))
+    (declaration_list
+      (function_signature_item
+        (visibility_modifier
+          (crate))
+        (function_modifiers)
+        (identifier)
+        (parameters))))
+  (macro_definition
+    (identifier)
+    (macro_rule
+      (token_tree_pattern
+        (token_binding_pattern
+          (metavariable)
+          (fragment_specifier)))
+      (token_tree))
+    (macro_rule
+      (token_tree_pattern
+        (token_repetition_pattern
+          (token_binding_pattern
+            (metavariable)
+            (fragment_specifier))))
+      (token_tree)))
+  (mod_item
+    (identifier)
+    (declaration_list
+      (foreign_mod_item
+        (extern_modifier
+          (string_literal
+            (string_content)))
+        (declaration_list
+          (function_signature_item
+            (visibility_modifier
+              (scoped_identifier
+                (crate)
+                (identifier)))
+            (function_modifiers)
+            (identifier)
+            (parameters)))))))
+
+================================================================================
+Unicode whitespace cannot replace frontmatter header spacing
+:error
+================================================================================
+
+---‎
+value = 1
+---
+fn main() {}
+
+--------------------------------------------------------------------------------
+
+(ERROR)

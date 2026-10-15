@@ -120,7 +120,7 @@ const fieldIdentifierKeywords = [...reservedIdentifiers, ...primitiveTypes, 'aut
 module.exports = grammar({
   name: 'rust',
 
-  extras: ($) => [/\s/, $.line_comment, $.block_comment],
+  extras: ($) => [/[\s\u0085\u200E\u200F\u2028\u2029]/, $.line_comment, $.block_comment],
 
   externals: () => [
     sym('string_content'),
@@ -1668,7 +1668,7 @@ module.exports = grammar({
  */
 function macroRepetitionSeparator(start, content, end) {
   return choice(
-    /[^\s/+*?$"][^/+*?$"]*|\/(?:[^/*+*?$"][^/+*?$"]*)?|\$/,
+    /[^\s\u0085\u200E\u200F\u2028\u2029/+*?$"][^/+*?$"]*|\/(?:[^/*+*?$"][^/+*?$"]*)?|\$/,
     /[bc]?"(?:[^"\\]|\\[\s\S])*"/,
     /b?'(?:\\(?:[^xu]|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F][0-9a-fA-F_]*\}|x[0-9a-fA-F]{2})|[^\\'])'/,
     seq(start, content, end)

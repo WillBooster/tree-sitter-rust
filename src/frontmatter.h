@@ -10,7 +10,7 @@ typedef struct {
 } Frontmatter;
 
 static bool frontmatter_space(int32_t c);
-static bool frontmatter_whitespace(int32_t c);
+static bool rust_whitespace(int32_t c);
 static bool frontmatter_header_valid(TSLexer *lexer);
 
 typedef struct {
@@ -41,7 +41,7 @@ static bool scan_frontmatter_context(Frontmatter *state, TSLexer *lexer) {
     if (lexer->lookahead == '#') {
         state->allowed = frontmatter_shebang_prefix(lexer);
     } else {
-        while (frontmatter_whitespace(lexer->lookahead)) lexer->advance(lexer, false);
+        while (rust_whitespace(lexer->lookahead)) lexer->advance(lexer, false);
         state->allowed = lexer->lookahead == '-';
     }
     lexer->result_symbol = FRONTMATTER_CONTEXT;
@@ -60,7 +60,7 @@ static bool frontmatter_shebang_prefix(TSLexer *lexer) {
 
 static bool frontmatter_shebang_attribute(ShebangProbe *probe, TSLexer *lexer) {
     for (;;) {
-        while (frontmatter_whitespace(lexer->lookahead)) frontmatter_shebang_advance(probe, lexer);
+        while (rust_whitespace(lexer->lookahead)) frontmatter_shebang_advance(probe, lexer);
         if (lexer->lookahead != '/') return lexer->lookahead == '[';
         frontmatter_shebang_advance(probe, lexer);
         if (lexer->lookahead == '/') {
@@ -93,7 +93,7 @@ static bool skip_frontmatter_shebang_block(ShebangProbe *probe, TSLexer *lexer) 
 
 static void frontmatter_shebang_advance(ShebangProbe *probe, TSLexer *lexer) {
     int32_t current = lexer->lookahead;
-    if (probe->after_first_line && probe->next_line_start < 0 && !frontmatter_whitespace(current)) probe->next_line_start = current;
+    if (probe->after_first_line && probe->next_line_start < 0 && !rust_whitespace(current)) probe->next_line_start = current;
     if (current == '\n') probe->after_first_line = true;
     lexer->advance(lexer, false);
 }
@@ -160,7 +160,7 @@ static bool scan_frontmatter_end(Frontmatter *state, TSLexer *lexer) {
     return true;
 }
 
-// The grammar token checks Unicode identifiers; this preflight prevents comment extras inside the header.
+// Preflight prevents comments and non-horizontal whitespace from being skipped as extras inside the header.
 static bool frontmatter_header_valid(TSLexer *lexer) {
     bool trailing_space = false;
     bool first = true;
@@ -171,7 +171,7 @@ static bool frontmatter_header_valid(TSLexer *lexer) {
             trailing_space = true;
             continue;
         }
-        if (trailing_space) return false;
+        if (trailing_space || rust_whitespace(c)) return false;
         bool identifier = c >= 0x80 || c == '_' || isalpha(c);
         if (!identifier && (first || !(isdigit(c) || c == '-' || c == '.'))) return false;
         first = false;
@@ -180,7 +180,7 @@ static bool frontmatter_header_valid(TSLexer *lexer) {
     return lexer->lookahead == '\n';
 }
 
-static bool frontmatter_whitespace(int32_t c) {
+static bool rust_whitespace(int32_t c) {
     return (c >= '\t' && c <= '\r') || c == ' ' || c == 0x85 || c == 0x200e || c == 0x200f || c == 0x2028 || c == 0x2029;
 }
 
