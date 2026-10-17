@@ -18,6 +18,8 @@ test('injects Markdown into documentation content without comment delimiters or 
     '/** **Outer block** */',
     'struct Example;',
     'mod inner { /*! **Inner block** */ }',
+    '/**\n * ```rust\n * let value = 1;\n * ```\n */',
+    'fn guttered() {}',
     '/* ordinary block */',
     '/*** also ordinary */',
     '//// also ordinary',
@@ -38,6 +40,7 @@ test('injects Markdown into documentation content without comment delimiters or 
       ' ```\n',
       ' **Outer block** ',
       ' **Inner block** ',
+      '\n * ```rust\n * let value = 1;\n * ```\n ',
     ]);
     expect(
       matches

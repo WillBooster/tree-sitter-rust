@@ -60,6 +60,12 @@ parser.setLanguage(await Language.load(rust));
 
 The package also ships the queries in `queries/` and the node types in `src/node-types.json`.
 
+Documentation-comment injections require a host with Markdown parsing and fenced-language injections.
+Line documentation is combined across the syntax tree; an unclosed fence can affect later comments.
+Each block comment is a separate Markdown document. Its content is passed through unchanged, including
+leading `*` gutters, which remain Markdown text and can prevent fence recognition. Use unguttered block
+documentation or line documentation for fenced examples with these queries.
+
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
 fuzzed with. The parser loads only with that runtime, version 2.0.0 or later; upstream's `tree-sitter` crate rejects it:
