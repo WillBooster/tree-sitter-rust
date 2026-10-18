@@ -11,9 +11,12 @@ c"\u{4_1___}";
 --------------------------------------------------------------------------------
 
 (source_file
-  (expression_statement (char_literal))
-  (expression_statement (char_literal))
-  (expression_statement (char_literal))
+  (expression_statement
+    (char_literal))
+  (expression_statement
+    (char_literal))
+  (expression_statement
+    (char_literal))
   (expression_statement
     (string_literal
       (string_content)
@@ -21,7 +24,8 @@ c"\u{4_1___}";
       (escape_sequence)
       (string_content)))
   (expression_statement
-    (string_literal (escape_sequence))))
+    (string_literal
+      (escape_sequence))))
 
 ================================================================================
 Unicode escapes in macro tokens and repetition separators
@@ -51,7 +55,8 @@ chars!('\u{10__FFFF}' "\u{4_1_}");
       macro: (identifier)
       (token_tree
         (char_literal)
-        (string_literal (escape_sequence))))))
+        (string_literal
+          (escape_sequence))))))
 
 ================================================================================
 Unicode character escapes cannot start with an underscore

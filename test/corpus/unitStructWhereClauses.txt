@@ -17,7 +17,8 @@ struct Record where i32: Copy { value: i32 }
     (where_clause
       (where_predicate
         left: (primitive_type)
-        bounds: (trait_bounds (type_identifier)))))
+        bounds: (trait_bounds
+          (type_identifier)))))
   (struct_item
     (visibility_modifier)
     name: (type_identifier)
@@ -30,7 +31,8 @@ struct Record where i32: Copy { value: i32 }
         left: (array_type
           element: (primitive_type)
           length: (identifier))
-        bounds: (trait_bounds (type_identifier)))))
+        bounds: (trait_bounds
+          (type_identifier)))))
   (struct_item
     name: (type_identifier)
     (where_clause))
@@ -38,16 +40,21 @@ struct Record where i32: Copy { value: i32 }
     name: (type_identifier))
   (struct_item
     name: (type_identifier)
-    body: (ordered_field_declaration_list type: (primitive_type))
+    body: (ordered_field_declaration_list
+      type: (primitive_type))
     (where_clause
       (where_predicate
         left: (primitive_type)
-        bounds: (trait_bounds (type_identifier)))))
+        bounds: (trait_bounds
+          (type_identifier)))))
   (struct_item
     name: (type_identifier)
     (where_clause
       (where_predicate
         left: (primitive_type)
-        bounds: (trait_bounds (type_identifier))))
+        bounds: (trait_bounds
+          (type_identifier))))
     body: (field_declaration_list
-      (field_declaration name: (field_identifier) type: (primitive_type)))))
+      (field_declaration
+        name: (field_identifier)
+        type: (primitive_type)))))

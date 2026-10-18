@@ -1235,55 +1235,65 @@ mod macos_only {}
 #![allow(clippy::useless_transmute)]
 
 #[clippy::cyclomatic_complexity = "100"]
+fn complex() {}
 
 --------------------------------------------------------------------------------
 
 (source_file
-  (attribute_item
-    (attribute
-      (identifier)))
-  (function_item
-    name: (identifier)
-    parameters: (parameters)
-    body: (block))
-  (attribute_item
-    (attribute
-      (identifier)
-      arguments: (token_tree
-        (identifier))))
-  (struct_item
-    name: (type_identifier))
-  (attribute_item
-    (attribute
-      (identifier)
-      arguments: (token_tree
+  (attributed_declaration
+    (attribute_item
+      (attribute
+        (identifier)))
+    declaration: (function_item
+      name: (identifier)
+      parameters: (parameters)
+      body: (block)))
+  (attributed_declaration
+    (attribute_item
+      (attribute
         (identifier)
-        (identifier))))
-  (struct_item
-    name: (type_identifier))
-  (attribute_item
-    (attribute
-      (identifier)
-      arguments: (token_tree
+        arguments: (token_tree
+          (identifier))))
+    declaration: (struct_item
+      name: (type_identifier)))
+  (attributed_declaration
+    (attribute_item
+      (attribute
         (identifier)
-        (string_literal
-          (string_content)))))
-  (mod_item
-    name: (identifier)
-    body: (declaration_list))
+        arguments: (token_tree
+          (identifier)
+          (identifier))))
+    declaration: (struct_item
+      name: (type_identifier)))
+  (attributed_declaration
+    (attribute_item
+      (attribute
+        (identifier)
+        arguments: (token_tree
+          (identifier)
+          (string_literal
+            (string_content)))))
+    declaration: (mod_item
+      name: (identifier)
+      body: (declaration_list)))
   (inner_attribute_item
     (attribute
       (identifier)
       arguments: (token_tree
         (identifier)
         (identifier))))
-  (attribute_item
-    (attribute
-      (scoped_identifier
-        path: (identifier)
-        name: (identifier))
-      value: (string_literal
-        (string_content)))))
+  (attributed_declaration
+    (attribute_item
+      (attribute
+        (scoped_identifier
+          path: (identifier)
+          name: (identifier))
+        value: (string_literal
+          (string_content))))
+    declaration: (function_item
+      name: (identifier)
+      parameters: (parameters)
+      body: (block))))
 
 ================================================================================
 Inner attributes
@@ -1358,28 +1368,30 @@ fn baz() {}
 --------------------------------------------------------------------------------
 
 (source_file
-  (attribute_item
-    (attribute
-      (identifier)
-      (macro_invocation
+  (attributed_declaration
+    (attribute_item
+      (attribute
         (identifier)
-        (token_tree
-          (string_literal
-            (string_content))))))
-  (function_item
-    (identifier)
-    (parameters)
-    (block))
-  (attribute_item
-    (attribute
+        (macro_invocation
+          (identifier)
+          (token_tree
+            (string_literal
+              (string_content))))))
+    (function_item
       (identifier)
-      (scoped_identifier
+      (parameters)
+      (block)))
+  (attributed_declaration
+    (attribute_item
+      (attribute
         (identifier)
-        (identifier))))
-  (function_item
-    (identifier)
-    (parameters)
-    (block)))
+        (scoped_identifier
+          (identifier)
+          (identifier))))
+    (function_item
+      (identifier)
+      (parameters)
+      (block))))
 
 ================================================================================
 Attribute macros
@@ -1447,48 +1459,49 @@ pub enum Error {
     (scoped_identifier
       (identifier)
       (identifier)))
-  (attribute_item
-    (attribute
-      (identifier)
-      (token_tree
+  (attributed_declaration
+    (attribute_item
+      (attribute
         (identifier)
-        (identifier))))
-  (enum_item
-    (visibility_modifier)
-    (type_identifier)
-    (enum_variant_list
-      (attribute_item
-        (attribute
+        (token_tree
           (identifier)
-          (token_tree
-            (string_literal
-              (string_content))
+          (identifier))))
+    (enum_item
+      (visibility_modifier)
+      (type_identifier)
+      (enum_variant_list
+        (attribute_item
+          (attribute
             (identifier)
             (token_tree
-              (integer_literal)))))
-      (enum_variant
-        (identifier)
-        (ordered_field_declaration_list
-          (type_identifier)))
-      (attribute_item
-        (attribute
+              (string_literal
+                (string_content))
+              (identifier)
+              (token_tree
+                (integer_literal)))))
+        (enum_variant
           (identifier)
-          (token_tree
-            (string_literal
-              (string_content))
+          (ordered_field_declaration_list
+            (type_identifier)))
+        (attribute_item
+          (attribute
             (identifier)
-            (identifier)
-            (identifier)
-            (identifier))))
-      (enum_variant
-        (identifier)
-        (field_declaration_list
-          (field_declaration
-            (field_identifier)
-            (primitive_type))
-          (field_declaration
-            (field_identifier)
-            (type_identifier)))))))
+            (token_tree
+              (string_literal
+                (string_content))
+              (identifier)
+              (identifier)
+              (identifier)
+              (identifier))))
+        (enum_variant
+          (identifier)
+          (field_declaration_list
+            (field_declaration
+              (field_identifier)
+              (primitive_type))
+            (field_declaration
+              (field_identifier)
+              (type_identifier))))))))
 
 ================================================================================
 Attributes and Expressions

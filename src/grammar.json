@@ -91,6 +91,47 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "empty_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "inner_attribute_item"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_attributable_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "attributed_declaration"
+        }
+      ]
+    },
+    "attributed_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "attribute_item"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "declaration",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_attributable_declaration"
+          }
+        }
+      ]
+    },
+    "_attributable_declaration": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "const_item"
         },
         {
@@ -104,18 +145,6 @@
         {
           "type": "SYMBOL",
           "name": "decl_macro"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "empty_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "attribute_item"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "inner_attribute_item"
         },
         {
           "type": "SYMBOL",
@@ -7363,19 +7392,19 @@
       "type": "PREC_DYNAMIC",
       "value": -1,
       "content": {
-        "type": "PREC_RIGHT",
-        "value": 12,
-        "content": {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "REPEAT1",
-              "content": {
-                "type": "SYMBOL",
-                "name": "attribute_item"
-              }
-            },
-            {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "REPEAT1",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute_item"
+            }
+          },
+          {
+            "type": "PREC_RIGHT",
+            "value": 12,
+            "content": {
               "type": "FIELD",
               "name": "value",
               "content": {
@@ -7383,8 +7412,8 @@
                 "name": "_expression"
               }
             }
-          ]
-        }
+          }
+        ]
       }
     },
     "_expression_ending_with_block": {
@@ -13420,6 +13449,9 @@
   ],
   "conflicts": [
     [
+      "attributed_expression"
+    ],
+    [
       "type_parameters",
       "for_lifetimes"
     ],
@@ -13442,10 +13474,6 @@
     [
       "_expression_except_range",
       "shorthand_field_initializer"
-    ],
-    [
-      "_declaration_statement",
-      "attributed_expression"
     ],
     [
       "_expression_except_range",

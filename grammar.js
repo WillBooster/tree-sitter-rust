@@ -160,13 +160,13 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.attributed_expression],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
     [$._token_pattern, $.token_repetition_pattern],
     [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
     [$._expression_except_range, $.shorthand_field_initializer],
-    [$._declaration_statement, $.attributed_expression],
     [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
@@ -199,14 +199,16 @@ module.exports = grammar({
     expression_statement: ($) => choice(seq($._expression, ';'), prec(1, $._expression_ending_with_block)),
 
     _declaration_statement: ($) =>
+      choice($.empty_statement, $.inner_attribute_item, $._attributable_declaration, $.attributed_declaration),
+
+    attributed_declaration: ($) => seq(repeat1($.attribute_item), field('declaration', $._attributable_declaration)),
+
+    _attributable_declaration: ($) =>
       choice(
         $.const_item,
         $.macro_invocation,
         $.macro_definition,
         $.decl_macro,
-        $.empty_statement,
-        $.attribute_item,
-        $.inner_attribute_item,
         $.mod_item,
         $.foreign_mod_item,
         $.struct_item,
@@ -1009,7 +1011,7 @@ module.exports = grammar({
     _expression: ($) => choice($._expression_except_range, $.range_expression, $.attributed_expression),
 
     attributed_expression: ($) =>
-      prec.dynamic(-1, prec.right(PREC.unary, seq(repeat1($.attribute_item), field('value', $._expression)))),
+      prec.dynamic(-1, seq(repeat1($.attribute_item), prec.right(PREC.unary, field('value', $._expression)))),
 
     _expression_ending_with_block: ($) =>
       choice(

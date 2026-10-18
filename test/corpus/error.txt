@@ -12,26 +12,26 @@ const A: &[&str] = &[
 ---
 
 (source_file
-    (const_item
+  (const_item
     name: (identifier)
     type: (reference_type
-        type: (array_type
+      type: (array_type
         element: (reference_type
-            type: (primitive_type))))
+          type: (primitive_type))))
     value: (reference_expression
-        value: (array_expression
-            (ERROR)
-            (string_literal
-                (string_content))
-            (ERROR)
-            (string_literal
-                (string_content))
-            (ERROR)
-            (string_literal
-                (string_content))
-            (ERROR)
-            (string_literal
-                (string_content))))))
+      value: (array_expression
+        (ERROR)
+        (string_literal
+          (string_content))
+        (ERROR)
+        (string_literal
+          (string_content))
+        (ERROR)
+        (string_literal
+          (string_content))
+        (ERROR)
+        (string_literal
+          (string_content))))))
 
 ====================================
 Json macro contents
@@ -42,17 +42,17 @@ Json macro contents
 ---
 
 (source_file
-    (expression_statement
-        (parenthesized_expression
-            (block
-                (ERROR
-                    (string_literal
-                        (string_content))
-                    (identifier)
-                    (string_literal
-                        (string_content)))
-                (identifier)))
-        (MISSING ";")))
+  (expression_statement
+    (parenthesized_expression
+      (block
+        (ERROR
+          (string_literal
+            (string_content))
+          (identifier)
+          (string_literal
+            (string_content)))
+        (identifier)))
+    (MISSING ";")))
 
 ====================================
 Longer json macro contents
@@ -71,27 +71,27 @@ Longer json macro contents
 ---
 
 (source_file
-    (expression_statement
-        (tuple_expression
-            (block
-                (ERROR
-                    (string_literal
-                        (string_content))
-                    (string_literal
-                        (string_content))
-                    (string_literal
-                        (string_content))
-                    (string_literal
-                        (string_content)))
-                (string_literal
-                    (string_content))
-                (ERROR))
-                (ERROR
-                    (string_literal
-                        (string_content))
-                    (string_literal
-                        (string_content)))
-                (string_literal
-                    (string_content))
-                (ERROR))
-        (MISSING ";")))
+  (expression_statement
+    (tuple_expression
+      (block
+        (ERROR
+          (string_literal
+            (string_content))
+          (string_literal
+            (string_content))
+          (string_literal
+            (string_content))
+          (string_literal
+            (string_content)))
+        (string_literal
+          (string_content))
+        (ERROR))
+      (ERROR
+        (string_literal
+          (string_content))
+        (string_literal
+          (string_content)))
+      (string_literal
+        (string_content))
+      (ERROR))
+    (MISSING ";")))
