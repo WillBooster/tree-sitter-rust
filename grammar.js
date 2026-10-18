@@ -1256,11 +1256,11 @@ module.exports = grammar({
       ),
 
     shorthand_field_initializer: ($) =>
-      seq(repeat($.attribute_item), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
+      seq(optional($._outer_attributes), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
 
     field_initializer: ($) =>
       seq(
-        repeat($.attribute_item),
+        optional($._outer_attributes),
         field(
           'field',
           choice(
