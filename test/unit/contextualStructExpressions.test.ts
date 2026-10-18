@@ -33,6 +33,8 @@ test('preserves contextual struct construction names and initializer fields', ()
         for (const body of [
           '{ a: 1 }',
           '{ a: 1, ..previous }',
+          '{ #[cfg(x)] #[allow(unused)] a: 1 }',
+          '{ #[cfg(x)] #[allow(unused)] 0: 1 }',
           ...(name === 'gen' && type === name ? [] : ['{ a }']),
         ]) {
           const source = `fn f() { let value = ${type} ${body}; after(); }`;
@@ -64,6 +66,7 @@ test('preserves contextual struct construction names and initializer fields', ()
       '{ 1_000 + 2 }',
       '{ 1 as u8 }',
       '{ #[cfg(x)] 1 }',
+      '{ #[cfg(x)] #[allow(unused)] 1 }',
       '{ yield 1; }',
       'move { yield 1; }',
     ]) {

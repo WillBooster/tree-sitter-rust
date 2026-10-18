@@ -26,6 +26,11 @@ test('uses a Wasm build built from the current parser', () => {
 // Thread CPU excludes concurrent test workers and background Wasm compilation/collection.
 // The ratio allows headroom over tenfold input growth while detecting quadratic work.
 test.each([
+  ['declaration attributes', 'fn f() { ', '#[a] ', 'let x = 1; }', false],
+  ['expression attributes', 'fn f() { let x = ', '#[a] ', '1 + 2; }', false],
+  ['block statement attributes', 'fn f() { ', '#[a] ', 'if true {} after(); }', false],
+  ['foreign attributes', 'unsafe extern "C" { ', '#[a] ', 'safe fn f(); }', false],
+  ['orphan attributes', 'mod m { ', '#[a] ', '}', true],
   ['line errors', '', '$ a\n', '', true],
   ['malformed foreign visibility', 'extern "C" { ', 'pub(in x fn f;\n', ' }', true],
   ['macro dollar groups', 'macro_rules! m { (', '$( a )', '*) => {}; }', false],

@@ -46,14 +46,17 @@ test('captures qualified extern declarations without accepting their qualifiers 
     'pub(in crate /* path */ :: r#outer) safe fn raw_path();',
     'pub(crate) safe static SAFE: i32;',
     'pub(in /* outer /* inner */ comment */ crate) unsafe static UNSAFE: i32;',
-  ];
+  ].flatMap((item) => [item, `#[allow(unused)] /* bridge */ #[cfg(all())] ${item}`]);
   const foreignSource = `unsafe extern "C" { ${items.join('\n')} }`;
   const source = `mod r#outer { ${foreignSource} }`;
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
     expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([source, foreignSource, ...items]);
-    for (const invalid of ['safe fn f();', 'safe static X: i32;', 'unsafe static X: i32;']) {
+    for (const invalid of ['safe fn f();', 'safe static X: i32;', 'unsafe static X: i32;'].flatMap((item) => [
+      item,
+      `#[a] #[b] ${item}`,
+    ])) {
       const invalidTree = parser.parse(invalid)!;
       try {
         expect(invalidTree.rootNode.hasError, invalid).toBe(true);

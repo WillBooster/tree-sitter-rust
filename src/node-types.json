@@ -8,7 +8,7 @@
         "named": true
       },
       {
-        "type": "attribute_item",
+        "type": "attributed_declaration",
         "named": true
       },
       {
@@ -777,6 +777,108 @@
       "types": [
         {
           "type": "attribute",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "attributed_declaration",
+    "named": true,
+    "fields": {
+      "declaration": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "associated_type",
+            "named": true
+          },
+          {
+            "type": "const_item",
+            "named": true
+          },
+          {
+            "type": "decl_macro",
+            "named": true
+          },
+          {
+            "type": "enum_item",
+            "named": true
+          },
+          {
+            "type": "extern_crate_declaration",
+            "named": true
+          },
+          {
+            "type": "foreign_mod_item",
+            "named": true
+          },
+          {
+            "type": "function_item",
+            "named": true
+          },
+          {
+            "type": "function_signature_item",
+            "named": true
+          },
+          {
+            "type": "impl_item",
+            "named": true
+          },
+          {
+            "type": "let_declaration",
+            "named": true
+          },
+          {
+            "type": "macro_definition",
+            "named": true
+          },
+          {
+            "type": "macro_invocation",
+            "named": true
+          },
+          {
+            "type": "mod_item",
+            "named": true
+          },
+          {
+            "type": "static_item",
+            "named": true
+          },
+          {
+            "type": "struct_item",
+            "named": true
+          },
+          {
+            "type": "trait_alias",
+            "named": true
+          },
+          {
+            "type": "trait_item",
+            "named": true
+          },
+          {
+            "type": "type_item",
+            "named": true
+          },
+          {
+            "type": "union_item",
+            "named": true
+          },
+          {
+            "type": "use_declaration",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute_item",
           "named": true
         }
       ]
