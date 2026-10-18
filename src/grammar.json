@@ -9305,8 +9305,12 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "_type_identifier"
+                "type": "RESERVED",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_type_identifier"
+                },
+                "context_name": "struct_name"
               },
               {
                 "type": "PREC_DYNAMIC",
@@ -13900,5 +13904,13 @@
     "_literal_pattern",
     "_pattern"
   ],
-  "reserved": {}
+  "reserved": {
+    "global": [],
+    "struct_name": [
+      {
+        "type": "STRING",
+        "value": "else"
+      }
+    ]
+  }
 }

@@ -248,3 +248,48 @@ test('attaches outer documentation before let conditions without losing followin
     parser.delete();
   }
 });
+
+test('rejects documentation before else without treating the keyword as a struct constructor', async () => {
+  await Parser.init();
+  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
+  try {
+    for (const doc of ['/// docs\n', '/** docs */']) {
+      for (const branch of ['else {}', 'else if y {}']) {
+        const source = `fn f() { if x {} ${doc}${branch} }`;
+        const tree = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(true);
+          expect(
+            tree.rootNode.descendantsOfType('struct_expression').map((node) => node.childForFieldName('name')?.text)
+          ).not.toContain('else');
+        } finally {
+          tree.delete();
+        }
+      }
+      for (const name of ['r#else', 'elsewhere', 'Record']) {
+        const source = `fn f() { let value = ${doc}${name} {}; }`;
+        const tree = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(false);
+          expect(tree.rootNode.descendantsOfType('struct_expression')[0]?.childForFieldName('name')?.text).toBe(name);
+        } finally {
+          tree.delete();
+        }
+      }
+    }
+    for (const comment of ['// comment\n', '/* comment */', '']) {
+      const source = `fn f() { if x {} ${comment}else {} }`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        expect(tree.rootNode.descendantsOfType('if_expression')[0]?.childForFieldName('alternative')?.type).toBe(
+          'else_clause'
+        );
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});

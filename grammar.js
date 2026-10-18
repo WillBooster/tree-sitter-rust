@@ -8,7 +8,7 @@
 
 // @ts-check
 
-const { alias, choice, field, grammar, optional, prec, repeat, repeat1, seq, sym, token } =
+const { alias, choice, field, grammar, optional, prec, repeat, repeat1, reserved, seq, sym, token } =
   /** @type {typeof globalThis & import('@willbooster/web-tree-sitter/dsl').DSL} */ (globalThis);
 
 // https://doc.rust-lang.org/reference/expressions.html#expression-precedence
@@ -198,6 +198,11 @@ module.exports = grammar({
     [$.function_modifiers, $.impl_item, $.trait_item],
     [$.function_modifiers, $.trait_item],
   ],
+
+  reserved: {
+    global: () => [],
+    struct_name: () => ['else'],
+  },
 
   word: ($) => $.identifier,
 
@@ -1248,7 +1253,7 @@ module.exports = grammar({
         field(
           'name',
           choice(
-            $._type_identifier,
+            reserved('struct_name', $._type_identifier),
             prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
