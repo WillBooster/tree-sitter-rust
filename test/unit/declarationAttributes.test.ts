@@ -138,3 +138,42 @@ test('reassigns attributes when declarations are inserted and removed incrementa
     parser.delete();
   }
 });
+
+test('ends attributed block statements before the following statement without a semicolon', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  try {
+    for (const expression of [
+      '{ first(); }',
+      'if true { first(); }',
+      'unsafe { first(); }',
+      'loop { break; }',
+      'match x { _ => () }',
+    ]) {
+      const source = `fn f() { #[allow(unused)] #[cfg(all())] ${expression} after(); }`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(false);
+        const statements = tree.rootNode
+          .descendantsOfType('function_item')[0]!
+          .childForFieldName('body')!.namedChildren;
+        expect(
+          statements.map((node) => node.text),
+          source
+        ).toEqual([`#[allow(unused)] #[cfg(all())] ${expression}`, 'after();']);
+        expect(statements[0]?.namedChildren[0]?.childForFieldName('value')?.text).toBe(expression);
+      } finally {
+        tree.delete();
+      }
+    }
+    const invalid = parser.parse('fn f() { #[allow(unused)] first() after(); }')!;
+    try {
+      expect(invalid.rootNode.hasError).toBe(true);
+    } finally {
+      invalid.delete();
+    }
+  } finally {
+    parser.delete();
+  }
+});

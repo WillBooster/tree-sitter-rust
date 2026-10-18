@@ -83,6 +83,39 @@
             "type": "SYMBOL",
             "name": "_expression_ending_with_block"
           }
+        },
+        {
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_attributed_block_statement"
+            },
+            "named": true,
+            "value": "attributed_expression"
+          }
+        }
+      ]
+    },
+    "_attributed_block_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "attribute_item"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_expression_ending_with_block"
+          }
         }
       ]
     },
@@ -13450,6 +13483,10 @@
   "conflicts": [
     [
       "attributed_expression"
+    ],
+    [
+      "_attributed_block_statement",
+      "_expression_except_range"
     ],
     [
       "type_parameters",

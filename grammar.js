@@ -161,6 +161,7 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$.attributed_expression],
+    [$._attributed_block_statement, $._expression_except_range],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
     [$._token_pattern, $.token_repetition_pattern],
@@ -196,7 +197,14 @@ module.exports = grammar({
 
     empty_statement: () => ';',
 
-    expression_statement: ($) => choice(seq($._expression, ';'), prec(1, $._expression_ending_with_block)),
+    expression_statement: ($) =>
+      choice(
+        seq($._expression, ';'),
+        prec(1, $._expression_ending_with_block),
+        prec(1, alias($._attributed_block_statement, $.attributed_expression))
+      ),
+
+    _attributed_block_statement: ($) => seq(repeat1($.attribute_item), field('value', $._expression_ending_with_block)),
 
     _declaration_statement: ($) =>
       choice($.empty_statement, $.inner_attribute_item, $._attributable_declaration, $.attributed_declaration),
