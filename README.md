@@ -92,7 +92,8 @@ Outer declaration attributes belong to an `attributed_declaration` node whose `d
 the item. In declaration and statement positions, outer attributes without a following declaration or
 expression produce a syntax error. Outer documentation comments (`///` and `/** ... */`) are
 `attribute_item` nodes containing a `line_comment` or `block_comment`, with their existing `outer` and
-`doc` fields. Inner documentation and ordinary comments remain comment extras.
+`doc` fields. Inner documentation and ordinary comments remain comment extras. Ordinary line comments
+are leaf nodes; read their `text` rather than an anonymous `//` child.
 
 Parameter and list attributes retain their sibling nodes. Attributes inside parentheses also precede
 the operand as siblings. List and parenthesized operands remain queryable through

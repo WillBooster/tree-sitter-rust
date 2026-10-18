@@ -350,11 +350,13 @@ static bool skip_trivia(TSLexer *lexer);
 static bool skip_block_trivia(TSLexer *lexer);
 static bool scanner_whitespace(int32_t c);
 static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols);
+static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start);
 
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-    // Tree-sitter enables every external token during recovery; the unused sentinel suppresses normal scans.
+    // Recovery enables every external token; only comment starts are safe without parser context.
     if (valid_symbols[ERROR_SENTINEL]) {
-        return false;
+        skip_token_whitespace(lexer, false);
+        return lexer->lookahead == '/' && scan_comment_start(lexer, valid_symbols);
     }
 
     Scanner *scanner = (Scanner *)payload;
@@ -378,9 +380,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_raw_string_content(scanner, lexer);
     }
 
-    while (valid_symbols[FRONTMATTER_START] ? rust_whitespace(lexer->lookahead) : scanner_whitespace(lexer->lookahead)) {
-        skip(lexer);
-    }
+    skip_token_whitespace(lexer, valid_symbols[FRONTMATTER_START]);
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
         return scan_frontmatter_start(&scanner->frontmatter, lexer);
     }
@@ -581,4 +581,10 @@ static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
     }
     lexer->result_symbol = token;
     return true;
+}
+
+static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start) {
+    while (frontmatter_start ? rust_whitespace(lexer->lookahead) : scanner_whitespace(lexer->lookahead)) {
+        skip(lexer);
+    }
 }

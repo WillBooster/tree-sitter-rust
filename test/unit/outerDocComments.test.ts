@@ -110,3 +110,60 @@ test('reclassifies ordinary and outer comments across incremental prefix edits',
     parser.delete();
   }
 });
+
+test('retains comments and their highlighting while recovering from an invalid expression', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
+  try {
+    for (const comment of ['// hello\n', '//// hello\n', '/* hello */', '/* nested /* hello */ */']) {
+      const source = `fn f(){let x = @ ${comment};} fn after() {}`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(true);
+        expect(tree.rootNode.descendantsOfType(['line_comment', 'block_comment']).map((node) => node.text)).toContain(
+          comment.trimEnd()
+        );
+        expect(
+          highlights
+            .captures(tree.rootNode)
+            .filter(({ name }) => name === 'comment')
+            .map(({ node }) => node.text)
+        ).toContain(comment.trimEnd());
+        expect(
+          tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text)
+        ).toEqual(['f', 'after']);
+        expect(tree.rootNode.descendantsOfType('let_declaration')[0]?.childForFieldName('value')).toBeNull();
+      } finally {
+        tree.delete();
+      }
+    }
+    for (const comment of [
+      '// it\'s "x\n',
+      '//! it\'s "x\n',
+      '/// it\'s "x\n',
+      '/* it\'s "x */',
+      '/*! it\'s "x */',
+      '/** it\'s "x */',
+    ]) {
+      const source = `@@@ ${comment}\nfn after() { let s = "y"; }`;
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError, source).toBe(true);
+        expect(
+          tree.rootNode.descendantsOfType(['line_comment', 'block_comment']).map((node) => node.text.trimEnd())
+        ).toEqual([comment.trimEnd()]);
+        expect(
+          tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text)
+        ).toEqual(['after']);
+        expect(tree.rootNode.descendantsOfType('string_literal').map((node) => node.text)).toEqual(['"y"']);
+      } finally {
+        tree.delete();
+      }
+    }
+  } finally {
+    highlights.delete();
+    parser.delete();
+  }
+});
