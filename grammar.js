@@ -178,7 +178,6 @@ module.exports = grammar({
     [$.scoped_identifier, $.scoped_type_identifier],
     [$.parameters, $._pattern],
     [$.parameters, $.tuple_struct_pattern],
-    [$.array_expression],
     [$.visibility_modifier],
     [$.visibility_modifier, $.scoped_identifier, $.scoped_type_identifier],
     [$.foreign_mod_item, $.function_modifiers],
@@ -1165,9 +1164,8 @@ module.exports = grammar({
     array_expression: ($) =>
       seq(
         '[',
-        repeat(prec(PREC.call, $.attribute_item)),
         choice(
-          seq($._expression, ';', field('length', $._expression)),
+          seq(repeat(prec(PREC.call, $.attribute_item)), $._expression, ';', field('length', $._expression)),
           seq(sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','))
         ),
         ']'

@@ -8855,22 +8855,22 @@
           "value": "["
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "PREC",
-            "value": 15,
-            "content": {
-              "type": "SYMBOL",
-              "name": "attribute_item"
-            }
-          }
-        },
-        {
           "type": "CHOICE",
           "members": [
             {
               "type": "SEQ",
               "members": [
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "PREC",
+                    "value": 15,
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "attribute_item"
+                    }
+                  }
+                },
                 {
                   "type": "SYMBOL",
                   "name": "_expression"
@@ -13483,9 +13483,6 @@
     [
       "parameters",
       "tuple_struct_pattern"
-    ],
-    [
-      "array_expression"
     ],
     [
       "visibility_modifier"
