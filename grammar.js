@@ -145,7 +145,7 @@ module.exports = grammar({
     sym('_frontmatter_end'),
     sym('_frontmatter_context'),
     sym('_ordinary_line_comment'),
-    sym('_inner_line_comment_start'),
+    sym('_extra_line_doc_comment_start'),
     sym('_outer_line_comment_start'),
     sym('_ordinary_block_comment_start'),
     sym('_outer_block_comment_start'),
@@ -1651,8 +1651,11 @@ module.exports = grammar({
       choice(
         sym('_ordinary_line_comment'),
         seq(
-          alias(sym('_inner_line_comment_start'), '//'),
-          field('inner', alias($._inner_line_doc_comment_marker, sym('inner_doc_comment_marker'))),
+          alias(sym('_extra_line_doc_comment_start'), '//'),
+          choice(
+            field('inner', alias($._inner_line_doc_comment_marker, sym('inner_doc_comment_marker'))),
+            field('outer', alias($._outer_line_doc_comment_marker, sym('outer_doc_comment_marker')))
+          ),
           field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))
         )
       ),
@@ -1673,7 +1676,10 @@ module.exports = grammar({
         optional(
           choice(
             seq(
-              field('inner', alias(sym('_inner_block_doc_comment_marker'), sym('inner_doc_comment_marker'))),
+              choice(
+                field('inner', alias(sym('_inner_block_doc_comment_marker'), sym('inner_doc_comment_marker'))),
+                field('outer', alias(sym('_outer_block_doc_comment_marker'), sym('outer_doc_comment_marker')))
+              ),
               optional(field('doc', alias(sym('_block_comment_content'), sym('doc_comment'))))
             ),
             sym('_block_comment_content')

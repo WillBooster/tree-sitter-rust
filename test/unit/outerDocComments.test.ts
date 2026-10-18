@@ -167,3 +167,50 @@ test('retains comments and their highlighting while recovering from an invalid e
     parser.delete();
   }
 });
+
+test('retains misplaced documentation without swallowing following declarations', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
+  try {
+    for (const comment of ['/** it\'s "x */', '/// it\'s "x\n']) {
+      for (const prefix of [
+        `fn f() { let x: ${comment} u8 = 1; }`,
+        `use a::{${comment} b};`,
+        `fn f() { let x = 1 ${comment}; }`,
+        `type T = Vec<${comment}u8>;`,
+        `fn f<T: ${comment}Clone>() {}`,
+        `fn f<T>() where T: ${comment}Clone {}`,
+      ]) {
+        const source = `${prefix}\nfn after() { let s = "y"; }`;
+        const tree = parser.parse(source)!;
+        try {
+          const node = tree.rootNode.descendantsOfType(['line_comment', 'block_comment'])[0];
+          expect(node?.text.trimEnd(), source).toBe(comment.trimEnd());
+          expect(node?.childForFieldName('outer')?.text, source).toBe(comment.startsWith('///') ? '/' : '*');
+          expect(node?.childForFieldName('doc')?.text, source).toContain('it\'s "x');
+          expect(tree.rootNode.descendantsOfType('function_item').at(-1)?.childForFieldName('name')?.text, source).toBe(
+            'after'
+          );
+          expect(
+            tree.rootNode.descendantsOfType('string_literal').map((item) => item.text),
+            source
+          ).toEqual(['"y"']);
+          expect(
+            highlights
+              .captures(tree.rootNode)
+              .filter(({ name }) => name === 'comment')
+              .map(({ node: item }) => item.text.trimEnd()),
+            source
+          ).toContain(comment.trimEnd());
+        } finally {
+          tree.delete();
+        }
+      }
+    }
+  } finally {
+    highlights.delete();
+    parser.delete();
+  }
+});

@@ -26,7 +26,7 @@ enum TokenType {
     FRONTMATTER_END,
     FRONTMATTER_CONTEXT,
     ORDINARY_LINE_COMMENT,
-    INNER_LINE_COMMENT_START,
+    EXTRA_LINE_DOC_COMMENT_START,
     OUTER_LINE_COMMENT_START,
     ORDINARY_BLOCK_COMMENT_START,
     OUTER_BLOCK_COMMENT_START
@@ -563,8 +563,8 @@ static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
     advance(lexer);
     lexer->mark_end(lexer);
     if (line && lexer->lookahead == '!') {
-        if (!valid_symbols[INNER_LINE_COMMENT_START]) return false;
-        lexer->result_symbol = INNER_LINE_COMMENT_START;
+        if (!valid_symbols[EXTRA_LINE_DOC_COMMENT_START]) return false;
+        lexer->result_symbol = EXTRA_LINE_DOC_COMMENT_START;
         return true;
     }
     bool outer = false;
@@ -573,7 +573,10 @@ static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
         outer = line ? lexer->lookahead != '/' : lexer->lookahead != '*' && lexer->lookahead != '/';
     }
     enum TokenType token = line ? ORDINARY_LINE_COMMENT : ORDINARY_BLOCK_COMMENT_START;
-    if (outer) token = line ? OUTER_LINE_COMMENT_START : OUTER_BLOCK_COMMENT_START;
+    if (outer) {
+        enum TokenType outer_token = line ? OUTER_LINE_COMMENT_START : OUTER_BLOCK_COMMENT_START;
+        token = valid_symbols[outer_token] ? outer_token : line ? EXTRA_LINE_DOC_COMMENT_START : ORDINARY_BLOCK_COMMENT_START;
+    }
     if (!valid_symbols[token]) return false;
     if (token == ORDINARY_LINE_COMMENT) {
         while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
