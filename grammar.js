@@ -214,7 +214,7 @@ module.exports = grammar({
 
     _block_statement_expression: ($) => alias($._attributed_block_statement, $.attributed_expression),
 
-    _outer_attributes: ($) => prec.right(repeat1($.attribute_item)),
+    _outer_attributes: ($) => prec.right(seq($.attribute_item, repeat($.attribute_item))),
 
     _attributed_block_statement: ($) => seq($._outer_attributes, field('value', $._expression_ending_with_block)),
 

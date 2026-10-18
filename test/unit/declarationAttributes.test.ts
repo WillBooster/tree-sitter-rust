@@ -10,6 +10,10 @@ test('associates outer attributes with declarations and rejects orphan attribute
   const query = new Query(language, '(attributed_declaration (attribute_item) @attribute declaration: (_) @item)');
   const tags = new Query(language, readFileSync('queries/tags.scm', 'utf8'));
   try {
+    const nodeTypes = JSON.parse(readFileSync('src/node-types.json', 'utf8'));
+    for (const type of ['attributed_declaration', 'attributed_expression']) {
+      expect(nodeTypes.find((node: { type: string }) => node.type === type)?.children.required, type).toBe(true);
+    }
     for (const item of [
       'pub fn f() {}',
       'struct S;',
