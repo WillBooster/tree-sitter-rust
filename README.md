@@ -89,7 +89,8 @@ still contains `+ 2`. Consecutive attributes share one wrapper. Queries matching
 these wrappers, including attributed block statements. The `value` field identifies the operand.
 
 Outer declaration attributes belong to an `attributed_declaration` node whose `declaration` field identifies
-the item. Attributes without a following declaration or expression produce a syntax error.
+the item. In declaration and statement positions, outer attributes without a following declaration or
+expression produce a syntax error.
 
 Parameter and list attributes retain their sibling nodes. Attributes inside parentheses also precede
 the operand as siblings. List and parenthesized operands remain queryable through
