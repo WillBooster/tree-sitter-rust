@@ -1296,7 +1296,13 @@ module.exports = grammar({
       ),
 
     let_condition: ($) =>
-      seq('let', field('pattern', $._pattern), '=', field('value', prec.left(PREC.and, $._expression))),
+      seq(
+        optional($._outer_attributes),
+        'let',
+        field('pattern', $._pattern),
+        '=',
+        field('value', prec.left(PREC.and, $._expression))
+      ),
 
     _let_chain: ($) =>
       prec.left(

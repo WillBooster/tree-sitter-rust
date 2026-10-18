@@ -214,3 +214,37 @@ test('retains misplaced documentation without swallowing following declarations'
     parser.delete();
   }
 });
+
+test('attaches outer documentation before let conditions without losing following declarations', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  try {
+    for (const attribute of ['/** docs */', '/// docs\n', '#[allow(unused)]']) {
+      for (const condition of [
+        `${attribute} let Some(x) = value`,
+        `let Some(a) = first && ${attribute} let Some(x) = value`,
+      ]) {
+        for (const keyword of ['if', 'while']) {
+          const source = `fn f() { ${keyword} ${condition} {} } fn after() {}`;
+          const tree = parser.parse(source)!;
+          try {
+            expect(tree.rootNode.hasError, source).toBe(false);
+            const last = tree.rootNode.descendantsOfType('let_condition').at(-1)!;
+            expect(last.namedChildren[0]?.type, source).toBe('attribute_item');
+            expect(last.namedChildren[0]?.text.trimEnd(), source).toBe(attribute.trimEnd());
+            expect(last.childForFieldName('pattern')?.text, source).toBe('Some(x)');
+            expect(last.childForFieldName('value')?.text, source).toBe('value');
+            expect(tree.rootNode.descendantsOfType('function_item').at(-1)?.childForFieldName('name')?.text).toBe(
+              'after'
+            );
+          } finally {
+            tree.delete();
+          }
+        }
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
