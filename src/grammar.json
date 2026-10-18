@@ -13020,28 +13020,6 @@
         }
       ]
     },
-    "_inner_line_doc_comment_marker": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "!"
-        }
-      }
-    },
-    "_outer_line_doc_comment_marker": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "/"
-        }
-      }
-    },
     "block_comment": {
       "type": "SEQ",
       "members": [
@@ -13882,6 +13860,14 @@
     {
       "type": "SYMBOL",
       "name": "_outer_block_comment_start"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_outer_line_doc_comment_marker"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_inner_line_doc_comment_marker"
     }
   ],
   "inline": [

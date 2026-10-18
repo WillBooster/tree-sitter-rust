@@ -8,7 +8,14 @@ test('attaches outer documentation to its declaration and rejects orphan documen
   const parser = new Parser().setLanguage(language);
   const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
-    for (const doc of ['/// documentation\n', '/** documentation */', '///\n', '/** */']) {
+    for (const doc of [
+      '/// documentation\n',
+      '///*documentation*\n',
+      '///*\n',
+      '/** documentation */',
+      '///\n',
+      '/** */',
+    ]) {
       for (const item of ['pub fn f() {}', 'struct S;', 'enum E { V }', 'mod inner {}', 'type T = u8;', 'm!{}']) {
         const source = `mod m { ${doc} /* bridge */ #[allow(unused)] ${item} }`;
         const tree = parser.parse(source)!;
@@ -301,7 +308,7 @@ test('retains outer documentation in broken use lists and type annotations', asy
   const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   const injections = new Query(language, readFileSync('queries/injections.scm', 'utf8'));
   try {
-    for (const doc of ['/// documentation\n', '/** documentation */']) {
+    for (const doc of ['/// documentation\n', '///*documentation*\n', '/** documentation */']) {
       for (const source of [
         `use a::{@ ${doc} b}; fn after() {}`,
         `fn f() { let x: , ${doc} = 1; } fn after() {}`,
@@ -314,7 +321,9 @@ test('retains outer documentation in broken use lists and type annotations', asy
           const comment = tree.rootNode.descendantsOfType(['line_comment', 'block_comment'])[0];
           expect(comment?.text, source).toBe(doc);
           expect(comment?.childForFieldName('outer')?.text).toBe(doc.startsWith('///') ? '/' : '*');
-          expect(comment?.childForFieldName('doc')?.text.trim()).toBe('documentation');
+          expect(comment?.childForFieldName('doc')?.text.trim()).toBe(
+            doc.includes('*documentation*') ? '*documentation*' : 'documentation'
+          );
           expect(
             highlights
               .captures(tree.rootNode)
@@ -326,7 +335,7 @@ test('retains outer documentation in broken use lists and type annotations', asy
               .captures(tree.rootNode)
               .filter(({ name }) => name === 'injection.content')
               .map(({ node }) => node.text.trim())
-          ).toContain('documentation');
+          ).toContain(doc.includes('*documentation*') ? '*documentation*' : 'documentation');
           expect(
             tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text)
           ).toContain('after');

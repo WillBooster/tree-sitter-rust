@@ -29,7 +29,9 @@ enum TokenType {
     EXTRA_LINE_DOC_COMMENT_START,
     OUTER_LINE_COMMENT_START,
     ORDINARY_BLOCK_COMMENT_START,
-    OUTER_BLOCK_COMMENT_START
+    OUTER_BLOCK_COMMENT_START,
+    LINE_OUTER_DOC_MARKER,
+    LINE_INNER_DOC_MARKER
 };
 
 #include "frontmatter.h"
@@ -211,7 +213,21 @@ static inline bool process_trailing_dot_float_literal(TSLexer *lexer) {
     return true;
 }
 
-static inline bool process_line_doc_content(TSLexer *lexer) {
+static inline bool process_line_doc_comment(TSLexer *lexer, const bool *valid_symbols) {
+    if (valid_symbols[LINE_OUTER_DOC_MARKER] || valid_symbols[LINE_INNER_DOC_MARKER]) {
+        if (valid_symbols[LINE_OUTER_DOC_MARKER] && lexer->lookahead == '/') {
+            lexer->result_symbol = LINE_OUTER_DOC_MARKER;
+        } else if (valid_symbols[LINE_INNER_DOC_MARKER] && lexer->lookahead == '!') {
+            lexer->result_symbol = LINE_INNER_DOC_MARKER;
+        } else {
+            return false;
+        }
+        advance(lexer);
+        lexer->mark_end(lexer);
+        return true;
+    }
+
+
     lexer->result_symbol = LINE_DOC_CONTENT;
     for (;;) {
         if (lexer->eof(lexer)) {
@@ -372,8 +388,9 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
 
     if (scan_string_tokens(scanner, lexer, valid_symbols)) return true;
 
-    if (valid_symbols[LINE_DOC_CONTENT]) {
-        return process_line_doc_content(lexer);
+    if (valid_symbols[LINE_DOC_CONTENT] || valid_symbols[LINE_OUTER_DOC_MARKER] ||
+        valid_symbols[LINE_INNER_DOC_MARKER]) {
+        return process_line_doc_comment(lexer, valid_symbols);
     }
 
     if (valid_symbols[RAW_STRING_LITERAL_CONTENT]) {

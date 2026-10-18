@@ -149,6 +149,8 @@ module.exports = grammar({
     sym('_outer_line_comment_start'),
     sym('_ordinary_block_comment_start'),
     sym('_outer_block_comment_start'),
+    sym('_outer_line_doc_comment_marker'),
+    sym('_inner_line_doc_comment_marker'),
   ],
 
   supertypes: ($) => [
@@ -1658,28 +1660,25 @@ module.exports = grammar({
 
     comment: ($) => choice($.line_comment, $.block_comment),
 
-    line_comment: ($) =>
+    line_comment: () =>
       choice(
         sym('_ordinary_line_comment'),
         seq(
           alias(sym('_extra_line_doc_comment_start'), '//'),
           choice(
-            field('inner', alias($._inner_line_doc_comment_marker, sym('inner_doc_comment_marker'))),
-            field('outer', alias($._outer_line_doc_comment_marker, sym('outer_doc_comment_marker')))
+            field('inner', alias(sym('_inner_line_doc_comment_marker'), sym('inner_doc_comment_marker'))),
+            field('outer', alias(sym('_outer_line_doc_comment_marker'), sym('outer_doc_comment_marker')))
           ),
           field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))
         )
       ),
 
-    _outer_line_comment: ($) =>
+    _outer_line_comment: () =>
       seq(
         alias(sym('_outer_line_comment_start'), '//'),
-        field('outer', alias($._outer_line_doc_comment_marker, sym('outer_doc_comment_marker'))),
+        field('outer', alias(sym('_outer_line_doc_comment_marker'), sym('outer_doc_comment_marker'))),
         field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))
       ),
-
-    _inner_line_doc_comment_marker: () => token.immediate(prec(2, '!')),
-    _outer_line_doc_comment_marker: () => token.immediate(prec(2, '/')),
 
     block_comment: () =>
       seq(

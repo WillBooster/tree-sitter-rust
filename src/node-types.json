@@ -2825,11 +2825,6 @@
     }
   },
   {
-    "type": "inner_doc_comment_marker",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "integer_literal",
     "named": true,
     "fields": {}
@@ -3405,11 +3400,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "outer_doc_comment_marker",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "parameter",
@@ -5834,6 +5824,10 @@
     "named": false
   },
   {
+    "type": "inner_doc_comment_marker",
+    "named": true
+  },
+  {
     "type": "item",
     "named": false
   },
@@ -5879,6 +5873,10 @@
   },
   {
     "type": "mutable_specifier",
+    "named": true
+  },
+  {
+    "type": "outer_doc_comment_marker",
     "named": true
   },
   {

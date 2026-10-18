@@ -102,6 +102,7 @@ Line doc comments
 //   - Only a comment
 ///  - Outer line doc (exactly 3 slashes)
 ///
+///*bold* documentation
 //// - Only a comment
 fn documented() {}
 
@@ -116,6 +117,10 @@ fn documented() {}
     doc: (doc_comment))
   (line_comment)
   (attributed_declaration
+    (attribute_item
+      (line_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
     (attribute_item
       (line_comment
         outer: (outer_doc_comment_marker)
