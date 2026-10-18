@@ -146,7 +146,16 @@ module.exports = grammar({
     sym('_frontmatter_context'),
   ],
 
-  supertypes: ($) => [$._declaration_statement, $._expression, $._type, $._literal, $._literal_pattern, $._pattern],
+  supertypes: ($) => [
+    $._declaration_statement,
+    $._foreign_declaration_statement,
+    $._block_statement_expression,
+    $._expression,
+    $._type,
+    $._literal,
+    $._literal_pattern,
+    $._pattern,
+  ],
 
   inline: ($) => [
     $._path,
@@ -160,13 +169,13 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$._attributed_block_statement, $._expression_except_range],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
     [$._token_pattern, $.token_repetition_pattern],
     [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
     [$._expression_except_range, $.shorthand_field_initializer],
-    [$._declaration_statement, $.attributed_expression],
     [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
@@ -195,17 +204,30 @@ module.exports = grammar({
 
     empty_statement: () => ';',
 
-    expression_statement: ($) => choice(seq($._expression, ';'), prec(1, $._expression_ending_with_block)),
+    expression_statement: ($) =>
+      choice(
+        seq($._expression, ';'),
+        prec(1, $._expression_ending_with_block),
+        prec(1, alias($._block_statement_expression, $._expression))
+      ),
+
+    _block_statement_expression: ($) => alias($._attributed_block_statement, $.attributed_expression),
+
+    _outer_attributes: ($) => prec.right(seq($.attribute_item, repeat($.attribute_item))),
+
+    _attributed_block_statement: ($) => seq($._outer_attributes, field('value', $._expression_ending_with_block)),
 
     _declaration_statement: ($) =>
+      choice($.empty_statement, $.inner_attribute_item, $._attributable_declaration, $.attributed_declaration),
+
+    attributed_declaration: ($) => seq($._outer_attributes, field('declaration', $._attributable_declaration)),
+
+    _attributable_declaration: ($) =>
       choice(
         $.const_item,
         $.macro_invocation,
         $.macro_definition,
         $.decl_macro,
-        $.empty_statement,
-        $.attribute_item,
-        $.inner_attribute_item,
         $.mod_item,
         $.foreign_mod_item,
         $.struct_item,
@@ -405,7 +427,31 @@ module.exports = grammar({
     // `_foreign_declaration_start` required by qualified extern items. Keep this context marker so `safe` remains
     // an identifier outside extern blocks while qualified items still participate in declaration supertype queries.
     _foreign_declaration_list: ($) =>
-      seq('{', repeat(seq(optional(sym('_foreign_declaration_context')), $._declaration_statement)), '}'),
+      seq(
+        '{',
+        repeat(
+          seq(
+            optional(sym('_foreign_declaration_context')),
+            alias($._foreign_declaration_statement, $._declaration_statement)
+          )
+        ),
+        '}'
+      ),
+
+    _foreign_declaration_statement: ($) =>
+      choice(
+        $.empty_statement,
+        $.inner_attribute_item,
+        $._attributable_declaration,
+        alias($._foreign_attributed_declaration, $.attributed_declaration)
+      ),
+
+    _foreign_attributed_declaration: ($) =>
+      seq(
+        $._outer_attributes,
+        optional(sym('_foreign_declaration_context')),
+        field('declaration', $._attributable_declaration)
+      ),
 
     _safe_function_signature_item: ($) =>
       seq(
@@ -1008,7 +1054,7 @@ module.exports = grammar({
     _expression: ($) => choice($._expression_except_range, $.range_expression, $.attributed_expression),
 
     attributed_expression: ($) =>
-      prec.dynamic(-1, prec.right(PREC.unary, seq(repeat1($.attribute_item), field('value', $._expression)))),
+      prec.dynamic(-1, seq($._outer_attributes, prec.right(PREC.unary, field('value', $._expression)))),
 
     _expression_ending_with_block: ($) =>
       choice(
@@ -1208,11 +1254,11 @@ module.exports = grammar({
       ),
 
     shorthand_field_initializer: ($) =>
-      seq(repeat($.attribute_item), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
+      seq(optional($._outer_attributes), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
 
     field_initializer: ($) =>
       seq(
-        repeat($.attribute_item),
+        optional($._outer_attributes),
         field(
           'field',
           choice(

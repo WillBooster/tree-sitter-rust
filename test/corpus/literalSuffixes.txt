@@ -13,17 +13,25 @@ tokens!("text"custom, r#"raw"#custom, 'x'custom, b'x'custom,
     (macro_invocation
       macro: (identifier)
       (token_tree
-        (string_literal (string_content))
-        (raw_string_literal (string_content))
+        (string_literal
+          (string_content))
+        (raw_string_literal
+          (string_content))
         (char_literal)
         (char_literal)
-        (string_literal (string_content))
-        (raw_string_literal (string_content))
-        (string_literal (string_content))
-        (raw_string_literal (string_content))
-        (string_literal (string_content))
+        (string_literal
+          (string_content))
+        (raw_string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (raw_string_literal
+          (string_content))
+        (string_literal
+          (string_content))
         (char_literal)
-        (string_literal (string_content))
+        (string_literal
+          (string_content))
         (identifier)
         (char_literal)
         (block_comment)
@@ -43,18 +51,30 @@ tokens!("a"r"b", b"a"br#"b"#, c"a"cr"b",
     (macro_invocation
       macro: (identifier)
       (token_tree
-        (string_literal (string_content))
-        (string_literal (string_content))
-        (string_literal (string_content))
-        (string_literal (string_content))
-        (string_literal (string_content))
-        (string_literal (string_content))
-        (raw_string_literal (string_content))
-        (string_literal (string_content))
-        (raw_string_literal (string_content))
-        (string_literal (string_content))
-        (raw_string_literal (string_content))
-        (string_literal (string_content))))))
+        (string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (raw_string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (raw_string_literal
+          (string_content))
+        (string_literal
+          (string_content))
+        (raw_string_literal
+          (string_content))
+        (string_literal
+          (string_content))))))
 
 ================================================================================
 Comments separate strings from identifiers without surrounding spaces
@@ -69,9 +89,11 @@ tokens!("text"/*gap*/suffix, r#"raw"#/*gap*/r#identifier);
     (macro_invocation
       macro: (identifier)
       (token_tree
-        (string_literal (string_content))
+        (string_literal
+          (string_content))
         (block_comment)
         (identifier)
-        (raw_string_literal (string_content))
+        (raw_string_literal
+          (string_content))
         (block_comment)
         (identifier)))))

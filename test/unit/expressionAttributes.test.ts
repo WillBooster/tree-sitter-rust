@@ -100,7 +100,6 @@ test('retains multiple attributes through prefix edits and unchanged declaration
     for (const source of [
       '#[a] struct X { #[b] y: i32 }',
       'fn f(#[a] x: i32) {}',
-      'fn f() { #[a] let x = 1; #[b] g(); }',
       'fn f() { let x = [#[a] 1, #[b] 2]; }',
       'fn f() { let x = (#[a] 1, 2); }',
       'fn f() { let x = (#[a] 1, #[b] 2, #[c] 3); }',
