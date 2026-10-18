@@ -73,7 +73,7 @@ fuzzed with. The parser loads only with that runtime, version 2.0.0 or later; up
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "2" }
-tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "3" }
+tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "5" }
 ```
 
 ```rust
@@ -90,7 +90,9 @@ these wrappers, including attributed block statements. The `value` field identif
 
 Outer declaration attributes belong to an `attributed_declaration` node whose `declaration` field identifies
 the item. In declaration and statement positions, outer attributes without a following declaration or
-expression produce a syntax error.
+expression produce a syntax error. Outer documentation comments (`///` and `/** ... */`) are
+`attribute_item` nodes containing a `line_comment` or `block_comment`, with their existing `outer` and
+`doc` fields. Inner documentation and ordinary comments remain comment extras.
 
 Parameter and list attributes retain their sibling nodes. Attributes inside parentheses also precede
 the operand as siblings. List and parenthesized operands remain queryable through

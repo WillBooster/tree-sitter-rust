@@ -24,7 +24,12 @@ enum TokenType {
     FRONTMATTER_HEADER_END,
     FRONTMATTER_CONTENT,
     FRONTMATTER_END,
-    FRONTMATTER_CONTEXT
+    FRONTMATTER_CONTEXT,
+    ORDINARY_LINE_COMMENT,
+    INNER_LINE_COMMENT_START,
+    OUTER_LINE_COMMENT_START,
+    ORDINARY_BLOCK_COMMENT_START,
+    OUTER_BLOCK_COMMENT_START
 };
 
 #include "frontmatter.h"
@@ -344,6 +349,7 @@ static bool foreign_identifier_continue(int32_t c);
 static bool skip_trivia(TSLexer *lexer);
 static bool skip_block_trivia(TSLexer *lexer);
 static bool scanner_whitespace(int32_t c);
+static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols);
 
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     // Tree-sitter enables every external token during recovery; the unused sentinel suppresses normal scans.
@@ -378,6 +384,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
         return scan_frontmatter_start(&scanner->frontmatter, lexer);
     }
+    if (lexer->lookahead == '/') return scan_comment_start(lexer, valid_symbols);
     if (valid_symbols[FOREIGN_DECLARATION_CONTEXT] && valid_symbols[FOREIGN_DECLARATION_START]) {
         return scan_foreign_declaration_start(lexer);
     }
@@ -548,3 +555,30 @@ static bool skip_block_trivia(TSLexer *lexer) {
 }
 
 static bool scanner_whitespace(int32_t c) { return rust_whitespace(c) || iswspace(c); }
+
+static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
+    advance(lexer);
+    bool line = lexer->lookahead == '/';
+    if (!line && lexer->lookahead != '*') return false;
+    advance(lexer);
+    lexer->mark_end(lexer);
+    if (line && lexer->lookahead == '!') {
+        if (!valid_symbols[INNER_LINE_COMMENT_START]) return false;
+        lexer->result_symbol = INNER_LINE_COMMENT_START;
+        return true;
+    }
+    bool outer = false;
+    if (lexer->lookahead == (line ? '/' : '*')) {
+        advance(lexer);
+        outer = line ? lexer->lookahead != '/' : lexer->lookahead != '*' && lexer->lookahead != '/';
+    }
+    enum TokenType token = line ? ORDINARY_LINE_COMMENT : ORDINARY_BLOCK_COMMENT_START;
+    if (outer) token = line ? OUTER_LINE_COMMENT_START : OUTER_BLOCK_COMMENT_START;
+    if (!valid_symbols[token]) return false;
+    if (token == ORDINARY_LINE_COMMENT) {
+        while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
+        lexer->mark_end(lexer);
+    }
+    lexer->result_symbol = token;
+    return true;
+}
