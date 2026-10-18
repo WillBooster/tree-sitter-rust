@@ -91,23 +91,40 @@
             "type": "ALIAS",
             "content": {
               "type": "SYMBOL",
-              "name": "_attributed_block_statement"
+              "name": "_block_statement_expression"
             },
             "named": true,
-            "value": "attributed_expression"
+            "value": "_expression"
           }
         }
       ]
+    },
+    "_block_statement_expression": {
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_attributed_block_statement"
+      },
+      "named": true,
+      "value": "attributed_expression"
+    },
+    "_outer_attributes": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "REPEAT1",
+        "content": {
+          "type": "SYMBOL",
+          "name": "attribute_item"
+        }
+      }
     },
     "_attributed_block_statement": {
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT1",
-          "content": {
-            "type": "SYMBOL",
-            "name": "attribute_item"
-          }
+          "type": "SYMBOL",
+          "name": "_outer_attributes"
         },
         {
           "type": "FIELD",
@@ -144,11 +161,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT1",
-          "content": {
-            "type": "SYMBOL",
-            "name": "attribute_item"
-          }
+          "type": "SYMBOL",
+          "name": "_outer_attributes"
         },
         {
           "type": "FIELD",
@@ -1681,8 +1695,13 @@
                 ]
               },
               {
-                "type": "SYMBOL",
-                "name": "_declaration_statement"
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_foreign_declaration_statement"
+                },
+                "named": true,
+                "value": "_declaration_statement"
               }
             ]
           }
@@ -1690,6 +1709,61 @@
         {
           "type": "STRING",
           "value": "}"
+        }
+      ]
+    },
+    "_foreign_declaration_statement": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "empty_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "inner_attribute_item"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_attributable_declaration"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_foreign_attributed_declaration"
+          },
+          "named": true,
+          "value": "attributed_declaration"
+        }
+      ]
+    },
+    "_foreign_attributed_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_outer_attributes"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_foreign_declaration_context"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "declaration",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_attributable_declaration"
+          }
         }
       ]
     },
@@ -7428,11 +7502,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SYMBOL",
-              "name": "attribute_item"
-            }
+            "type": "SYMBOL",
+            "name": "_outer_attributes"
           },
           {
             "type": "PREC_RIGHT",
@@ -13482,9 +13553,6 @@
   ],
   "conflicts": [
     [
-      "attributed_expression"
-    ],
-    [
       "_attributed_block_statement",
       "_expression_except_range"
     ],
@@ -13673,6 +13741,8 @@
   ],
   "supertypes": [
     "_declaration_statement",
+    "_foreign_declaration_statement",
+    "_block_statement_expression",
     "_expression",
     "_type",
     "_literal",

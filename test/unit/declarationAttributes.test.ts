@@ -143,6 +143,7 @@ test('ends attributed block statements before the following statement without a 
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
+  const query = new Query(language, '(_expression/attributed_expression) @expression');
   try {
     for (const expression of [
       '{ first(); }',
@@ -163,6 +164,9 @@ test('ends attributed block statements before the following statement without a 
           source
         ).toEqual([`#[allow(unused)] #[cfg(all())] ${expression}`, 'after();']);
         expect(statements[0]?.namedChildren[0]?.childForFieldName('value')?.text).toBe(expression);
+        expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([
+          `#[allow(unused)] #[cfg(all())] ${expression}`,
+        ]);
       } finally {
         tree.delete();
       }
@@ -174,6 +178,7 @@ test('ends attributed block statements before the following statement without a 
       invalid.delete();
     }
   } finally {
+    query.delete();
     parser.delete();
   }
 });
