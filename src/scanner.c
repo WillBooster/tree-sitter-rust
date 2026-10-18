@@ -575,7 +575,9 @@ static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
     enum TokenType token = line ? ORDINARY_LINE_COMMENT : ORDINARY_BLOCK_COMMENT_START;
     if (outer) {
         enum TokenType outer_token = line ? OUTER_LINE_COMMENT_START : OUTER_BLOCK_COMMENT_START;
-        token = valid_symbols[outer_token] ? outer_token : line ? EXTRA_LINE_DOC_COMMENT_START : ORDINARY_BLOCK_COMMENT_START;
+        token = valid_symbols[outer_token] && !valid_symbols[ERROR_SENTINEL]
+            ? outer_token
+            : line ? EXTRA_LINE_DOC_COMMENT_START : ORDINARY_BLOCK_COMMENT_START;
     }
     if (!valid_symbols[token]) return false;
     if (token == ORDINARY_LINE_COMMENT) {

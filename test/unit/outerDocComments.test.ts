@@ -293,3 +293,51 @@ test('rejects documentation before else without treating the keyword as a struct
     parser.delete();
   }
 });
+
+test('retains outer documentation in broken use lists and type annotations', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
+  const injections = new Query(language, readFileSync('queries/injections.scm', 'utf8'));
+  try {
+    for (const doc of ['/// documentation\n', '/** documentation */']) {
+      for (const source of [
+        `use a::{@ ${doc} b}; fn after() {}`,
+        `fn f() { let x: , ${doc} = 1; } fn after() {}`,
+        `type T = @ ${doc}; fn after() {}`,
+        `fn f() -> @ ${doc} { 0 } fn after() {}`,
+      ]) {
+        const tree = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(true);
+          const comment = tree.rootNode.descendantsOfType(['line_comment', 'block_comment'])[0];
+          expect(comment?.text, source).toBe(doc);
+          expect(comment?.childForFieldName('outer')?.text).toBe(doc.startsWith('///') ? '/' : '*');
+          expect(comment?.childForFieldName('doc')?.text.trim()).toBe('documentation');
+          expect(
+            highlights
+              .captures(tree.rootNode)
+              .filter(({ name }) => name === 'comment')
+              .map(({ node }) => node.text)
+          ).toContain(doc);
+          expect(
+            injections
+              .captures(tree.rootNode)
+              .filter(({ name }) => name === 'injection.content')
+              .map(({ node }) => node.text.trim())
+          ).toContain('documentation');
+          expect(
+            tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text)
+          ).toContain('after');
+        } finally {
+          tree.delete();
+        }
+      }
+    }
+  } finally {
+    injections.delete();
+    highlights.delete();
+    parser.delete();
+  }
+});
