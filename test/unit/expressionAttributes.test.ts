@@ -156,3 +156,59 @@ test('retains expression supertype captures for every list operand', () => {
     parser.delete();
   }
 });
+
+test('requires array attributes to precede an operand across incremental edits', () => {
+  const parser = new Parser().setLanguage(language);
+  try {
+    for (const expression of ['[#[a]]', '[#[a],]', '[1, #[a]]', '[#[a]; 2]', '[[#[a]]]']) {
+      const tree = parser.parse(`fn f() { let x = ${expression}; }`)!;
+      try {
+        expect(tree.rootNode.hasError, expression).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
+    for (const expression of ['[]', '[#[a] #[b] 1, #[c] 2,]', '[#[a] 1; 2]', '[#[a] [#[b] 1]]']) {
+      const tree = parser.parse(`fn f() { let x = ${expression}; }`)!;
+      try {
+        expect(tree.rootNode.hasError, expression).toBe(false);
+        expect(tree.rootNode.descendantsOfType('attributed_expression')).toHaveLength(0);
+      } finally {
+        tree.delete();
+      }
+    }
+    const prefix = 'fn f() { let x = [[#[a] ';
+    let previous = '';
+    let tree = parser.parse(`${prefix}${previous}]]; }`)!;
+    try {
+      for (const operand of ['1', '', '2, #[b] 3']) {
+        tree.edit(
+          new Edit({
+            startIndex: prefix.length,
+            oldEndIndex: prefix.length + previous.length,
+            newEndIndex: prefix.length + operand.length,
+            startPosition: { row: 0, column: prefix.length },
+            oldEndPosition: { row: 0, column: prefix.length + previous.length },
+            newEndPosition: { row: 0, column: prefix.length + operand.length },
+          })
+        );
+        const source = `${prefix}${operand}]]; }`;
+        const old = tree;
+        tree = parser.parse(source, old)!;
+        old.delete();
+        const fresh = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(operand === '');
+          expect(tree.rootNode.toString()).toEqual(fresh.rootNode.toString());
+        } finally {
+          fresh.delete();
+        }
+        previous = operand;
+      }
+    } finally {
+      tree.delete();
+    }
+  } finally {
+    parser.delete();
+  }
+});
