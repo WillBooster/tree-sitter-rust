@@ -31,7 +31,7 @@ test.each([
   ['block statement attributes', 'fn f() { ', '#[a] ', 'if true {} after(); }', false],
   ['foreign attributes', 'unsafe extern "C" { ', '#[a] ', 'safe fn f(); }', false],
   ['orphan attributes', 'mod m { ', '#[a] ', '}', true],
-  ['misplaced documentation', 'fn f() { let x = 1\n', '/// docs\n', '; }', false],
+  ['orphan documentation', 'fn f() { 1 ', '/// docs\n', '}', true],
   ['documentation during recovery', 'fn f() { @ ', '/// docs\n', '}', true],
   ['line errors', '', '$ a\n', '', true],
   ['malformed foreign visibility', 'extern "C" { ', 'pub(in x fn f;\n', ' }', true],
