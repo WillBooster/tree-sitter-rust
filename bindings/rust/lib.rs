@@ -14,10 +14,10 @@
 //! assert!(!tree.root_node().has_error());
 //! ```
 //!
-//! The parser loads only with [willbooster-tree-sitter] 2.0.0 or later; upstream's `tree-sitter` crate rejects its
-//! ABI number.
+//! The parser requires [willbooster-tree-sitter] 7.0.5 or later within major version 7.
+//! Upstream's `tree-sitter` crate rejects its ABI number.
 //!
-//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/2/tree_sitter/struct.Parser.html
+//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/7/tree_sitter/struct.Parser.html
 //! [willbooster-tree-sitter]: https://crates.io/crates/willbooster-tree-sitter
 //! [tree-sitter]: https://tree-sitter.github.io/
 
