@@ -42,10 +42,11 @@ test.each([
   const large = prefix + line.repeat(20_000) + suffix;
   parseCpuTime(large, expectedError);
   parseCpuTime(large, expectedError);
+  // Equal input work keeps a tiny small-input sample from deciding the ratio.
   let smallFastest = Infinity;
   let largeFastest = Infinity;
   for (let run = 0; run < 5; run++) {
-    smallFastest = Math.min(smallFastest, parseCpuTime(small, expectedError));
+    smallFastest = Math.min(smallFastest, parseCpuTime(small, expectedError, 10));
     largeFastest = Math.min(largeFastest, parseCpuTime(large, expectedError));
   }
   expect(largeFastest / smallFastest).toBeLessThan(18);
@@ -53,13 +54,16 @@ test.each([
   expect(largeFastest).toBeLessThan(5_000_000);
 });
 
-function parseCpuTime(source: string, expectedError: boolean): number {
+function parseCpuTime(source: string, expectedError: boolean, repetitions = 1): number {
   const start = process.threadCpuUsage();
-  const tree = parser.parse(source);
+  let matchesExpectedError = true;
+  for (let run = 0; run < repetitions; run++) {
+    const tree = parser.parse(source);
+    if (!tree) throw new Error('The parser returned no tree');
+    matchesExpectedError = tree.rootNode.hasError === expectedError && matchesExpectedError;
+    tree.delete();
+  }
   const { system, user } = process.threadCpuUsage(start);
-  if (!tree) throw new Error('The parser returned no tree');
-  const { hasError } = tree.rootNode;
-  tree.delete();
-  expect(hasError).toBe(expectedError);
-  return system + user;
+  expect(matchesExpectedError).toBe(true);
+  return (system + user) / repetitions;
 }
