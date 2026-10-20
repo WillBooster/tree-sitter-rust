@@ -266,7 +266,8 @@ module.exports = grammar({
       const rules = seq(repeat(seq($.macro_rule, ';')), optional($.macro_rule));
 
       return seq(
-        choice('macro_rules!', seq(alias('macro_rules', 'macro_rules!'), '!')),
+        alias('macro_rules', 'macro_rules!'),
+        '!',
         field('name', choice($.identifier, $._reserved_identifier)),
         choice(seq('(', rules, ')', ';'), seq('[', rules, ']', ';'), seq('{', rules, '}'))
       );

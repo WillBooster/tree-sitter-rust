@@ -367,3 +367,27 @@ fn main() {
           (token_tree
             (token_tree
               (token_tree))))))))
+
+================================================================================
+Macro invocations named macro_rules
+================================================================================
+
+macro_rules! macro_rules { () => {}; }
+macro_rules! {}
+fn following() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (macro_definition
+    name: (identifier)
+    (macro_rule
+      left: (token_tree_pattern)
+      right: (token_tree)))
+  (macro_invocation
+    macro: (identifier)
+    (token_tree))
+  (function_item
+    name: (identifier)
+    parameters: (parameters)
+    body: (block)))
