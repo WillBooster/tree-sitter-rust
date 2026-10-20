@@ -119,6 +119,7 @@
 "let" @keyword
 "loop" @keyword
 "macro_rules!" @keyword
+(macro_definition "!" @keyword)
 "macro" @keyword
 "match" @keyword
 "mod" @keyword
@@ -162,4 +163,6 @@
 
 "*" @operator
 "&" @operator
+(reference_type "&&" @operator)
+(reference_pattern "&&" @operator)
 "'" @operator

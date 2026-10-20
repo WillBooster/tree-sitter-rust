@@ -1940,3 +1940,52 @@ fn main() {
           parameters: (closure_parameters
             (ERROR))
           body: (integer_literal))))))
+
+================================================================================
+Block match-arm boundaries before reference patterns
+================================================================================
+
+fn example(value: &&Option<i32>) {
+    match value {
+        &&Some(0) => {}
+        &&Some(_) => {}
+        &&None => {}
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    name: (identifier)
+    parameters: (parameters
+      (parameter
+        pattern: (identifier)
+        type: (reference_type
+          type: (generic_type
+            type: (type_identifier)
+            type_arguments: (type_arguments
+              (primitive_type))))))
+    body: (block
+      (expression_statement
+        (match_expression
+          value: (identifier)
+          body: (match_block
+            (match_arm
+              pattern: (match_pattern
+                (reference_pattern
+                  (tuple_struct_pattern
+                    type: (identifier)
+                    (integer_literal))))
+              value: (block))
+            (match_arm
+              pattern: (match_pattern
+                (reference_pattern
+                  (tuple_struct_pattern
+                    type: (identifier))))
+              value: (block))
+            (match_arm
+              pattern: (match_pattern
+                (reference_pattern
+                  (identifier)))
+              value: (block))))))))
