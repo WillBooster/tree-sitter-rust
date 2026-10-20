@@ -162,4 +162,6 @@
 
 "*" @operator
 "&" @operator
+(reference_type "&&" @operator)
+(reference_pattern "&&" @operator)
 "'" @operator
