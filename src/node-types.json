@@ -348,6 +348,10 @@
         "named": true
       },
       {
+        "type": "box_pattern",
+        "named": true
+      },
+      {
         "type": "captured_pattern",
         "named": true
       },
@@ -1161,6 +1165,22 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "box_pattern",
+    "named": true,
+    "fields": {
+      "pattern": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_pattern",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -5721,6 +5741,10 @@
   },
   {
     "type": "block",
+    "named": false
+  },
+  {
+    "type": "box",
     "named": false
   },
   {

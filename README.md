@@ -71,16 +71,22 @@ In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-
 fuzzed with. The parser requires version 7.0.5 or later within major version 7 of that runtime; upstream's
 `tree-sitter` crate rejects it:
 
-```toml
-[dependencies]
-tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.5" }
-tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "9" }
+```sh
+cargo add willbooster-tree-sitter@7.0.5 --rename tree-sitter
+cargo add willbooster-tree-sitter-rust --rename tree-sitter-rust
 ```
 
 ```rust
 let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_rust::LANGUAGE.into())?;
 ```
+
+## Box patterns
+
+`box_pattern` exposes its operand through the `pattern` field, including anonymous `_` patterns.
+Nested `box` patterns produce nested nodes; `box 6 | box 7` produces two boxed alternatives.
+The `box` keyword is an anonymous token, including inside macro token trees; `r#box` remains an identifier.
+The grammar parses this feature-gated syntax without evaluating Rust's feature attributes.
 
 ## Macros
 

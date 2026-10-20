@@ -101,6 +101,7 @@
 "auto" @keyword
 "await" @keyword
 "become" @keyword
+"box" @keyword
 "break" @keyword
 "const" @keyword
 "continue" @keyword

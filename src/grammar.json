@@ -1376,6 +1376,10 @@
         },
         {
           "type": "STRING",
+          "value": "box"
+        },
+        {
+          "type": "STRING",
           "value": "break"
         },
         {
@@ -11194,6 +11198,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "box_pattern"
+        },
+        {
+          "type": "SYMBOL",
           "name": "slice_pattern"
         },
         {
@@ -12262,6 +12270,23 @@
         {
           "type": "SYMBOL",
           "name": "_pattern"
+        }
+      ]
+    },
+    "box_pattern": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "box"
+        },
+        {
+          "type": "FIELD",
+          "name": "pattern",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_pattern"
+          }
         }
       ]
     },
