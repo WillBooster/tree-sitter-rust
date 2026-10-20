@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
@@ -115,11 +116,13 @@ test('keeps joint reference-pattern tokens distinct from nested patterns and boo
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const tree = parser.parse(`fn patterns(value: &&i32, a: bool, b: bool) {
+  const source = `fn patterns(value: &&i32, a: bool, b: bool) {
     let &&joint = value;
     let & /* gap */ &nested = value;
     let logical = a && b;
-  }`)!;
+  }`;
+  const tree = parser.parse(source)!;
+  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
     expect(tree.rootNode.hasError).toBe(false);
     const patterns = tree.rootNode
@@ -139,7 +142,21 @@ test('keeps joint reference-pattern tokens distinct from nested patterns and boo
     expect(
       tree.rootNode.descendantsOfType('binary_expression').map((node) => node.childForFieldName('operator')!.text)
     ).toEqual(['&&']);
+    expect(
+      highlights
+        .captures(tree.rootNode)
+        .filter(
+          ({ name, node }) => name === 'operator' && ['reference_type', 'reference_pattern'].includes(node.parent!.type)
+        )
+        .map(({ node }) => [node.text, node.startIndex])
+    ).toEqual([
+      ['&&', source.indexOf('&&i32')],
+      ['&&', source.indexOf('&&joint')],
+      ['&', source.indexOf('& /* gap */')],
+      ['&', source.indexOf('&nested')],
+    ]);
   } finally {
+    highlights.delete();
     tree.delete();
     parser.delete();
   }
