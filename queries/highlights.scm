@@ -156,7 +156,7 @@
 
 (escape_sequence) @escape
 
-(attribute_item) @attribute
+(attribute_item (attribute)) @attribute
 (inner_attribute_item) @attribute
 
 "*" @operator

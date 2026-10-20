@@ -8,7 +8,7 @@
 
 // @ts-check
 
-const { alias, choice, field, grammar, optional, prec, repeat, repeat1, seq, sym, token } =
+const { alias, choice, field, grammar, optional, prec, repeat, repeat1, reserved, seq, sym, token } =
   /** @type {typeof globalThis & import('@willbooster/web-tree-sitter/dsl').DSL} */ (globalThis);
 
 // https://doc.rust-lang.org/reference/expressions.html#expression-precedence
@@ -144,6 +144,16 @@ module.exports = grammar({
     sym('frontmatter_content'),
     sym('_frontmatter_end'),
     sym('_frontmatter_context'),
+    sym('_ordinary_line_comment'),
+    sym('_extra_line_doc_comment_start'),
+    sym('_outer_line_comment_start'),
+    sym('_ordinary_block_comment_start'),
+    sym('_outer_block_comment_start'),
+    sym('_outer_line_doc_comment_marker'),
+    sym('_inner_line_doc_comment_marker'),
+    sym('_orphan_line_doc_comment_start'),
+    sym('_orphan_block_doc_comment_start'),
+    sym('_orphan_doc_missing_owner'),
   ],
 
   supertypes: ($) => [
@@ -193,6 +203,11 @@ module.exports = grammar({
     [$.function_modifiers, $.impl_item, $.trait_item],
     [$.function_modifiers, $.trait_item],
   ],
+
+  reserved: {
+    global: () => [],
+    struct_name: () => ['else'],
+  },
 
   word: ($) => $.identifier,
 
@@ -353,6 +368,8 @@ module.exports = grammar({
 
     _non_special_token: ($) =>
       choice(
+        alias($._outer_line_comment, $.line_comment),
+        alias($._outer_block_comment, $.block_comment),
         $._literal,
         $.identifier,
         $.mutable_specifier,
@@ -394,7 +411,21 @@ module.exports = grammar({
         'while'
       ),
 
-    attribute_item: ($) => seq('#', '[', $.attribute, ']'),
+    attribute_item: ($) =>
+      choice(
+        seq('#', '[', $.attribute, ']'),
+        alias($._outer_line_comment, $.line_comment),
+        alias($._outer_block_comment, $.block_comment)
+      ),
+
+    _orphan_doc_expression: ($) =>
+      seq(
+        alias($._orphan_doc_attribute, $.attribute_item),
+        field('value', alias(sym('_orphan_doc_missing_owner'), $.identifier))
+      ),
+
+    _orphan_doc_attribute: ($) =>
+      choice(alias($._orphan_line_comment, $.line_comment), alias($._orphan_block_comment, $.block_comment)),
 
     inner_attribute_item: ($) => seq('#', '!', '[', $.attribute, ']'),
 
@@ -795,6 +826,7 @@ module.exports = grammar({
           seq(repeat($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
         ),
         optional(','),
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
         ')'
       ),
 
@@ -1214,10 +1246,18 @@ module.exports = grammar({
           seq(repeat(prec(PREC.call, $.attribute_item)), $._expression, ';', field('length', $._expression)),
           seq(sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','))
         ),
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
         ']'
       ),
 
-    parenthesized_expression: ($) => seq('(', repeat(prec(PREC.call, $.attribute_item)), $._expression, ')'),
+    parenthesized_expression: ($) =>
+      seq(
+        '(',
+        repeat(prec(PREC.call, $.attribute_item)),
+        $._expression,
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
+        ')'
+      ),
 
     tuple_expression: ($) =>
       seq(
@@ -1236,7 +1276,7 @@ module.exports = grammar({
         field(
           'name',
           choice(
-            $._type_identifier,
+            reserved('struct_name', $._type_identifier),
             prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
             alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
             $.generic_type_with_turbofish
@@ -1284,7 +1324,13 @@ module.exports = grammar({
       ),
 
     let_condition: ($) =>
-      seq('let', field('pattern', $._pattern), '=', field('value', prec.left(PREC.and, $._expression))),
+      seq(
+        optional($._outer_attributes),
+        'let',
+        field('pattern', $._pattern),
+        '=',
+        field('value', prec.left(PREC.and, $._expression))
+      ),
 
     _let_chain: ($) =>
       prec.left(
@@ -1394,7 +1440,15 @@ module.exports = grammar({
 
     try_block: ($) => seq('try', $.block),
 
-    block: ($) => seq(optional(seq($.label, ':')), '{', repeat($._statement), optional($._expression), '}'),
+    block: ($) =>
+      seq(
+        optional(seq($.label, ':')),
+        '{',
+        repeat($._statement),
+        optional($._expression),
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
+        '}'
+      ),
 
     _pattern: ($) =>
       choice(
@@ -1635,32 +1689,33 @@ module.exports = grammar({
 
     comment: ($) => choice($.line_comment, $.block_comment),
 
-    line_comment: ($) =>
-      seq(
-        '//',
-        choice(
-          seq(token.immediate(prec(2, /\/\//)), /.*/),
-          seq($._line_doc_comment_marker, field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))),
-          token.immediate(prec(1, /.*/))
+    line_comment: () =>
+      choice(
+        sym('_ordinary_line_comment'),
+        seq(
+          alias(sym('_extra_line_doc_comment_start'), '//'),
+          choice(
+            field('inner', alias(sym('_inner_line_doc_comment_marker'), sym('inner_doc_comment_marker'))),
+            field('outer', alias(sym('_outer_line_doc_comment_marker'), sym('outer_doc_comment_marker')))
+          ),
+          field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))
         )
       ),
 
-    _line_doc_comment_marker: ($) =>
-      choice(
-        field('outer', alias($._outer_line_doc_comment_marker, sym('outer_doc_comment_marker'))),
-        field('inner', alias($._inner_line_doc_comment_marker, sym('inner_doc_comment_marker')))
-      ),
+    _outer_line_comment: () => outerLineComment('_outer_line_comment_start'),
 
-    _inner_line_doc_comment_marker: () => token.immediate(prec(2, '!')),
-    _outer_line_doc_comment_marker: () => token.immediate(prec(2, '/')),
+    _orphan_line_comment: () => outerLineComment('_orphan_line_doc_comment_start'),
 
-    block_comment: ($) =>
+    block_comment: () =>
       seq(
-        '/*',
+        alias(sym('_ordinary_block_comment_start'), '/*'),
         optional(
           choice(
             seq(
-              $._block_doc_comment_marker,
+              choice(
+                field('inner', alias(sym('_inner_block_doc_comment_marker'), sym('inner_doc_comment_marker'))),
+                field('outer', alias(sym('_outer_block_doc_comment_marker'), sym('outer_doc_comment_marker')))
+              ),
               optional(field('doc', alias(sym('_block_comment_content'), sym('doc_comment'))))
             ),
             sym('_block_comment_content')
@@ -1669,11 +1724,9 @@ module.exports = grammar({
         '*/'
       ),
 
-    _block_doc_comment_marker: () =>
-      choice(
-        field('outer', alias(sym('_outer_block_doc_comment_marker'), sym('outer_doc_comment_marker'))),
-        field('inner', alias(sym('_inner_block_doc_comment_marker'), sym('inner_doc_comment_marker')))
-      ),
+    _outer_block_comment: () => outerBlockComment('_outer_block_comment_start'),
+
+    _orphan_block_comment: () => outerBlockComment('_orphan_block_doc_comment_start'),
 
     _path: ($) =>
       choice(
@@ -1770,4 +1823,23 @@ function sepBy1(sep, rule) {
  */
 function sepBy(sep, rule) {
   return optional(sepBy1(sep, rule));
+}
+
+/** @param {string} start */
+function outerLineComment(start) {
+  return seq(
+    alias(sym(start), '//'),
+    field('outer', alias(sym('_outer_line_doc_comment_marker'), sym('outer_doc_comment_marker'))),
+    field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))
+  );
+}
+
+/** @param {string} start */
+function outerBlockComment(start) {
+  return seq(
+    alias(sym(start), '/*'),
+    field('outer', alias(sym('_outer_block_doc_comment_marker'), sym('outer_doc_comment_marker'))),
+    optional(field('doc', alias(sym('_block_comment_content'), sym('doc_comment')))),
+    '*/'
+  );
 }

@@ -9,6 +9,7 @@ Block comments
 /* Comment with asterisks **/
 
 /** Outer block comment */
+fn documented() {}
 
 
 /*! Inner block comment */
@@ -19,9 +20,15 @@ Block comments
 (source_file
   (block_comment)
   (block_comment)
-  (block_comment
-    outer: (outer_doc_comment_marker)
-    doc: (doc_comment))
+  (attributed_declaration
+    (attribute_item
+      (block_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
+    declaration: (function_item
+      name: (identifier)
+      parameters: (parameters)
+      body: (block)))
   (block_comment
     inner: (inner_doc_comment_marker)
     doc: (doc_comment))
@@ -65,6 +72,7 @@ Line comments
 // Comment
 
 /// Outer line doc comment
+fn documented() {}
 
 //! Inner line doc comment
 
@@ -72,9 +80,15 @@ Line comments
 
 (source_file
   (line_comment)
-  (line_comment
-    outer: (outer_doc_comment_marker)
-    doc: (doc_comment))
+  (attributed_declaration
+    (attribute_item
+      (line_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
+    declaration: (function_item
+      name: (identifier)
+      parameters: (parameters)
+      body: (block)))
   (line_comment
     inner: (inner_doc_comment_marker)
     doc: (doc_comment)))
@@ -88,7 +102,9 @@ Line doc comments
 //   - Only a comment
 ///  - Outer line doc (exactly 3 slashes)
 ///
+///*bold* documentation
 //// - Only a comment
+fn documented() {}
 
 ---
 
@@ -100,13 +116,24 @@ Line doc comments
     inner: (inner_doc_comment_marker)
     doc: (doc_comment))
   (line_comment)
-  (line_comment
-    outer: (outer_doc_comment_marker)
-    doc: (doc_comment))
-  (line_comment
-    outer: (outer_doc_comment_marker)
-    doc: (doc_comment))
-  (line_comment))
+  (attributed_declaration
+    (attribute_item
+      (line_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
+    (attribute_item
+      (line_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
+    (attribute_item
+      (line_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
+    (line_comment)
+    declaration: (function_item
+      name: (identifier)
+      parameters: (parameters)
+      body: (block))))
 
 ====================================
 Block doc comments
@@ -118,6 +145,7 @@ Block doc comments
 /*   - Only a comment */
 /**  - Outer block doc (exactly) 2 asterisks */
 /*** - Only a comment */
+fn documented() {}
 
 ----
 
@@ -129,10 +157,16 @@ Block doc comments
     inner: (inner_doc_comment_marker)
     doc: (doc_comment))
   (block_comment)
-  (block_comment
-    outer: (outer_doc_comment_marker)
-    doc: (doc_comment))
-  (block_comment))
+  (attributed_declaration
+    (attribute_item
+      (block_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
+    (block_comment)
+    declaration: (function_item
+      name: (identifier)
+      parameters: (parameters)
+      body: (block))))
 
 =====================================
 Nested doc block comments
@@ -141,6 +175,7 @@ Nested doc block comments
 /*   /* */  /** */  /*! */  */
 /*!  /* */  /** */  /*! */  */
 /**  /* */  /** */  /*! */  */
+fn documented() {}
 
 ----
 
@@ -149,9 +184,15 @@ Nested doc block comments
   (block_comment
     inner: (inner_doc_comment_marker)
     doc: (doc_comment))
-  (block_comment
-    outer: (outer_doc_comment_marker)
-    doc: (doc_comment)))
+  (attributed_declaration
+    (attribute_item
+      (block_comment
+        outer: (outer_doc_comment_marker)
+        doc: (doc_comment)))
+    declaration: (function_item
+      name: (identifier)
+      parameters: (parameters)
+      body: (block))))
 
 ====================================
 Comments degenerate cases
@@ -179,11 +220,13 @@ let x; // <- immediate item after an empty line doc comment
   (block_comment
     (inner_doc_comment_marker))
   (line_comment)
-  (line_comment
-    (outer_doc_comment_marker)
-    (doc_comment))
-  (let_declaration
-    (identifier))
+  (attributed_declaration
+    (attribute_item
+      (line_comment
+        (outer_doc_comment_marker)
+        (doc_comment)))
+    (let_declaration
+      (identifier)))
   (line_comment)
   (block_comment)
   (block_comment))
@@ -285,16 +328,18 @@ fn after_comments() {}
   (block_comment)
   (block_comment)
   (block_comment)
-  (block_comment
-    (outer_doc_comment_marker)
-    (doc_comment))
-  (block_comment
-    (inner_doc_comment_marker)
-    (doc_comment))
-  (function_item
-    (identifier)
-    (parameters)
-    (block)))
+  (attributed_declaration
+    (attribute_item
+      (block_comment
+        (outer_doc_comment_marker)
+        (doc_comment)))
+    (block_comment
+      (inner_doc_comment_marker)
+      (doc_comment))
+    (function_item
+      (identifier)
+      (parameters)
+      (block))))
 
 ============================================
 Nested block comments separated by slashes
@@ -314,10 +359,12 @@ fn after() {}
   (block_comment
     (inner_doc_comment_marker)
     (doc_comment))
-  (block_comment
-    (outer_doc_comment_marker)
-    (doc_comment))
-  (function_item
-    (identifier)
-    (parameters)
-    (block)))
+  (attributed_declaration
+    (attribute_item
+      (block_comment
+        (outer_doc_comment_marker)
+        (doc_comment)))
+    (function_item
+      (identifier)
+      (parameters)
+      (block))))

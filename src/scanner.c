@@ -24,7 +24,17 @@ enum TokenType {
     FRONTMATTER_HEADER_END,
     FRONTMATTER_CONTENT,
     FRONTMATTER_END,
-    FRONTMATTER_CONTEXT
+    FRONTMATTER_CONTEXT,
+    ORDINARY_LINE_COMMENT,
+    EXTRA_LINE_DOC_COMMENT_START,
+    OUTER_LINE_COMMENT_START,
+    ORDINARY_BLOCK_COMMENT_START,
+    OUTER_BLOCK_COMMENT_START,
+    LINE_OUTER_DOC_MARKER,
+    LINE_INNER_DOC_MARKER,
+    ORPHAN_LINE_DOC_COMMENT_START,
+    ORPHAN_BLOCK_DOC_COMMENT_START,
+    ORPHAN_DOC_MISSING_OWNER
 };
 
 #include "frontmatter.h"
@@ -54,7 +64,7 @@ void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *bu
     scanner->frontmatter.allowed = false;
     scanner->opening_hash_count = 0;
     scanner->literal_suffix_pending = 0;
-    if (length == 7) scanner->frontmatter.allowed = buffer[6];
+    if (length >= 7) scanner->frontmatter.allowed = buffer[6];
     if (length > 0) scanner->opening_hash_count = (uint8_t)buffer[0];
     if (length > 1) scanner->literal_suffix_pending = (uint8_t)buffer[1];
     if (length >= 6) {
@@ -206,7 +216,21 @@ static inline bool process_trailing_dot_float_literal(TSLexer *lexer) {
     return true;
 }
 
-static inline bool process_line_doc_content(TSLexer *lexer) {
+static inline bool process_line_doc_comment(TSLexer *lexer, const bool *valid_symbols) {
+    if (valid_symbols[LINE_OUTER_DOC_MARKER] || valid_symbols[LINE_INNER_DOC_MARKER]) {
+        if (valid_symbols[LINE_OUTER_DOC_MARKER] && lexer->lookahead == '/') {
+            lexer->result_symbol = LINE_OUTER_DOC_MARKER;
+        } else if (valid_symbols[LINE_INNER_DOC_MARKER] && lexer->lookahead == '!') {
+            lexer->result_symbol = LINE_INNER_DOC_MARKER;
+        } else {
+            return false;
+        }
+        advance(lexer);
+        lexer->mark_end(lexer);
+        return true;
+    }
+
+
     lexer->result_symbol = LINE_DOC_CONTENT;
     for (;;) {
         if (lexer->eof(lexer)) {
@@ -342,16 +366,23 @@ static bool foreign_identifier(TSLexer *lexer);
 static bool foreign_word(TSLexer *lexer, const char *word);
 static bool foreign_identifier_continue(int32_t c);
 static bool skip_trivia(TSLexer *lexer);
-static bool skip_block_trivia(TSLexer *lexer);
+static bool scan_trivia(TSLexer *lexer, bool stop_at_outer_doc);
+static bool skip_trivia_comment(TSLexer *lexer, bool stop_at_outer_doc);
+static bool skip_block_comment_body(TSLexer *lexer);
 static bool scanner_whitespace(int32_t c);
+static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols);
+static enum TokenType outer_comment_token(TSLexer *lexer, const bool *valid_symbols, bool line);
+static bool outer_comment_has_following_token(TSLexer *lexer, bool line);
+static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start);
 
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-    // Tree-sitter enables every external token during recovery; the unused sentinel suppresses normal scans.
+    Scanner *scanner = (Scanner *)payload;
+    // Recovery enables every external token; only comment starts are safe without parser context.
     if (valid_symbols[ERROR_SENTINEL]) {
-        return false;
+        skip_token_whitespace(lexer, false);
+        return lexer->lookahead == '/' && scan_comment_start(lexer, valid_symbols);
     }
 
-    Scanner *scanner = (Scanner *)payload;
     if (valid_symbols[FRONTMATTER_CONTEXT] || valid_symbols[FRONTMATTER_CONTENT] ||
         valid_symbols[FRONTMATTER_HEADER_END] || valid_symbols[FRONTMATTER_END]) {
         return scan_frontmatter_token(&scanner->frontmatter, lexer, valid_symbols);
@@ -364,20 +395,20 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
 
     if (scan_string_tokens(scanner, lexer, valid_symbols)) return true;
 
-    if (valid_symbols[LINE_DOC_CONTENT]) {
-        return process_line_doc_content(lexer);
+    if (valid_symbols[LINE_DOC_CONTENT] || valid_symbols[LINE_OUTER_DOC_MARKER] ||
+        valid_symbols[LINE_INNER_DOC_MARKER]) {
+        return process_line_doc_comment(lexer, valid_symbols);
     }
 
     if (valid_symbols[RAW_STRING_LITERAL_CONTENT]) {
         return scan_raw_string_content(scanner, lexer);
     }
 
-    while (valid_symbols[FRONTMATTER_START] ? rust_whitespace(lexer->lookahead) : scanner_whitespace(lexer->lookahead)) {
-        skip(lexer);
-    }
+    skip_token_whitespace(lexer, valid_symbols[FRONTMATTER_START]);
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
         return scan_frontmatter_start(&scanner->frontmatter, lexer);
     }
+    if (lexer->lookahead == '/') return scan_comment_start(lexer, valid_symbols);
     if (valid_symbols[FOREIGN_DECLARATION_CONTEXT] && valid_symbols[FOREIGN_DECLARATION_START]) {
         return scan_foreign_declaration_start(lexer);
     }
@@ -522,21 +553,38 @@ static bool foreign_identifier_continue(int32_t c) {
     return c == '_' || iswalnum(c) || (c >= 0x80 && !rust_whitespace(c));
 }
 
-static bool skip_trivia(TSLexer *lexer) {
+static bool skip_trivia(TSLexer *lexer) { return scan_trivia(lexer, false); }
+
+static bool scan_trivia(TSLexer *lexer, bool stop_at_outer_doc) {
     for (;;) {
         while (scanner_whitespace(lexer->lookahead)) advance(lexer);
         if (lexer->lookahead != '/') return true;
         advance(lexer);
-        if (lexer->lookahead == '/') {
-            while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
-            continue;
-        }
-        if (lexer->lookahead != '*' || !skip_block_trivia(lexer)) return false;
+        if (!skip_trivia_comment(lexer, stop_at_outer_doc)) return false;
     }
 }
 
-static bool skip_block_trivia(TSLexer *lexer) {
+static bool skip_trivia_comment(TSLexer *lexer, bool stop_at_outer_doc) {
+    if (lexer->lookahead == '/') {
+        advance(lexer);
+        if (stop_at_outer_doc && lexer->lookahead == '/') {
+            advance(lexer);
+            if (lexer->lookahead != '/') return false;
+        }
+        while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
+        return true;
+    }
+    if (lexer->lookahead != '*') return false;
     advance(lexer);
+    if (stop_at_outer_doc && lexer->lookahead == '*') {
+        advance(lexer);
+        if (lexer->lookahead == '/') { advance(lexer); return true; }
+        if (lexer->lookahead != '*') return false;
+    }
+    return skip_block_comment_body(lexer);
+}
+
+static bool skip_block_comment_body(TSLexer *lexer) {
     unsigned depth = 1;
     while (depth > 0 && !lexer->eof(lexer)) {
         int32_t previous = lexer->lookahead;
@@ -548,3 +596,54 @@ static bool skip_block_trivia(TSLexer *lexer) {
 }
 
 static bool scanner_whitespace(int32_t c) { return rust_whitespace(c) || iswspace(c); }
+
+static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
+    advance(lexer);
+    bool line = lexer->lookahead == '/';
+    if (!line && lexer->lookahead != '*') return false;
+    advance(lexer);
+    lexer->mark_end(lexer);
+    if (line && lexer->lookahead == '!') {
+        if (!valid_symbols[EXTRA_LINE_DOC_COMMENT_START]) return false;
+        lexer->result_symbol = EXTRA_LINE_DOC_COMMENT_START;
+        return true;
+    }
+    bool outer = false;
+    if (lexer->lookahead == (line ? '/' : '*')) {
+        advance(lexer);
+        outer = line ? lexer->lookahead != '/' : lexer->lookahead != '*' && lexer->lookahead != '/';
+    }
+    enum TokenType token = line ? ORDINARY_LINE_COMMENT : ORDINARY_BLOCK_COMMENT_START;
+    if (outer) token = outer_comment_token(lexer, valid_symbols, line);
+    if (!valid_symbols[token]) return false;
+    if (token == ORDINARY_LINE_COMMENT) {
+        while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
+        lexer->mark_end(lexer);
+    }
+    lexer->result_symbol = token;
+    return true;
+}
+
+static enum TokenType outer_comment_token(TSLexer *lexer, const bool *valid_symbols, bool line) {
+    enum TokenType fallback = line ? EXTRA_LINE_DOC_COMMENT_START : ORDINARY_BLOCK_COMMENT_START;
+    if (valid_symbols[ERROR_SENTINEL]) return fallback;
+    enum TokenType attached = line ? OUTER_LINE_COMMENT_START : OUTER_BLOCK_COMMENT_START;
+    if (valid_symbols[attached]) return attached;
+    enum TokenType orphan = line ? ORPHAN_LINE_DOC_COMMENT_START : ORPHAN_BLOCK_DOC_COMMENT_START;
+    if (valid_symbols[orphan] && !outer_comment_has_following_token(lexer, line)) return orphan;
+    return fallback;
+}
+
+static bool outer_comment_has_following_token(TSLexer *lexer, bool line) {
+    if (line) {
+        while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
+    } else if (!skip_block_comment_body(lexer)) return true;
+    if (!scan_trivia(lexer, true)) return true;
+    return !lexer->eof(lexer) && lexer->lookahead != '}' && lexer->lookahead != ')' && lexer->lookahead != ']';
+}
+
+static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start) {
+    while (frontmatter_start ? rust_whitespace(lexer->lookahead) : scanner_whitespace(lexer->lookahead)) {
+        skip(lexer);
+    }
+}
