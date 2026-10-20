@@ -153,6 +153,7 @@ module.exports = grammar({
     sym('_inner_line_doc_comment_marker'),
     sym('_orphan_line_doc_comment_start'),
     sym('_orphan_block_doc_comment_start'),
+    sym('_orphan_doc_missing_owner'),
   ],
 
   supertypes: ($) => [
@@ -417,7 +418,11 @@ module.exports = grammar({
         alias($._outer_block_comment, $.block_comment)
       ),
 
-    _orphan_doc_expression: ($) => seq(alias($._orphan_doc_attribute, $.attribute_item), field('value', $._expression)),
+    _orphan_doc_expression: ($) =>
+      seq(
+        alias($._orphan_doc_attribute, $.attribute_item),
+        field('value', alias(sym('_orphan_doc_missing_owner'), $.identifier))
+      ),
 
     _orphan_doc_attribute: ($) =>
       choice(alias($._orphan_line_comment, $.line_comment), alias($._orphan_block_comment, $.block_comment)),

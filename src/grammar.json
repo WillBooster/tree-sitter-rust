@@ -1550,8 +1550,13 @@
           "type": "FIELD",
           "name": "value",
           "content": {
-            "type": "SYMBOL",
-            "name": "_expression"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_orphan_doc_missing_owner"
+            },
+            "named": true,
+            "value": "identifier"
           }
         }
       ]
@@ -14081,6 +14086,10 @@
     {
       "type": "SYMBOL",
       "name": "_orphan_block_doc_comment_start"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_orphan_doc_missing_owner"
     }
   ],
   "inline": [

@@ -430,6 +430,39 @@ test('preserves completed operands before orphan documentation with or without f
   }
 });
 
+test('keeps orphan documentation recovery inside its closing boundary when a statement is unfinished', async () => {
+  await Parser.init();
+  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
+  try {
+    for (const doc of ['/// it\'s "x\n', '/** it\'s "x */']) {
+      for (const value of [`[1 ${doc}]`, `[(1) ${doc}]`, `(1 ${doc})`]) {
+        for (const following of ['fn after() { let s = "y"; }', 'fn g() {}\nfn after() {}']) {
+          const source = `fn f() { let x = ${value} } ${following}`;
+          const tree = parser.parse(source)!;
+          try {
+            expect(tree.rootNode.hasError, source).toBe(true);
+            expect(
+              tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text),
+              source
+            ).toEqual(following.startsWith('fn g') ? ['f', 'g', 'after'] : ['f', 'after']);
+            const comment = tree.rootNode.descendantsOfType(['line_comment', 'block_comment'])[0];
+            expect(comment?.text, source).toBe(doc);
+            expect(comment?.childForFieldName('doc')?.text.trim(), source).toBe('it\'s "x');
+            expect(
+              tree.rootNode.descendantsOfType('integer_literal').map((node) => node.text),
+              source
+            ).toContain('1');
+          } finally {
+            tree.delete();
+          }
+        }
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
 test('updates orphan documentation diagnostics when a following expression is edited', async () => {
   await Parser.init();
   const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
