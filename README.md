@@ -74,13 +74,19 @@ fuzzed with. The parser requires version 7.0.5 or later within major version 7 o
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.5" }
-tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "7" }
+tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "8" }
 ```
 
 ```rust
 let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_rust::LANGUAGE.into())?;
 ```
+
+## Reference nodes
+
+A joint `&&` token produces one `reference_pattern` or `reference_type` node with an anonymous `&&` child.
+Consecutive `&` tokens separated by whitespace or comments produce nested reference nodes.
+For a joint token, an optional lifetime and mutability describe the inner reference.
 
 ## Attributes
 

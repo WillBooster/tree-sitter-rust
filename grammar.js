@@ -992,7 +992,8 @@ module.exports = grammar({
         field('type', $._type)
       ),
 
-    reference_type: ($) => seq('&', optional($.lifetime), optional($.mutable_specifier), field('type', $._type)),
+    reference_type: ($) =>
+      seq(choice('&', '&&'), optional($.lifetime), optional($.mutable_specifier), field('type', $._type)),
 
     pointer_type: ($) => seq('*', choice('const', $.mutable_specifier), field('type', $._type)),
 
@@ -1582,7 +1583,7 @@ module.exports = grammar({
         $._pattern
       ),
 
-    reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
+    reference_pattern: ($) => seq(choice('&', '&&'), optional($.mutable_specifier), $._pattern),
 
     or_pattern: ($) => prec.left(-2, choice(seq($._pattern, '|', $._pattern), seq('|', $._pattern))),
 

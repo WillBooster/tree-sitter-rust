@@ -72,14 +72,12 @@ fn main() {
               (closure_parameters
                 (parameter
                   (reference_type
-                    (reference_type
-                      (primitive_type)))))
+                    (primitive_type))))
               (boolean_literal)))
           (function_type
             (parameters
               (reference_type
-                (reference_type
-                  (type_identifier))))
+                (type_identifier)))
             (type_identifier))))
       (let_declaration
         (identifier)
