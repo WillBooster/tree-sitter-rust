@@ -1414,9 +1414,11 @@ module.exports = grammar({
 
     label: ($) => seq("'", $.identifier),
 
-    break_expression: ($) => prec.left(seq('break', optional($.label), optional($._expression))),
+    break_expression: ($) => prec.left(seq($._break_expression_head, optional($._expression))),
 
-    continue_expression: ($) => prec.left(seq('continue', optional($.label))),
+    _break_expression_head: ($) => prec.right(seq('break', optional($.label))),
+
+    continue_expression: ($) => prec.right(seq('continue', optional($.label))),
 
     index_expression: ($) => prec(PREC.call, seq($._expression, '[', $._expression, ']')),
 
