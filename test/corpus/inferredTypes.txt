@@ -1,0 +1,131 @@
+==================
+Inferred types in function pointer parameters
+==================
+fn main() {
+    let scalar = (|_: u8| true) as fn(_) -> _;
+    let predicate = (|_: &u8| true) as fn(&_) -> _;
+    let mutable = (|_: &mut u8| true) as fn(&mut _) -> _;
+    let nested = (|_: &&u8| true) as fn(&&_) -> _;
+    let explicit = (|_: &u8| true) as fn(value: &_) -> _;
+    let array = (|_: &[u8; 1]| true) as fn(&[_; 1]) -> _;
+    let _wildcard = |_: &u8| true;
+    after();
+}
+
+---
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (type_cast_expression
+          (parenthesized_expression
+            (closure_expression
+              (closure_parameters
+                (parameter
+                  (primitive_type)))
+              (boolean_literal)))
+          (function_type
+            (parameters
+              (type_identifier))
+            (type_identifier))))
+      (let_declaration
+        (identifier)
+        (type_cast_expression
+          (parenthesized_expression
+            (closure_expression
+              (closure_parameters
+                (parameter
+                  (reference_type
+                    (primitive_type))))
+              (boolean_literal)))
+          (function_type
+            (parameters
+              (reference_type
+                (type_identifier)))
+            (type_identifier))))
+      (let_declaration
+        (identifier)
+        (type_cast_expression
+          (parenthesized_expression
+            (closure_expression
+              (closure_parameters
+                (parameter
+                  (reference_type
+                    (mutable_specifier)
+                    (primitive_type))))
+              (boolean_literal)))
+          (function_type
+            (parameters
+              (reference_type
+                (mutable_specifier)
+                (type_identifier)))
+            (type_identifier))))
+      (let_declaration
+        (identifier)
+        (type_cast_expression
+          (parenthesized_expression
+            (closure_expression
+              (closure_parameters
+                (parameter
+                  (reference_type
+                    (reference_type
+                      (primitive_type)))))
+              (boolean_literal)))
+          (function_type
+            (parameters
+              (reference_type
+                (reference_type
+                  (type_identifier))))
+            (type_identifier))))
+      (let_declaration
+        (identifier)
+        (type_cast_expression
+          (parenthesized_expression
+            (closure_expression
+              (closure_parameters
+                (parameter
+                  (reference_type
+                    (primitive_type))))
+              (boolean_literal)))
+          (function_type
+            (parameters
+              (parameter
+                (identifier)
+                (reference_type
+                  (type_identifier))))
+            (type_identifier))))
+      (let_declaration
+        (identifier)
+        (type_cast_expression
+          (parenthesized_expression
+            (closure_expression
+              (closure_parameters
+                (parameter
+                  (reference_type
+                    (array_type
+                      (primitive_type)
+                      (integer_literal)))))
+              (boolean_literal)))
+          (function_type
+            (parameters
+              (reference_type
+                (array_type
+                  (type_identifier)
+                  (integer_literal))))
+            (type_identifier))))
+      (let_declaration
+        (identifier)
+        (closure_expression
+          (closure_parameters
+            (parameter
+              (reference_type
+                (primitive_type))))
+          (boolean_literal)))
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments))))))
