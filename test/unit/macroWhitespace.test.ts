@@ -150,6 +150,7 @@ test('recognizes macro_rules invocations through keyword trivia edits', async ()
         ]);
         expect(tokens.filter(({ name }) => name === 'keyword').map(({ node }) => node.text)).toEqual([
           'macro_rules',
+          '!',
           'fn',
         ]);
       }
