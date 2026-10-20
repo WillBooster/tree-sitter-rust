@@ -118,6 +118,7 @@
 "let" @keyword
 "loop" @keyword
 "macro_rules!" @keyword
+(macro_definition "!" @keyword)
 "macro" @keyword
 "match" @keyword
 "mod" @keyword

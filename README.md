@@ -74,13 +74,18 @@ fuzzed with. The parser requires version 7.0.5 or later within major version 7 o
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.5" }
-tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "8" }
+tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "9" }
 ```
 
 ```rust
 let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_rust::LANGUAGE.into())?;
 ```
+
+## Macros
+
+A macro definition's anonymous `macro_rules!` node covers the `macro_rules` keyword. The `!` is a separate
+anonymous child. A macro invocation's `macro` field contains its name, including when that name is `macro_rules`.
 
 ## Reference nodes
 
