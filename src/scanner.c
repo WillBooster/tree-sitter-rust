@@ -363,9 +363,10 @@ static bool foreign_identifier(TSLexer *lexer);
 static bool foreign_word(TSLexer *lexer, const char *word);
 static bool foreign_identifier_continue(int32_t c);
 static bool skip_trivia(TSLexer *lexer);
-static bool skip_block_trivia(TSLexer *lexer);
+static bool skip_block_comment_body(TSLexer *lexer);
 static bool scanner_whitespace(int32_t c);
 static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols);
+static bool outer_comment_has_following_token(TSLexer *lexer, bool line);
 static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start);
 
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
@@ -555,12 +556,13 @@ static bool skip_trivia(TSLexer *lexer) {
             while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
             continue;
         }
-        if (lexer->lookahead != '*' || !skip_block_trivia(lexer)) return false;
+        if (lexer->lookahead != '*') return false;
+        advance(lexer);
+        if (!skip_block_comment_body(lexer)) return false;
     }
 }
 
-static bool skip_block_trivia(TSLexer *lexer) {
-    advance(lexer);
+static bool skip_block_comment_body(TSLexer *lexer) {
     unsigned depth = 1;
     while (depth > 0 && !lexer->eof(lexer)) {
         int32_t previous = lexer->lookahead;
@@ -592,9 +594,9 @@ static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
     enum TokenType token = line ? ORDINARY_LINE_COMMENT : ORDINARY_BLOCK_COMMENT_START;
     if (outer) {
         enum TokenType outer_token = line ? OUTER_LINE_COMMENT_START : OUTER_BLOCK_COMMENT_START;
-        token = valid_symbols[outer_token] && !valid_symbols[ERROR_SENTINEL]
-            ? outer_token
-            : line ? EXTRA_LINE_DOC_COMMENT_START : ORDINARY_BLOCK_COMMENT_START;
+        bool attach = valid_symbols[outer_token] && !valid_symbols[ERROR_SENTINEL];
+        if (!attach && !outer_comment_has_following_token(lexer, line)) return false;
+        token = attach ? outer_token : line ? EXTRA_LINE_DOC_COMMENT_START : ORDINARY_BLOCK_COMMENT_START;
     }
     if (!valid_symbols[token]) return false;
     if (token == ORDINARY_LINE_COMMENT) {
@@ -603,6 +605,14 @@ static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols) {
     }
     lexer->result_symbol = token;
     return true;
+}
+
+static bool outer_comment_has_following_token(TSLexer *lexer, bool line) {
+    if (line) {
+        while (!lexer->eof(lexer) && lexer->lookahead != '\n') advance(lexer);
+    } else if (!skip_block_comment_body(lexer)) return true;
+    if (!skip_trivia(lexer)) return true;
+    return !lexer->eof(lexer) && lexer->lookahead != '}' && lexer->lookahead != ')' && lexer->lookahead != ']';
 }
 
 static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start) {

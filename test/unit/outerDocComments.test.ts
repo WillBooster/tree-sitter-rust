@@ -43,7 +43,16 @@ test('attaches outer documentation to its declaration and rejects orphan documen
           tree.delete();
         }
       }
-      for (const source of [doc, `mod m { fn f() {} ${doc} }`, `fn f() { ${doc} }`, `struct S { ${doc} }`]) {
+      for (const source of [
+        doc,
+        `mod m { fn f() {} ${doc} }`,
+        `fn f() { ${doc} }`,
+        `struct S { ${doc} }`,
+        `fn f() { 1 ${doc} }`,
+        `fn f() { (1 ${doc}) }`,
+        `fn f() { [1 ${doc}] }`,
+        `fn f() { 1 ${doc} /* ordinary */ }`,
+      ]) {
         const tree = parser.parse(source)!;
         try {
           expect(tree.rootNode.hasError, source).toBe(true);
