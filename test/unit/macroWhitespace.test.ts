@@ -108,7 +108,7 @@ test('preserves macro bindings, references and highlights through trivia edits',
         .map(({ node }) => [node.text, node.startIndex, node.endIndex])
     ).toEqual(expected);
     const tokens = highlights.captures(current.rootNode);
-    const keyword = source.startsWith('macro_rules!') ? 'macro_rules!' : 'macro_rules';
+    const keyword = 'macro_rules';
     expect(
       tokens
         .filter(({ name, node }) => name === 'keyword' && node.type === 'macro_rules!')
@@ -117,6 +117,47 @@ test('preserves macro bindings, references and highlights through trivia edits',
     expect(tokens.filter(({ name }) => name === 'comment').map(({ node }) => node.text)).toEqual(
       ['/* keyword */', '/* left */', '/* binding */', '/* right */'].filter((text) => source.includes(text))
     );
+  }
+});
+
+test('recognizes macro_rules invocations through keyword trivia edits', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(
+    language,
+    '(macro_definition name: (identifier) @definition)\n' +
+      '(macro_invocation macro: (identifier) @invocation)\n' +
+      '(function_item name: (identifier) @function)'
+  );
+  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
+  try {
+    for (const argumentsText of ['{}', '()', '[]']) {
+      const invocation = `macro_rules! ${argumentsText}`;
+      const terminator = argumentsText === '{}' ? '' : ';';
+      const source = `macro_rules! macro_rules { () => {}; }\n${invocation}${terminator}\nfn following() {}`;
+      checkEdits(parser, query, source, invocation, `macro_rules /* gap */ ! ${argumentsText}`, check, [highlights]);
+      function check(_source: string, tree: Tree): void {
+        expect(query.captures(tree.rootNode).map(({ name, node }) => [name, node.text])).toEqual([
+          ['definition', 'macro_rules'],
+          ['invocation', 'macro_rules'],
+          ['function', 'following'],
+        ]);
+        const tokens = highlights.captures(tree.rootNode);
+        expect(tokens.filter(({ name }) => name === 'function.macro').map(({ node }) => node.text)).toEqual([
+          'macro_rules',
+          '!',
+        ]);
+        expect(tokens.filter(({ name }) => name === 'keyword').map(({ node }) => node.text)).toEqual([
+          'macro_rules',
+          'fn',
+        ]);
+      }
+    }
+  } finally {
+    highlights.delete();
+    query.delete();
+    parser.delete();
   }
 });
 
