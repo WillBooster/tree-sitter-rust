@@ -195,7 +195,6 @@ module.exports = grammar({
     [$._type, $._pattern],
     [$.unit_type, $.tuple_pattern],
     [$.scoped_identifier, $.scoped_type_identifier],
-    [$.parameters, $._pattern],
     [$.parameters, $.tuple_struct_pattern],
     [$.visibility_modifier],
     [$.visibility_modifier, $.scoped_identifier, $.scoped_type_identifier],
@@ -821,10 +820,7 @@ module.exports = grammar({
     parameters: ($) =>
       seq(
         '(',
-        sepBy(
-          ',',
-          seq(repeat($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
-        ),
+        sepBy(',', seq(repeat($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, $._type))),
         optional(','),
         optional(alias($._orphan_doc_expression, $.attributed_expression)),
         ')'
@@ -857,6 +853,7 @@ module.exports = grammar({
         $.array_type,
         $.function_type,
         $._type_identifier_in_type_position,
+        alias('_', sym('type_identifier')),
         $.macro_invocation,
         $.never_type,
         $.dynamic_type,

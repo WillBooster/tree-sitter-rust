@@ -74,7 +74,7 @@ fuzzed with. The parser requires version 7.0.5 or later within major version 7 o
 ```toml
 [dependencies]
 tree-sitter = { package = "willbooster-tree-sitter", version = "7.0.5" }
-tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "6" }
+tree-sitter-rust = { package = "willbooster-tree-sitter-rust", version = "7" }
 ```
 
 ```rust

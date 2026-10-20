@@ -4966,10 +4966,6 @@
                           "name": "variadic_parameter"
                         },
                         {
-                          "type": "STRING",
-                          "value": "_"
-                        },
-                        {
                           "type": "SYMBOL",
                           "name": "_type"
                         }
@@ -5010,10 +5006,6 @@
                               {
                                 "type": "SYMBOL",
                                 "name": "variadic_parameter"
-                              },
-                              {
-                                "type": "STRING",
-                                "value": "_"
                               },
                               {
                                 "type": "SYMBOL",
@@ -5359,6 +5351,15 @@
         {
           "type": "SYMBOL",
           "name": "_type_identifier_in_type_position"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "_"
+          },
+          "named": true,
+          "value": "type_identifier"
         },
         {
           "type": "SYMBOL",
@@ -13947,10 +13948,6 @@
     [
       "scoped_identifier",
       "scoped_type_identifier"
-    ],
-    [
-      "parameters",
-      "_pattern"
     ],
     [
       "parameters",
