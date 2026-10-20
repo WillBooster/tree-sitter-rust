@@ -685,3 +685,72 @@ fn main() {
                   (identifier))
                 (shorthand_field_initializer
                   (identifier))))))))))
+
+================================================================================
+Box patterns
+================================================================================
+
+fn patterns(value: Box<Option<i32>>) {
+    match value {
+        box Some(n) => {}
+        box None => {}
+    }
+}
+fn nested(value: Box<Box<(i32, i32)>>) {
+    let box box (left, right) = value;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (generic_type
+              (type_identifier)
+              (type_arguments
+                (primitive_type)))))))
+    (block
+      (expression_statement
+        (match_expression
+          (identifier)
+          (match_block
+            (match_arm
+              (match_pattern
+                (box_pattern
+                  (tuple_struct_pattern
+                    (identifier)
+                    (identifier))))
+              (block))
+            (match_arm
+              (match_pattern
+                (box_pattern
+                  (identifier)))
+              (block)))))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (generic_type
+              (type_identifier)
+              (type_arguments
+                (tuple_type
+                  (primitive_type)
+                  (primitive_type))))))))
+    (block
+      (let_declaration
+        (box_pattern
+          (box_pattern
+            (tuple_pattern
+              (identifier)
+              (identifier))))
+        (identifier)))))

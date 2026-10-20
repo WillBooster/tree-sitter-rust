@@ -383,6 +383,7 @@ module.exports = grammar({
         'async',
         'await',
         'become',
+        'box',
         'break',
         'const',
         'continue',
@@ -1459,6 +1460,7 @@ module.exports = grammar({
         $.struct_pattern,
         $._reserved_identifier,
         $.ref_pattern,
+        $.box_pattern,
         $.slice_pattern,
         $.captured_pattern,
         $.reference_pattern,
@@ -1574,6 +1576,8 @@ module.exports = grammar({
       ),
 
     ref_pattern: ($) => seq('ref', $._pattern),
+
+    box_pattern: ($) => seq('box', field('pattern', $._pattern)),
 
     captured_pattern: ($) =>
       seq(
