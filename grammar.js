@@ -151,6 +151,7 @@ module.exports = grammar({
     sym('_outer_block_comment_start'),
     sym('_outer_line_doc_comment_marker'),
     sym('_inner_line_doc_comment_marker'),
+    sym('_orphan_doc_context'),
   ],
 
   supertypes: ($) => [
@@ -814,6 +815,7 @@ module.exports = grammar({
           seq(repeat($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
         ),
         optional(','),
+        optional(sym('_orphan_doc_context')),
         ')'
       ),
 
@@ -1233,10 +1235,12 @@ module.exports = grammar({
           seq(repeat(prec(PREC.call, $.attribute_item)), $._expression, ';', field('length', $._expression)),
           seq(sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','))
         ),
+        optional(sym('_orphan_doc_context')),
         ']'
       ),
 
-    parenthesized_expression: ($) => seq('(', repeat(prec(PREC.call, $.attribute_item)), $._expression, ')'),
+    parenthesized_expression: ($) =>
+      seq('(', repeat(prec(PREC.call, $.attribute_item)), $._expression, optional(sym('_orphan_doc_context')), ')'),
 
     tuple_expression: ($) =>
       seq(
@@ -1419,7 +1423,15 @@ module.exports = grammar({
 
     try_block: ($) => seq('try', $.block),
 
-    block: ($) => seq(optional(seq($.label, ':')), '{', repeat($._statement), optional($._expression), '}'),
+    block: ($) =>
+      seq(
+        optional(seq($.label, ':')),
+        '{',
+        repeat($._statement),
+        optional($._expression),
+        optional(sym('_orphan_doc_context')),
+        '}'
+      ),
 
     _pattern: ($) =>
       choice(

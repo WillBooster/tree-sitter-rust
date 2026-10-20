@@ -359,3 +359,75 @@ test('retains outer documentation in broken use lists and type annotations', asy
     parser.delete();
   }
 });
+
+test('rejects orphan documentation without exposing its text to Rust recovery', async () => {
+  await Parser.init();
+  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
+  try {
+    for (const doc of ['/// it\'s "x\n', '/** it\'s "x */']) {
+      for (const head of [
+        `fn f() { 1 ${doc} }`,
+        `fn f(x: u8 ${doc}) {}`,
+        `fn f() { let x = [1 ${doc}]; }`,
+        `fn f() { let x = 1 ${doc} }`,
+        `fn f() { let x: u8 ${doc} }`,
+      ]) {
+        const source = `${head} fn after() { let s = "y"; }`;
+        const tree = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(true);
+          const comment = tree.rootNode.descendantsOfType(['line_comment', 'block_comment'])[0];
+          expect(comment?.text, source).toBe(doc);
+          expect(comment?.childForFieldName('outer')?.text, source).toBe(doc.startsWith('///') ? '/' : '*');
+          expect(comment?.childForFieldName('doc')?.text.trim(), source).toBe('it\'s "x');
+          expect(
+            tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text),
+            source
+          ).toEqual(['f', 'after']);
+        } finally {
+          tree.delete();
+        }
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
+test('updates orphan documentation diagnostics when a following expression is edited', async () => {
+  await Parser.init();
+  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
+  const prefix = 'fn f() { 1 /** docs */ ';
+  let source = `${prefix}+ 2 }`;
+  let tree = parser.parse(source)!;
+  try {
+    for (const continuation of ['', '+ 2 ', '', '+ 2 ']) {
+      const next = `${prefix}${continuation}}`;
+      tree.edit(
+        new Edit({
+          startIndex: prefix.length,
+          oldEndIndex: source.length - 1,
+          newEndIndex: next.length - 1,
+          startPosition: { row: 0, column: prefix.length },
+          oldEndPosition: { row: 0, column: source.length - 1 },
+          newEndPosition: { row: 0, column: next.length - 1 },
+        })
+      );
+      const edited = parser.parse(next, tree)!;
+      const fresh = parser.parse(next)!;
+      try {
+        expect(edited.rootNode.toString()).toBe(fresh.rootNode.toString());
+        expect(edited.rootNode.hasError).toBe(continuation === '');
+        expect(edited.rootNode.descendantsOfType('block_comment')[0]?.text).toBe('/** docs */');
+      } finally {
+        fresh.delete();
+      }
+      tree.delete();
+      tree = edited;
+      source = next;
+    }
+  } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
