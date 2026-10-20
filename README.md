@@ -97,7 +97,7 @@ expression produce a syntax error. In attribute positions, outer documentation c
 comments remain comment extras. Misplaced outer documentation where attributes are unavailable also
 remains a comment extra, preserving its `outer` and `doc` fields and the following code. At completed block,
 parameter, parenthesized, and array boundaries, orphan outer documentation retains those fields and produces
-a syntax error. Ordinary line comments are leaf nodes; read their `text` rather than an anonymous `//` child.
+an attributed-expression wrapper with a missing value, preserving the preceding operand. Ordinary line comments are leaf nodes; read their `text` rather than an anonymous `//` child.
 
 Parameter and list attributes retain their sibling nodes. Attributes inside parentheses also precede
 the operand as siblings. List and parenthesized operands remain queryable through

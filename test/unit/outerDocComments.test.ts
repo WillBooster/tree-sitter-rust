@@ -394,6 +394,42 @@ test('rejects orphan documentation without exposing its text to Rust recovery', 
   }
 });
 
+test('preserves completed operands before orphan documentation with or without following trivia', async () => {
+  await Parser.init();
+  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
+  try {
+    for (const doc of ['/// docs\n', '/** docs */']) {
+      for (const trivia of ['', ' ', ' /* ordinary */ ']) {
+        for (const [operand, suffix, nodeType] of [
+          ['1', '', 'integer_literal'],
+          ['g(1)', '', 'call_expression'],
+          ['[1', ']', 'integer_literal'],
+          ['(1', ')', 'integer_literal'],
+        ] as const) {
+          const source = `fn f() { ${operand} ${doc}${trivia}${suffix} } fn after() {}`;
+          const tree = parser.parse(source)!;
+          try {
+            expect(tree.rootNode.hasError, source).toBe(true);
+            expect(
+              tree.rootNode.descendantsOfType(nodeType).map((node) => node.text),
+              source
+            ).toContain(nodeType === 'call_expression' ? 'g(1)' : '1');
+            expect(tree.rootNode.descendantsOfType(['line_comment', 'block_comment'])[0]?.text, source).toBe(doc);
+            expect(
+              tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text),
+              source
+            ).toEqual(['f', 'after']);
+          } finally {
+            tree.delete();
+          }
+        }
+      }
+    }
+  } finally {
+    parser.delete();
+  }
+});
+
 test('updates orphan documentation diagnostics when a following expression is edited', async () => {
   await Parser.init();
   const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));

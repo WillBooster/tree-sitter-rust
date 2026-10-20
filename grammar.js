@@ -151,7 +151,8 @@ module.exports = grammar({
     sym('_outer_block_comment_start'),
     sym('_outer_line_doc_comment_marker'),
     sym('_inner_line_doc_comment_marker'),
-    sym('_orphan_doc_context'),
+    sym('_orphan_line_doc_comment_start'),
+    sym('_orphan_block_doc_comment_start'),
   ],
 
   supertypes: ($) => [
@@ -415,6 +416,11 @@ module.exports = grammar({
         alias($._outer_line_comment, $.line_comment),
         alias($._outer_block_comment, $.block_comment)
       ),
+
+    _orphan_doc_expression: ($) => seq(alias($._orphan_doc_attribute, $.attribute_item), field('value', $._expression)),
+
+    _orphan_doc_attribute: ($) =>
+      choice(alias($._orphan_line_comment, $.line_comment), alias($._orphan_block_comment, $.block_comment)),
 
     inner_attribute_item: ($) => seq('#', '!', '[', $.attribute, ']'),
 
@@ -815,7 +821,7 @@ module.exports = grammar({
           seq(repeat($.attribute_item), choice($.parameter, $.self_parameter, $.variadic_parameter, '_', $._type))
         ),
         optional(','),
-        optional(sym('_orphan_doc_context')),
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
         ')'
       ),
 
@@ -1235,12 +1241,18 @@ module.exports = grammar({
           seq(repeat(prec(PREC.call, $.attribute_item)), $._expression, ';', field('length', $._expression)),
           seq(sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','))
         ),
-        optional(sym('_orphan_doc_context')),
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
         ']'
       ),
 
     parenthesized_expression: ($) =>
-      seq('(', repeat(prec(PREC.call, $.attribute_item)), $._expression, optional(sym('_orphan_doc_context')), ')'),
+      seq(
+        '(',
+        repeat(prec(PREC.call, $.attribute_item)),
+        $._expression,
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
+        ')'
+      ),
 
     tuple_expression: ($) =>
       seq(
@@ -1429,7 +1441,7 @@ module.exports = grammar({
         '{',
         repeat($._statement),
         optional($._expression),
-        optional(sym('_orphan_doc_context')),
+        optional(alias($._orphan_doc_expression, $.attributed_expression)),
         '}'
       ),
 
@@ -1685,12 +1697,9 @@ module.exports = grammar({
         )
       ),
 
-    _outer_line_comment: () =>
-      seq(
-        alias(sym('_outer_line_comment_start'), '//'),
-        field('outer', alias(sym('_outer_line_doc_comment_marker'), sym('outer_doc_comment_marker'))),
-        field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))
-      ),
+    _outer_line_comment: () => outerLineComment('_outer_line_comment_start'),
+
+    _orphan_line_comment: () => outerLineComment('_orphan_line_doc_comment_start'),
 
     block_comment: () =>
       seq(
@@ -1710,13 +1719,9 @@ module.exports = grammar({
         '*/'
       ),
 
-    _outer_block_comment: () =>
-      seq(
-        alias(sym('_outer_block_comment_start'), '/*'),
-        field('outer', alias(sym('_outer_block_doc_comment_marker'), sym('outer_doc_comment_marker'))),
-        optional(field('doc', alias(sym('_block_comment_content'), sym('doc_comment')))),
-        '*/'
-      ),
+    _outer_block_comment: () => outerBlockComment('_outer_block_comment_start'),
+
+    _orphan_block_comment: () => outerBlockComment('_orphan_block_doc_comment_start'),
 
     _path: ($) =>
       choice(
@@ -1813,4 +1818,23 @@ function sepBy1(sep, rule) {
  */
 function sepBy(sep, rule) {
   return optional(sepBy1(sep, rule));
+}
+
+/** @param {string} start */
+function outerLineComment(start) {
+  return seq(
+    alias(sym(start), '//'),
+    field('outer', alias(sym('_outer_line_doc_comment_marker'), sym('outer_doc_comment_marker'))),
+    field('doc', alias(sym('_line_doc_content'), sym('doc_comment')))
+  );
+}
+
+/** @param {string} start */
+function outerBlockComment(start) {
+  return seq(
+    alias(sym(start), '/*'),
+    field('outer', alias(sym('_outer_block_doc_comment_marker'), sym('outer_doc_comment_marker'))),
+    optional(field('doc', alias(sym('_block_comment_content'), sym('doc_comment')))),
+    '*/'
+  );
 }
