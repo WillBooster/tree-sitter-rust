@@ -1,0 +1,131 @@
+==================
+Labeled jumps retain condition body boundaries
+==================
+const _: () = 'a: while break 'a {};
+fn conditions() {
+    'outer: loop {
+        if break 'outer { if_body(); }
+        while break 'outer { while_body(); }
+        while continue 'outer { continue_body(); }
+        match break 'outer { _ => {} }
+    }
+    after();
+}
+
+---
+
+(source_file
+  (const_item
+    (identifier)
+    (unit_type)
+    (while_expression
+      (label
+        (identifier))
+      (break_expression
+        (label
+          (identifier)))
+      (block)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (loop_expression
+          (label
+            (identifier))
+          (block
+            (expression_statement
+              (if_expression
+                (break_expression
+                  (label
+                    (identifier)))
+                (block
+                  (expression_statement
+                    (call_expression
+                      (identifier)
+                      (arguments))))))
+            (expression_statement
+              (while_expression
+                (break_expression
+                  (label
+                    (identifier)))
+                (block
+                  (expression_statement
+                    (call_expression
+                      (identifier)
+                      (arguments))))))
+            (expression_statement
+              (while_expression
+                (continue_expression
+                  (label
+                    (identifier)))
+                (block
+                  (expression_statement
+                    (call_expression
+                      (identifier)
+                      (arguments))))))
+            (expression_statement
+              (match_expression
+                (break_expression
+                  (label
+                    (identifier)))
+                (match_block
+                  (match_arm
+                    (match_pattern)
+                    (block))))))))
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments))))))
+
+==================
+Break labels and values remain separate
+==================
+fn values() {
+    let block = 'value: loop { break 'value { 1 }; };
+    let character = loop { break 'x'; };
+    let number = 'number: loop { break 'number 2; };
+    after();
+}
+
+---
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (loop_expression
+          (label
+            (identifier))
+          (block
+            (expression_statement
+              (break_expression
+                (label
+                  (identifier))
+                (block
+                  (integer_literal)))))))
+      (let_declaration
+        (identifier)
+        (loop_expression
+          (block
+            (expression_statement
+              (break_expression
+                (char_literal))))))
+      (let_declaration
+        (identifier)
+        (loop_expression
+          (label
+            (identifier))
+          (block
+            (expression_statement
+              (break_expression
+                (label
+                  (identifier))
+                (integer_literal))))))
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments))))))
