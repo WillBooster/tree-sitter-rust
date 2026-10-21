@@ -76,27 +76,30 @@ Longer json macro contents
       (block
         (ERROR
           (string_literal
-            (string_content)))
-        (expression_statement
-          (block
-            (ERROR
+            (string_content))
+          (expression_statement
+            (block
               (string_literal
                 (string_content))
-              (string_literal
-                (string_content))
-              (string_literal
-                (string_content)))
+              (ERROR
+                (identifier))))
+          (field_expression
             (string_literal
               (string_content))
-            (ERROR)))
-        (ERROR
+            (field_identifier))
+          (string_literal
+            (string_content))
+          (call_expression
+            (identifier)
+            (arguments))
+          (expression_statement
+            (block))
+          (string_literal
+            (string_content))
           (string_literal
             (string_content)))
-        (expression_statement
-          (block
-            (ERROR
-              (string_literal
-                (string_content)))
-            (string_literal
-              (string_content))))))
+        (string_literal
+          (string_content)))
+      (ERROR))
     (MISSING ";")))
+
