@@ -101,6 +101,7 @@
 "auto" @keyword
 "await" @keyword
 "become" @keyword
+"box" @keyword
 "break" @keyword
 "const" @keyword
 "continue" @keyword
@@ -118,6 +119,7 @@
 "let" @keyword
 "loop" @keyword
 "macro_rules!" @keyword
+(macro_definition "!" @keyword)
 "macro" @keyword
 "match" @keyword
 "mod" @keyword
@@ -161,4 +163,6 @@
 
 "*" @operator
 "&" @operator
+(reference_type "&&" @operator)
+(reference_pattern "&&" @operator)
 "'" @operator

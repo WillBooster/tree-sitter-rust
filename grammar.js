@@ -266,7 +266,8 @@ module.exports = grammar({
       const rules = seq(repeat(seq($.macro_rule, ';')), optional($.macro_rule));
 
       return seq(
-        choice('macro_rules!', seq(alias('macro_rules', 'macro_rules!'), '!')),
+        alias('macro_rules', 'macro_rules!'),
+        '!',
         field('name', choice($.identifier, $._reserved_identifier)),
         choice(seq('(', rules, ')', ';'), seq('[', rules, ']', ';'), seq('{', rules, '}'))
       );
@@ -383,6 +384,7 @@ module.exports = grammar({
         'async',
         'await',
         'become',
+        'box',
         'break',
         'const',
         'continue',
@@ -992,7 +994,8 @@ module.exports = grammar({
         field('type', $._type)
       ),
 
-    reference_type: ($) => seq('&', optional($.lifetime), optional($.mutable_specifier), field('type', $._type)),
+    reference_type: ($) =>
+      seq(choice('&', '&&'), optional($.lifetime), optional($.mutable_specifier), field('type', $._type)),
 
     pointer_type: ($) => seq('*', choice('const', $.mutable_specifier), field('type', $._type)),
 
@@ -1461,6 +1464,7 @@ module.exports = grammar({
         $.struct_pattern,
         $._reserved_identifier,
         $.ref_pattern,
+        $.box_pattern,
         $.slice_pattern,
         $.captured_pattern,
         $.reference_pattern,
@@ -1577,6 +1581,8 @@ module.exports = grammar({
 
     ref_pattern: ($) => seq('ref', $._pattern),
 
+    box_pattern: ($) => seq('box', field('pattern', $._pattern)),
+
     captured_pattern: ($) =>
       seq(
         choice($.identifier, $._reserved_identifier, alias(choice(...primitiveTypes), $.identifier)),
@@ -1584,7 +1590,7 @@ module.exports = grammar({
         $._pattern
       ),
 
-    reference_pattern: ($) => seq('&', optional($.mutable_specifier), $._pattern),
+    reference_pattern: ($) => seq(choice('&', '&&'), optional($.mutable_specifier), $._pattern),
 
     or_pattern: ($) => prec.left(-2, choice(seq($._pattern, '|', $._pattern), seq('|', $._pattern))),
 
