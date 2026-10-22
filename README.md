@@ -81,6 +81,12 @@ let mut parser = tree_sitter::Parser::new();
 parser.set_language(&tree_sitter_rust::LANGUAGE.into())?;
 ```
 
+## Conditional chains
+
+An `if` / `else if` / `else` chain is one `if_expression`. Its repeated `alternative` field contains a direct
+`else_clause` for each `else if` and any final `else`. Conditional clauses expose `condition` and `consequence`
+fields. The final `else` exposes only `consequence`.
+
 ## Box patterns
 
 `box_pattern` exposes its operand through the `pattern` field, including anonymous `_` patterns.
