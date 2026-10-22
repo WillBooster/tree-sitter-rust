@@ -563,13 +563,12 @@ if foo && bar || baz {}
             right: (integer_literal))
           consequence: (block)
           alternative: (else_clause
-            (if_expression
-              condition: (binary_expression
-                left: (identifier)
-                right: (integer_literal))
-              consequence: (block)
-              alternative: (else_clause
-                (block))))))))
+            condition: (binary_expression
+              left: (identifier)
+              right: (integer_literal))
+            consequence: (block))
+          alternative: (else_clause
+            consequence: (block))))))
   (let_declaration
     pattern: (identifier)
     value: (if_expression
@@ -579,7 +578,7 @@ if foo && bar || baz {}
       consequence: (block
         (integer_literal))
       alternative: (else_clause
-        (block
+        consequence: (block
           (integer_literal)))))
   (expression_statement
     (if_expression
@@ -1373,7 +1372,7 @@ let three_ranges = [const { (0..=5).into_inner() }; 3];
                   arguments: (arguments
                     (integer_literal))))))))
       alternative: (else_clause
-        (block
+        consequence: (block
           (identifier)))))
   (let_declaration
     pattern: (identifier)
