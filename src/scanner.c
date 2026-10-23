@@ -34,7 +34,8 @@ enum TokenType {
     LINE_INNER_DOC_MARKER,
     ORPHAN_LINE_DOC_COMMENT_START,
     ORPHAN_BLOCK_DOC_COMMENT_START,
-    ORPHAN_DOC_MISSING_OWNER
+    ORPHAN_DOC_MISSING_OWNER,
+    TRAILING_TYPE_BOUND_PLUS
 };
 
 #include "frontmatter.h"
@@ -373,7 +374,9 @@ static bool scanner_whitespace(int32_t c);
 static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols);
 static enum TokenType outer_comment_token(TSLexer *lexer, const bool *valid_symbols, bool line);
 static bool outer_comment_has_following_token(TSLexer *lexer, bool line);
-static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start);
+static void skip_token_whitespace(TSLexer *lexer, bool rust_only);
+static bool scan_trailing_type_bound_plus(TSLexer *lexer);
+static bool ascii_identifier_start(int32_t c);
 
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
@@ -404,6 +407,11 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_raw_string_content(scanner, lexer);
     }
 
+    if (valid_symbols[TRAILING_TYPE_BOUND_PLUS]) skip_token_whitespace(lexer, true);
+    if (valid_symbols[TRAILING_TYPE_BOUND_PLUS] && lexer->lookahead == '+') {
+        return scan_trailing_type_bound_plus(lexer);
+    }
+
     skip_token_whitespace(lexer, valid_symbols[FRONTMATTER_START]);
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
         return scan_frontmatter_start(&scanner->frontmatter, lexer);
@@ -413,9 +421,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_foreign_declaration_start(lexer);
     }
 
-    if (valid_symbols[MACRO_METAVARIABLE_NAME] &&
-        (lexer->lookahead == '_' || (lexer->lookahead >= 'a' && lexer->lookahead <= 'z') ||
-         (lexer->lookahead >= 'A' && lexer->lookahead <= 'Z'))) {
+    if (valid_symbols[MACRO_METAVARIABLE_NAME] && ascii_identifier_start(lexer->lookahead)) {
         return scan_macro_metavariable_name(scanner, lexer, valid_symbols[RAW_STRING_LITERAL_START]);
     }
 
@@ -438,6 +444,33 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         process_trailing_dot_float_literal(lexer);
 }
 
+static bool scan_trailing_type_bound_plus(TSLexer *lexer) {
+    advance(lexer);
+    lexer->mark_end(lexer);
+    for (;;) {
+        while (rust_whitespace(lexer->lookahead)) advance(lexer);
+        if (lexer->lookahead != '/') break;
+        advance(lexer);
+        if (!skip_trivia_comment(lexer, false)) return false;
+    }
+    lexer->result_symbol = TRAILING_TYPE_BOUND_PLUS;
+    switch (lexer->lookahead) {
+        case ';': case ',': case '>': case ')': case ']': case '}': case '{': case '=':
+            return true;
+        case ':':
+            advance(lexer);
+            return lexer->lookahead != ':';
+        case 'w':
+            return foreign_word(lexer, "where");
+        default:
+            return lexer->eof(lexer);
+    }
+}
+
+static bool ascii_identifier_start(int32_t c) {
+    return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
 static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool raw_string_valid) {
     int32_t c = lexer->lookahead;
     char prefix[2] = {0};
@@ -447,7 +480,7 @@ static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool 
         length++;
         advance(lexer);
         c = lexer->lookahead;
-    } while (c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
+    } while (ascii_identifier_start(c) || (c >= '0' && c <= '9'));
     if (c >= 0x80 && !rust_whitespace(c)) return false;
     bool byte_prefix = length == 1 && prefix[0] == 'b';
     bool string_prefix = length == 1 && (prefix[0] == 'r' || prefix[0] == 'c' || byte_prefix);
@@ -642,8 +675,8 @@ static bool outer_comment_has_following_token(TSLexer *lexer, bool line) {
     return !lexer->eof(lexer) && lexer->lookahead != '}' && lexer->lookahead != ')' && lexer->lookahead != ']';
 }
 
-static void skip_token_whitespace(TSLexer *lexer, bool frontmatter_start) {
-    while (frontmatter_start ? rust_whitespace(lexer->lookahead) : scanner_whitespace(lexer->lookahead)) {
+static void skip_token_whitespace(TSLexer *lexer, bool rust_only) {
+    while (rust_only ? rust_whitespace(lexer->lookahead) : scanner_whitespace(lexer->lookahead)) {
         skip(lexer);
     }
 }

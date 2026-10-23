@@ -3296,6 +3296,15 @@
                 "name": "bounded_type"
               },
               {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_trailing_bounded_type"
+                },
+                "named": true,
+                "value": "bounded_type"
+              },
+              {
                 "type": "SYMBOL",
                 "name": "macro_invocation"
               },
@@ -5368,6 +5377,15 @@
           "name": "bounded_type"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_trailing_bounded_type"
+          },
+          "named": true,
+          "value": "bounded_type"
+        },
+        {
           "type": "SYMBOL",
           "name": "removed_trait_bound"
         },
@@ -6375,6 +6393,70 @@
           }
         ]
       }
+    },
+    "_trailing_bounded_type": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "dynamic_type"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "abstract_type"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "+"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "lifetime"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_type"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "use_bounds"
+                  },
+                  {
+                    "type": "PREC_DYNAMIC",
+                    "value": -2,
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "higher_ranked_trait_bound"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_trailing_type_bound_plus"
+          },
+          "named": false,
+          "value": "+"
+        }
+      ]
     },
     "use_bounds": {
       "type": "SEQ",
@@ -14011,6 +14093,10 @@
       "_pattern"
     ],
     [
+      "_type",
+      "_trailing_bounded_type"
+    ],
+    [
       "unit_type",
       "tuple_pattern"
     ],
@@ -14169,6 +14255,10 @@
     {
       "type": "SYMBOL",
       "name": "_orphan_doc_missing_owner"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_trailing_type_bound_plus"
     }
   ],
   "inline": [
