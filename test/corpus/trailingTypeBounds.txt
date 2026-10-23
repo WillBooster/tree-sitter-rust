@@ -1,0 +1,89 @@
+================================================================================
+Trait object bounds permit one trailing plus
+================================================================================
+
+type One = dyn Send +;
+type Many = dyn Send + Sync +;
+type LifetimeFirst = dyn 'static + Send +;
+type LifetimeLast = dyn Send + 'static +;
+fn argument(_: &(dyn Send +)) {}
+fn result() -> impl Send + { 1u8 }
+fn cast() { let _ = Box::new(1u8) as Box<dyn Send +>; }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (dynamic_type
+        (type_identifier))))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (bounded_type
+        (dynamic_type
+          (type_identifier))
+        (type_identifier))))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (dynamic_type
+        (lifetime
+          (identifier))
+        (type_identifier))))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (bounded_type
+        (dynamic_type
+          (type_identifier))
+        (lifetime
+          (identifier)))))
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (reference_type
+          (tuple_type
+            (bounded_type
+              (dynamic_type
+                (type_identifier)))))))
+    (block))
+  (function_item
+    (identifier)
+    (parameters)
+    (bounded_type
+      (abstract_type
+        (type_identifier)))
+    (block
+      (integer_literal)))
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (type_cast_expression
+          (call_expression
+            (scoped_identifier
+              (identifier)
+              (identifier))
+            (arguments
+              (integer_literal)))
+          (generic_type
+            (type_identifier)
+            (type_arguments
+              (bounded_type
+                (dynamic_type
+                  (type_identifier))))))))))
+
+================================================================================
+Repeated trailing plus signs remain invalid
+:error
+================================================================================
+
+type Invalid = dyn Send ++;
+
+--------------------------------------------------------------------------------
+
+(ERROR)

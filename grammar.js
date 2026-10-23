@@ -154,6 +154,7 @@ module.exports = grammar({
     sym('_orphan_line_doc_comment_start'),
     sym('_orphan_block_doc_comment_start'),
     sym('_orphan_doc_missing_owner'),
+    sym('_trailing_type_bound_plus'),
   ],
 
   supertypes: ($) => [
@@ -660,6 +661,7 @@ module.exports = grammar({
             $.function_type,
             $.dynamic_type,
             $.bounded_type,
+            alias($._trailing_bounded_type, $.bounded_type),
             $.macro_invocation,
             $.never_type,
             $.array_type,
@@ -860,6 +862,7 @@ module.exports = grammar({
         $.never_type,
         $.dynamic_type,
         $.bounded_type,
+        alias($._trailing_bounded_type, $.bounded_type),
         $.removed_trait_bound,
         $.modified_trait_bound,
         alias(choice(...primitiveTypes), sym('primitive_type'))
@@ -960,6 +963,12 @@ module.exports = grammar({
           '+',
           choice($.lifetime, $._type, $.use_bounds, prec.dynamic(-2, $.higher_ranked_trait_bound))
         )
+      ),
+
+    _trailing_bounded_type: ($) =>
+      prec.left(
+        -1,
+        seq(choice($.dynamic_type, $.abstract_type, $.bounded_type), alias(sym('_trailing_type_bound_plus'), '+'))
       ),
 
     use_bounds: ($) =>

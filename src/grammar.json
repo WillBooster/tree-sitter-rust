@@ -3296,6 +3296,15 @@
                 "name": "bounded_type"
               },
               {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_trailing_bounded_type"
+                },
+                "named": true,
+                "value": "bounded_type"
+              },
+              {
                 "type": "SYMBOL",
                 "name": "macro_invocation"
               },
@@ -5368,6 +5377,15 @@
           "name": "bounded_type"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_trailing_bounded_type"
+          },
+          "named": true,
+          "value": "bounded_type"
+        },
+        {
           "type": "SYMBOL",
           "name": "removed_trait_bound"
         },
@@ -6372,6 +6390,41 @@
                 }
               }
             ]
+          }
+        ]
+      }
+    },
+    "_trailing_bounded_type": {
+      "type": "PREC_LEFT",
+      "value": -1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "dynamic_type"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "abstract_type"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "bounded_type"
+              }
+            ]
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_trailing_type_bound_plus"
+            },
+            "named": false,
+            "value": "+"
           }
         ]
       }
@@ -14169,6 +14222,10 @@
     {
       "type": "SYMBOL",
       "name": "_orphan_doc_missing_owner"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_trailing_type_bound_plus"
     }
   ],
   "inline": [
