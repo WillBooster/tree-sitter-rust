@@ -6395,39 +6395,68 @@
       }
     },
     "_trailing_bounded_type": {
-      "type": "PREC_LEFT",
-      "value": -1,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "CHOICE",
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "dynamic_type"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "abstract_type"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "dynamic_type"
+                "type": "STRING",
+                "value": "+"
               },
               {
-                "type": "SYMBOL",
-                "name": "abstract_type"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "bounded_type"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "lifetime"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_type"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "use_bounds"
+                  },
+                  {
+                    "type": "PREC_DYNAMIC",
+                    "value": -2,
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "higher_ranked_trait_bound"
+                    }
+                  }
+                ]
               }
             ]
-          },
-          {
-            "type": "ALIAS",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_trailing_type_bound_plus"
-            },
-            "named": false,
-            "value": "+"
           }
-        ]
-      }
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_trailing_type_bound_plus"
+          },
+          "named": false,
+          "value": "+"
+        }
+      ]
     },
     "use_bounds": {
       "type": "SEQ",
@@ -14062,6 +14091,10 @@
     [
       "_type",
       "_pattern"
+    ],
+    [
+      "_type",
+      "_trailing_bounded_type"
     ],
     [
       "unit_type",

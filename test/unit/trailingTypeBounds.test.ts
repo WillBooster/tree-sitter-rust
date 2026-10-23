@@ -47,7 +47,14 @@ test('reclassifies trailing and continuing bounds across incremental edits', asy
   let source = 'type Object = dyn Send;';
   let tree = parser.parse(source)!;
   try {
-    for (const replacement of [' + /* bound */', ' + /* bound */ Sync', ' + /* bound */ Sync +', '']) {
+    for (const replacement of [
+      ' + /* bound */',
+      ' + /* bound */ Sync',
+      ' + /* bound */ Sync +',
+      ' + /* bound */ ::core::marker::Sync',
+      ' + /* bound */ ::core::marker::Sync +',
+      '',
+    ]) {
       const start = source.indexOf('Send') + 'Send'.length;
       const oldEnd = source.indexOf(';');
       const next = source.slice(0, start) + replacement + source.slice(oldEnd);
@@ -81,6 +88,29 @@ test('reclassifies trailing and continuing bounds across incremental edits', asy
 });
 
 test.each([
+  'type Object = dyn Send + ::core::marker::Sync;',
+  'type Object = dyn Send + ::core::marker::Sync +;',
+  'fn result() -> impl Send + ::core::marker::Sync { 1u8 }',
+  'fn result() -> impl Send + ::core::marker::Sync + { 1u8 }',
+  'type Object = dyn Send + /* path */ ::core::marker::Sync;',
+  'fn result() -> impl Send +\n// path\n::core::marker::Sync + { 1u8 }',
+])('keeps a global path after the preceding bound separator in %s', async (source) => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const tree = parser.parse(source)!;
+  const query = new Query(language, '(bounded_type (scoped_type_identifier) @trait)');
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(['::core::marker::Sync']);
+  } finally {
+    query.delete();
+    tree.delete();
+    parser.delete();
+  }
+});
+
+test.each([
   'type Object = dyn Send ++;',
   'type Object = dyn Send + Sync ++;',
   'type Object = dyn Send + /* nested /* comment */ */ + Sync;',
@@ -91,6 +121,8 @@ test.each([
   'type Object = dyn Send\u00A0+;',
   'type Object = dyn Send +\u00A0;',
   'trait Trait { type Assoc; } type Object = <dyn Trait<Assoc = u8> + as Trait>::Assoc;',
+  'type Object = dyn Send + : :core::marker::Sync;',
+  'type Object = dyn Send + : /* path */ :core::marker::Sync;',
 ])('rejects invalid bound separators in %s', async (source) => {
   await Parser.init();
   const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
@@ -98,6 +130,40 @@ test.each([
   try {
     expect(tree.rootNode.hasError).toBe(true);
   } finally {
+    tree.delete();
+    parser.delete();
+  }
+});
+
+test.each([
+  'fn bound<T: Send + Sync>() {}',
+  'fn bound<T: Send + Sync +>() {}',
+  'fn bound<T>() where T: Send + Sync {}',
+  'fn bound<T>() where T: Send + Sync + {}',
+  'trait Bound: Send + Sync {}',
+  'trait Bound: Send + Sync + {}',
+  'trait Bound = Send + Sync;',
+  'trait Bound = Send + Sync +;',
+])('preserves direct bound-list children and query captures in %s', async (source) => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const tree = parser.parse(source)!;
+  const query = new Query(
+    language,
+    '(trait_bounds (type_identifier) @bound) (trait_alias_bounds (type_identifier) @bound)'
+  );
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    const lists = tree.rootNode.descendantsOfType(['trait_bounds', 'trait_alias_bounds']);
+    expect(lists).toHaveLength(1);
+    expect(lists[0]!.namedChildren.map((node) => [node.type, node.text])).toEqual([
+      ['type_identifier', 'Send'],
+      ['type_identifier', 'Sync'],
+    ]);
+    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(['Send', 'Sync']);
+  } finally {
+    query.delete();
     tree.delete();
     parser.delete();
   }

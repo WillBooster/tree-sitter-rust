@@ -455,8 +455,11 @@ static bool scan_trailing_type_bound_plus(TSLexer *lexer) {
     }
     lexer->result_symbol = TRAILING_TYPE_BOUND_PLUS;
     switch (lexer->lookahead) {
-        case ';': case ',': case '>': case ')': case ']': case '}': case '{': case '=': case ':':
+        case ';': case ',': case '>': case ')': case ']': case '}': case '{': case '=':
             return true;
+        case ':':
+            advance(lexer);
+            return lexer->lookahead != ':';
         case 'w':
             return foreign_word(lexer, "where");
         default:

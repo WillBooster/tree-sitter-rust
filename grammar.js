@@ -194,6 +194,7 @@ module.exports = grammar({
     // Local ambiguity due to anonymous types:
     // See https://internals.rust-lang.org/t/pre-rfc-deprecating-anonymous-parameters/3710
     [$._type, $._pattern],
+    [$._type, $._trailing_bounded_type],
     [$.unit_type, $.tuple_pattern],
     [$.scoped_identifier, $.scoped_type_identifier],
     [$.parameters, $.tuple_struct_pattern],
@@ -966,9 +967,10 @@ module.exports = grammar({
       ),
 
     _trailing_bounded_type: ($) =>
-      prec.left(
-        -1,
-        seq(choice($.dynamic_type, $.abstract_type, $.bounded_type), alias(sym('_trailing_type_bound_plus'), '+'))
+      seq(
+        choice($.dynamic_type, $.abstract_type),
+        repeat(seq('+', choice($.lifetime, $._type, $.use_bounds, prec.dynamic(-2, $.higher_ranked_trait_bound)))),
+        alias(sym('_trailing_type_bound_plus'), '+')
       ),
 
     use_bounds: ($) =>

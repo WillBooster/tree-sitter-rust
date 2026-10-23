@@ -6,8 +6,10 @@ type One = dyn Send +;
 type Many = dyn Send + Sync +;
 type LifetimeFirst = dyn 'static + Send +;
 type LifetimeLast = dyn Send + 'static +;
+type Global = dyn Send + ::core::marker::Sync;
 fn argument(_: &(dyn Send +)) {}
 fn result() -> impl Send + { 1u8 }
+fn global_result() -> impl Send + ::core::marker::Sync + { 1u8 }
 fn cast() { let _ = Box::new(1u8) as Box<dyn Send +>; }
 
 --------------------------------------------------------------------------------
@@ -21,10 +23,9 @@ fn cast() { let _ = Box::new(1u8) as Box<dyn Send +>; }
   (type_item
     (type_identifier)
     (bounded_type
-      (bounded_type
-        (dynamic_type
-          (type_identifier))
-        (type_identifier))))
+      (dynamic_type
+        (type_identifier))
+      (type_identifier)))
   (type_item
     (type_identifier)
     (bounded_type
@@ -35,11 +36,21 @@ fn cast() { let _ = Box::new(1u8) as Box<dyn Send +>; }
   (type_item
     (type_identifier)
     (bounded_type
-      (bounded_type
-        (dynamic_type
-          (type_identifier))
-        (lifetime
-          (identifier)))))
+      (dynamic_type
+        (type_identifier))
+      (lifetime
+        (identifier))))
+  (type_item
+    (type_identifier)
+    (bounded_type
+      (dynamic_type
+        (type_identifier))
+      (scoped_type_identifier
+        (scoped_identifier
+          (scoped_identifier
+            (identifier))
+          (identifier))
+        (type_identifier))))
   (function_item
     (identifier)
     (parameters
@@ -55,6 +66,20 @@ fn cast() { let _ = Box::new(1u8) as Box<dyn Send +>; }
     (parameters)
     (bounded_type
       (abstract_type
+        (type_identifier)))
+    (block
+      (integer_literal)))
+  (function_item
+    (identifier)
+    (parameters)
+    (bounded_type
+      (abstract_type
+        (type_identifier))
+      (scoped_type_identifier
+        (scoped_identifier
+          (scoped_identifier
+            (identifier))
+          (identifier))
         (type_identifier)))
     (block
       (integer_literal)))
@@ -87,3 +112,50 @@ type Invalid = dyn Send ++;
 --------------------------------------------------------------------------------
 
 (ERROR)
+
+================================================================================
+Trailing separators preserve trait-bound lists
+================================================================================
+
+fn bound<T: Send + Sync +>() {}
+fn predicate<T>() where T: Send + Sync + {}
+trait Bound: Send + Sync + {}
+trait Alias = Send + Sync +;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)
+        (trait_bounds
+          (type_identifier)
+          (type_identifier))))
+    (parameters)
+    (block))
+  (function_item
+    (identifier)
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (parameters)
+    (where_clause
+      (where_predicate
+        (type_identifier)
+        (trait_bounds
+          (type_identifier)
+          (type_identifier))))
+    (block))
+  (trait_item
+    (type_identifier)
+    (trait_bounds
+      (type_identifier)
+      (type_identifier))
+    (declaration_list))
+  (trait_alias
+    (type_identifier)
+    (trait_alias_bounds
+      (type_identifier)
+      (type_identifier))))
