@@ -1,7 +1,7 @@
 import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-const whitespaceCodePoints = [0x85, 0x20_0E, 0x20_0F, 0x20_28, 0x20_29];
+const whitespaceCodePoints = [0x85, 0x20_0e, 0x20_0f, 0x20_28, 0x20_29];
 
 test.each(whitespaceCodePoints)('treats Rust whitespace code point %s as a token separator', async (codePoint) => {
   await Parser.init();
