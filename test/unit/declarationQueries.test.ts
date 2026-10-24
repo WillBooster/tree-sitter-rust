@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { Edit, Language, Parser, Query, type Node, type Tree } from '@willbooster/web-tree-sitter';
+
+import { Edit, Language, type Node, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('captures concrete declarations through their public supertype', async () => {

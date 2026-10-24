@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { Edit, Language, Parser, Query, type Node, type Point, type Tree } from '@willbooster/web-tree-sitter';
+import { Edit, Language, type Node, Parser, type Point, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 const Source = `macro_rules /* keyword */ ! add {
