@@ -170,6 +170,9 @@ module.exports = grammar({
 
   inline: ($) => [
     $._path,
+    $._struct_expression_name,
+    $._field_initializer_name,
+    $._assignee_expression,
     $._type_identifier,
     $._type_identifier_in_type_position,
     $._tokens,
@@ -180,14 +183,18 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.array_expression, $._array_assignee_expression],
+    [$.tuple_expression, $._tuple_assignee_expression],
+    [$.arguments, $._assignee_arguments],
+    [$.field_initializer_list, $._assignee_field_initializer_list],
     [$._attributed_block_statement, $._expression_except_range],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
     [$._token_pattern, $.token_repetition_pattern],
     [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
+    [$.field_initializer_list, $._assignee_field_initializer_list, $.block],
     [$._expression_except_range, $.shorthand_field_initializer],
-    [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
@@ -1224,7 +1231,7 @@ module.exports = grammar({
     },
 
     assignment_expression: ($) =>
-      prec.left(PREC.assign, seq(field('left', $._expression), '=', field('right', $._expression))),
+      prec.left(PREC.assign, seq(field('left', $._assignee_expression), '=', field('right', $._expression))),
 
     compound_assignment_expr: ($) =>
       prec.left(
@@ -1282,18 +1289,71 @@ module.exports = grammar({
 
     unit_expression: () => seq('(', ')'),
 
-    struct_expression: ($) =>
-      seq(
-        field(
-          'name',
-          choice(
-            reserved('struct_name', $._type_identifier),
-            prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
-            alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
-            $.generic_type_with_turbofish
-          )
-        ),
-        field('body', $.field_initializer_list)
+    _assignee_expression: ($) =>
+      choice(
+        $._expression,
+        alias($._struct_assignee_expression, $.struct_expression),
+        alias($._parenthesized_assignee_expression, $.parenthesized_expression),
+        alias($._tuple_assignee_expression, $.tuple_expression),
+        alias($._array_assignee_expression, $.array_expression),
+        alias($._call_assignee_expression, $.call_expression)
+      ),
+
+    _struct_assignee_expression: ($) =>
+      prec(
+        -1,
+        seq(
+          field('name', $._struct_expression_name),
+          field('body', alias($._assignee_field_initializer_list, $.field_initializer_list))
+        )
+      ),
+
+    _parenthesized_assignee_expression: ($) =>
+      prec(-1, seq('(', repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression, ')')),
+
+    _tuple_assignee_expression: ($) =>
+      prec(
+        -1,
+        seq(
+          '(',
+          repeat(prec(PREC.call, $.attribute_item)),
+          $._assignee_expression,
+          ',',
+          sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression)),
+          optional(','),
+          ')'
+        )
+      ),
+
+    _array_assignee_expression: ($) =>
+      prec(
+        -1,
+        seq('[', sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression)), optional(','), ']')
+      ),
+
+    _call_assignee_expression: ($) =>
+      prec(
+        PREC.call - 1,
+        seq(
+          field('function', $._expression_except_range),
+          field('arguments', alias($._assignee_arguments, $.arguments))
+        )
+      ),
+
+    _assignee_arguments: ($) =>
+      prec(
+        -1,
+        seq('(', sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression)), optional(','), ')')
+      ),
+
+    struct_expression: ($) => seq(field('name', $._struct_expression_name), field('body', $.field_initializer_list)),
+
+    _struct_expression_name: ($) =>
+      choice(
+        reserved('struct_name', $._type_identifier),
+        prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
+        alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
+        $.generic_type_with_turbofish
       ),
 
     field_initializer_list: ($) =>
@@ -1304,22 +1364,50 @@ module.exports = grammar({
         '}'
       ),
 
+    _assignee_field_initializer_list: ($) =>
+      seq(
+        '{',
+        optional(
+          choice(
+            $.remaining_field_pattern,
+            seq(
+              sepBy1(
+                ',',
+                choice(
+                  $.shorthand_field_initializer,
+                  $.field_initializer,
+                  alias($._assignee_field_initializer, $.field_initializer)
+                )
+              ),
+              optional(seq(',', optional($.remaining_field_pattern)))
+            )
+          )
+        ),
+        '}'
+      ),
+
+    _assignee_field_initializer: ($) =>
+      prec(
+        -1,
+        seq(
+          optional($._outer_attributes),
+          field('field', $._field_initializer_name),
+          ':',
+          field('value', $._assignee_expression)
+        )
+      ),
+
     shorthand_field_initializer: ($) =>
       seq(optional($._outer_attributes), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
 
     field_initializer: ($) =>
-      seq(
-        optional($._outer_attributes),
-        field(
-          'field',
-          choice(
-            $._field_identifier,
-            alias(choice(...fieldIdentifierKeywords), sym('field_identifier')),
-            alias(/[0-9][0-9_]*/, $.integer_literal)
-          )
-        ),
-        ':',
-        field('value', $._expression)
+      seq(optional($._outer_attributes), field('field', $._field_initializer_name), ':', field('value', $._expression)),
+
+    _field_initializer_name: ($) =>
+      choice(
+        $._field_identifier,
+        alias(choice(...fieldIdentifierKeywords), sym('field_identifier')),
+        alias(/[0-9][0-9_]*/, $.integer_literal)
       ),
 
     base_field_initializer: ($) => seq('..', $._expression),

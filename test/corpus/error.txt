@@ -18,8 +18,8 @@ const A: &[&str] = &[
       type: (array_type
         element: (reference_type
           type: (primitive_type))))
-    value: (reference_expression
-      value: (array_expression
+    (ERROR
+      (array_expression
         (ERROR)
         (string_literal
           (string_content))
