@@ -62,3 +62,81 @@ fn h() {}
     (identifier)
     (parameters)
     (block)))
+
+================================================================================
+Unfinished ordinary struct initializer before a call
+================================================================================
+
+fn f() {
+    let y = S { a: 1, b: 2,
+    next();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (struct_expression
+            (type_identifier)
+            (field_initializer_list
+              (field_initializer
+                (field_identifier)
+                (integer_literal))
+              (field_initializer
+                (field_identifier)
+                (integer_literal))
+              (shorthand_field_initializer
+                (identifier))
+              (MISSING "}")))
+          (arguments)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
+
+================================================================================
+Unfinished ordinary struct initializer before a method call
+================================================================================
+
+fn f() {
+    let y = S { a: 1, b: 2,
+    foo.bar();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (field_expression
+            (struct_expression
+              (type_identifier)
+              (field_initializer_list
+                (field_initializer
+                  (field_identifier)
+                  (integer_literal))
+                (field_initializer
+                  (field_identifier)
+                  (integer_literal))
+                (shorthand_field_initializer
+                  (identifier))
+                (MISSING "}")))
+            (field_identifier))
+          (arguments)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))

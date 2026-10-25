@@ -187,7 +187,6 @@ module.exports = grammar({
     [$.array_expression, $._array_assignee_expression],
     [$.tuple_expression, $._tuple_assignee_expression],
     [$.arguments, $._assignee_arguments],
-    [$.field_initializer_list, $._assignee_field_initializer_list],
     [$._attributed_block_statement, $._expression_except_range],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
@@ -1374,22 +1373,35 @@ module.exports = grammar({
         $.generic_type_with_turbofish
       ),
 
-    field_initializer_list: ($) =>
-      seq(
+    field_initializer_list: ($) => {
+      const ordinary = choice($.shorthand_field_initializer, $.field_initializer);
+      return seq(
         '{',
-        sepBy(',', choice($.shorthand_field_initializer, $.field_initializer, $.base_field_initializer)),
-        optional(','),
+        choice(
+          seq(optional($._ordinary_field_initializer_prefix), optional(ordinary)),
+          seq(
+            optional($._ordinary_field_initializer_prefix),
+            $.base_field_initializer,
+            repeat(seq(',', choice(ordinary, $.base_field_initializer))),
+            optional(',')
+          )
+        ),
         '}'
-      ),
+      );
+    },
+
+    _ordinary_field_initializer_prefix: ($) =>
+      repeat1(seq(choice($.shorthand_field_initializer, $.field_initializer), ',')),
 
     _assignee_field_initializer_list: ($) => {
       const ordinary = choice($.shorthand_field_initializer, $.field_initializer);
       const rest = alias($._assignee_field_initializer, $.field_initializer);
       return seq(
         '{',
+        optional($._ordinary_field_initializer_prefix),
         choice(
-          seq(optional(seq(sepBy1(',', choice(ordinary, rest)), ',')), $.remaining_field_pattern),
-          commaListWithRest(ordinary, rest)
+          $.remaining_field_pattern,
+          seq(rest, repeat(seq(',', choice(ordinary, rest))), optional(seq(',', optional($.remaining_field_pattern))))
         ),
         '}'
       );
