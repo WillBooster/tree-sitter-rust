@@ -1,0 +1,80 @@
+================================================================================
+Struct rest assignees
+================================================================================
+
+fn assignment() {
+    S { a, .. } = value;
+    S { a: a, .. } = value;
+    S { .. } = value;
+    S { a: _, .. } = value;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (assignment_expression
+          (struct_expression
+            (type_identifier)
+            (field_initializer_list
+              (shorthand_field_initializer
+                (identifier))
+              (remaining_field_pattern)))
+          (identifier)))
+      (expression_statement
+        (assignment_expression
+          (struct_expression
+            (type_identifier)
+            (field_initializer_list
+              (field_initializer
+                (field_identifier)
+                (identifier))
+              (remaining_field_pattern)))
+          (identifier)))
+      (expression_statement
+        (assignment_expression
+          (struct_expression
+            (type_identifier)
+            (field_initializer_list
+              (remaining_field_pattern)))
+          (identifier)))
+      (expression_statement
+        (assignment_expression
+          (struct_expression
+            (type_identifier)
+            (field_initializer_list
+              (field_initializer
+                (field_identifier)
+                (identifier))
+              (remaining_field_pattern)))
+          (identifier))))))
+
+================================================================================
+Singleton tuple struct rest assignees
+================================================================================
+
+fn assignment() {
+    (S { a, .. },) = value;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (expression_statement
+        (assignment_expression
+          (tuple_expression
+            (struct_expression
+              (type_identifier)
+              (field_initializer_list
+                (shorthand_field_initializer
+                  (identifier))
+                (remaining_field_pattern))))
+          (identifier))))))

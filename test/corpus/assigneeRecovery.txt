@@ -1,0 +1,142 @@
+================================================================================
+Unfinished ordinary array initializer
+================================================================================
+
+fn f() {
+    let y = [1, 2,
+    next();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (array_expression
+          (integer_literal)
+          (integer_literal)
+          (call_expression
+            (identifier)
+            (arguments))
+          (MISSING "]")))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
+
+================================================================================
+Unfinished ordinary call initializer
+================================================================================
+
+fn f() {
+    let y = foo(1, 2, ;
+    next();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (identifier)
+          (arguments
+            (integer_literal)
+            (integer_literal)
+            (MISSING ")"))))
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
+
+================================================================================
+Unfinished ordinary struct initializer before a call
+================================================================================
+
+fn f() {
+    let y = S { a: 1, b: 2,
+    next();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (struct_expression
+            (type_identifier)
+            (field_initializer_list
+              (field_initializer
+                (field_identifier)
+                (integer_literal))
+              (field_initializer
+                (field_identifier)
+                (integer_literal))
+              (shorthand_field_initializer
+                (identifier))
+              (MISSING "}")))
+          (arguments)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
+
+================================================================================
+Unfinished ordinary struct initializer before a method call
+================================================================================
+
+fn f() {
+    let y = S { a: 1, b: 2,
+    foo.bar();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (field_expression
+            (struct_expression
+              (type_identifier)
+              (field_initializer_list
+                (field_initializer
+                  (field_identifier)
+                  (integer_literal))
+                (field_initializer
+                  (field_identifier)
+                  (integer_literal))
+                (shorthand_field_initializer
+                  (identifier))
+                (MISSING "}")))
+            (field_identifier))
+          (arguments)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))

@@ -170,6 +170,10 @@ module.exports = grammar({
 
   inline: ($) => [
     $._path,
+    $._struct_expression_name,
+    $._field_initializer_name,
+    $._assignee_expression,
+    $._rest_assignee_expression,
     $._type_identifier,
     $._type_identifier_in_type_position,
     $._tokens,
@@ -180,6 +184,9 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.array_expression, $._array_assignee_expression],
+    [$.tuple_expression, $._tuple_assignee_expression],
+    [$.arguments, $._assignee_arguments],
     [$._attributed_block_statement, $._expression_except_range],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
@@ -187,7 +194,6 @@ module.exports = grammar({
     [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
     [$._expression_except_range, $.shorthand_field_initializer],
-    [$._expression_except_range, $.struct_expression],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
@@ -1224,7 +1230,7 @@ module.exports = grammar({
     },
 
     assignment_expression: ($) =>
-      prec.left(PREC.assign, seq(field('left', $._expression), '=', field('right', $._expression))),
+      prec.left(PREC.assign, seq(field('left', $._assignee_expression), '=', field('right', $._expression))),
 
     compound_assignment_expr: ($) =>
       prec.left(
@@ -1282,44 +1288,147 @@ module.exports = grammar({
 
     unit_expression: () => seq('(', ')'),
 
-    struct_expression: ($) =>
-      seq(
-        field(
-          'name',
-          choice(
-            reserved('struct_name', $._type_identifier),
-            prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
-            alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
-            $.generic_type_with_turbofish
-          )
-        ),
-        field('body', $.field_initializer_list)
+    _assignee_expression: ($) => choice($._expression, $._rest_assignee_expression),
+
+    _rest_assignee_expression: ($) =>
+      choice(
+        alias($._struct_assignee_expression, $.struct_expression),
+        alias($._parenthesized_assignee_expression, $.parenthesized_expression),
+        alias($._tuple_assignee_expression, $.tuple_expression),
+        alias($._array_assignee_expression, $.array_expression),
+        alias($._call_assignee_expression, $.call_expression)
       ),
 
-    field_initializer_list: ($) =>
-      seq(
+    _struct_assignee_expression: ($) =>
+      prec(
+        -1,
+        seq(
+          field('name', $._struct_expression_name),
+          field('body', alias($._assignee_field_initializer_list, $.field_initializer_list))
+        )
+      ),
+
+    _parenthesized_assignee_expression: ($) =>
+      prec(-1, seq('(', repeat(prec(PREC.call, $.attribute_item)), $._rest_assignee_expression, ')')),
+
+    _tuple_assignee_expression: ($) => {
+      const ordinary = seq(repeat(prec(PREC.call, $.attribute_item)), $._expression);
+      const rest = seq(repeat(prec(PREC.call, $.attribute_item)), $._rest_assignee_expression);
+      const assignee = seq(repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression);
+      return prec(
+        -1,
+        seq(
+          '(',
+          choice(
+            seq(rest, ',', repeat(seq(assignee, ',')), optional(assignee)),
+            seq(repeat1(seq(ordinary, ',')), rest, repeat(seq(',', assignee)), optional(','))
+          ),
+          ')'
+        )
+      );
+    },
+
+    _array_assignee_expression: ($) =>
+      prec(
+        -1,
+        seq(
+          '[',
+          commaListWithRest(
+            seq(repeat(prec(PREC.call, $.attribute_item)), $._expression),
+            seq(repeat(prec(PREC.call, $.attribute_item)), $._rest_assignee_expression)
+          ),
+          ']'
+        )
+      ),
+
+    _call_assignee_expression: ($) =>
+      prec(
+        PREC.call - 1,
+        seq(
+          field('function', $._expression_except_range),
+          field('arguments', alias($._assignee_arguments, $.arguments))
+        )
+      ),
+
+    _assignee_arguments: ($) =>
+      prec(
+        -1,
+        seq(
+          '(',
+          commaListWithRest(
+            seq(repeat(prec(PREC.call, $.attribute_item)), $._expression),
+            seq(repeat(prec(PREC.call, $.attribute_item)), $._rest_assignee_expression)
+          ),
+          ')'
+        )
+      ),
+
+    struct_expression: ($) => seq(field('name', $._struct_expression_name), field('body', $.field_initializer_list)),
+
+    _struct_expression_name: ($) =>
+      choice(
+        reserved('struct_name', $._type_identifier),
+        prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
+        alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
+        $.generic_type_with_turbofish
+      ),
+
+    field_initializer_list: ($) => {
+      const ordinary = choice($.shorthand_field_initializer, $.field_initializer);
+      return seq(
         '{',
-        sepBy(',', choice($.shorthand_field_initializer, $.field_initializer, $.base_field_initializer)),
-        optional(','),
+        choice(
+          seq(optional($._ordinary_field_initializer_prefix), optional(ordinary)),
+          seq(
+            optional($._ordinary_field_initializer_prefix),
+            $.base_field_initializer,
+            repeat(seq(',', choice(ordinary, $.base_field_initializer))),
+            optional(',')
+          )
+        ),
         '}'
+      );
+    },
+
+    _ordinary_field_initializer_prefix: ($) =>
+      repeat1(seq(choice($.shorthand_field_initializer, $.field_initializer), ',')),
+
+    _assignee_field_initializer_list: ($) => {
+      const ordinary = choice($.shorthand_field_initializer, $.field_initializer);
+      const rest = alias($._assignee_field_initializer, $.field_initializer);
+      return seq(
+        '{',
+        optional($._ordinary_field_initializer_prefix),
+        choice(
+          $.remaining_field_pattern,
+          seq(rest, repeat(seq(',', choice(ordinary, rest))), optional(seq(',', optional($.remaining_field_pattern))))
+        ),
+        '}'
+      );
+    },
+
+    _assignee_field_initializer: ($) =>
+      prec(
+        -1,
+        seq(
+          optional($._outer_attributes),
+          field('field', $._field_initializer_name),
+          ':',
+          field('value', $._rest_assignee_expression)
+        )
       ),
 
     shorthand_field_initializer: ($) =>
       seq(optional($._outer_attributes), choice($.identifier, alias(choice(...fieldIdentifierKeywords), $.identifier))),
 
     field_initializer: ($) =>
-      seq(
-        optional($._outer_attributes),
-        field(
-          'field',
-          choice(
-            $._field_identifier,
-            alias(choice(...fieldIdentifierKeywords), sym('field_identifier')),
-            alias(/[0-9][0-9_]*/, $.integer_literal)
-          )
-        ),
-        ':',
-        field('value', $._expression)
+      seq(optional($._outer_attributes), field('field', $._field_initializer_name), ':', field('value', $._expression)),
+
+    _field_initializer_name: ($) =>
+      choice(
+        $._field_identifier,
+        alias(choice(...fieldIdentifierKeywords), sym('field_identifier')),
+        alias(/[0-9][0-9_]*/, $.integer_literal)
       ),
 
     base_field_initializer: ($) => seq('..', $._expression),
@@ -1822,6 +1931,14 @@ function macroRepetitionSeparator(start, content, end) {
     /b?'(?:\\(?:[^xu]|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F][0-9a-fA-F_]*\}|x[0-9a-fA-F]{2})|[^\\'])'/,
     seq(start, content, end)
   );
+}
+
+/**
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} ordinary
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} rest
+ */
+function commaListWithRest(ordinary, rest) {
+  return seq(repeat(seq(ordinary, ',')), rest, repeat(seq(',', choice(ordinary, rest))), optional(','));
 }
 
 /**
