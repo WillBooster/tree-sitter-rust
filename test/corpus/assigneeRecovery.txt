@@ -1,0 +1,64 @@
+================================================================================
+Unfinished ordinary array initializer
+================================================================================
+
+fn f() {
+    let y = [1, 2,
+    next();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (array_expression
+          (integer_literal)
+          (integer_literal)
+          (call_expression
+            (identifier)
+            (arguments))
+          (MISSING "]")))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
+
+================================================================================
+Unfinished ordinary call initializer
+================================================================================
+
+fn f() {
+    let y = foo(1, 2, ;
+    next();
+}
+fn h() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (block
+      (let_declaration
+        (identifier)
+        (call_expression
+          (identifier)
+          (arguments
+            (integer_literal)
+            (integer_literal)
+            (MISSING ")"))))
+      (expression_statement
+        (call_expression
+          (identifier)
+          (arguments)))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))

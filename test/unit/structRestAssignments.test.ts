@@ -105,21 +105,23 @@ test.each(['S { a, .., }', 'S { .., a }', 'S { a .. }'])(
 );
 
 test.each([
-  ['(S { a, .. }, _)', 'tuple_expression'],
-  ['[S { a, .. }]', 'array_expression'],
-  ['(S { a, .. })', 'parenthesized_expression'],
-  ['Pair(S { a, .. })', 'call_expression'],
-  ['Outer { inner: S { a, .. }, .. }', 'struct_expression'],
-])('preserves nested rest assignees in %s', async (assignee, kind) => {
+  ['(S { a, .. }, _)', 'tuple_expression', 1],
+  ['(first, S { a, .. }, last)', 'tuple_expression', 1],
+  ['[S { a, .. }]', 'array_expression', 1],
+  ['[first, S { a, .. }, last]', 'array_expression', 1],
+  ['(S { a, .. })', 'parenthesized_expression', 1],
+  ['Pair(S { a, .. })', 'call_expression', 1],
+  ['Triple(first, S { a, .. }, last)', 'call_expression', 1],
+  ['Outer { inner: S { a, .. }, .. }', 'struct_expression', 2],
+  ['Outer { before: first, inner: S { a, .. }, after: last }', 'struct_expression', 1],
+])('preserves nested rest assignees in %s', async (assignee, kind, rests) => {
   await Parser.init();
   const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
   const tree = parser.parse(`fn assignment() { ${assignee} = value; }`)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
     expect(tree.rootNode.descendantsOfType('assignment_expression')[0]!.childForFieldName('left')!.type).toBe(kind);
-    expect(tree.rootNode.descendantsOfType('remaining_field_pattern')).toHaveLength(
-      assignee.startsWith('Outer') ? 2 : 1
-    );
+    expect(tree.rootNode.descendantsOfType('remaining_field_pattern')).toHaveLength(rests);
     expect(tree.rootNode.descendantsOfType('base_field_initializer')).toHaveLength(0);
   } finally {
     tree.delete();
@@ -159,6 +161,7 @@ test('retains tuple assignee boundaries while extra trailing commas are inserted
       () = ();
       (S { a, .. },) = (S { a: 2 },);
       ((S { a, .. },),) = ((S { a: 3 },),);
+      (a, S { a, .. }) = (4, S { a: 5 });
     }
     fn following() {}`;
   const assignees = [
@@ -167,6 +170,7 @@ test('retains tuple assignee boundaries while extra trailing commas are inserted
     ['unit_expression', '()'],
     ['tuple_expression', '(S { a, .. },)'],
     ['tuple_expression', '((S { a, .. },),)'],
+    ['tuple_expression', '(a, S { a, .. })'],
   ];
   let tree: Tree | undefined;
   try {
@@ -177,6 +181,8 @@ test('retains tuple assignee boundaries while extra trailing commas are inserted
       ['(a,,)', '(a,)', false],
       ['(S { a, .. },)', '(S { a, .. },,)', true],
       ['(S { a, .. },,)', '(S { a, .. },)', false],
+      ['(a, S { a, .. })', '(a, S { a, .. },,)', true],
+      ['(a, S { a, .. },,)', '(a, S { a, .. })', false],
     ] as const) {
       const start = source.indexOf(before);
       const next = source.slice(0, start) + after + source.slice(start + before.length);
@@ -215,6 +221,6 @@ test('retains tuple assignee boundaries while extra trailing commas are inserted
   function checkValidTree(current: Tree): void {
     expect(current.rootNode.hasError).toBe(false);
     expect(query.captures(current.rootNode).map(({ node }) => [node.type, node.text])).toEqual(assignees);
-    expect(current.rootNode.descendantsOfType('remaining_field_pattern')).toHaveLength(2);
+    expect(current.rootNode.descendantsOfType('remaining_field_pattern')).toHaveLength(3);
   }
 });
