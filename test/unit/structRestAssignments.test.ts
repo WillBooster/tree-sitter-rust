@@ -145,3 +145,76 @@ test.each([
     parser.delete();
   }
 });
+
+test('retains tuple assignee boundaries while extra trailing commas are inserted and undone', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(language, '(assignment_expression left: (_) @left)');
+  let source = `struct S { a: i32 }
+    fn assignment() {
+      let mut a = 0;
+      (a,) = (1,);
+      (a) = 1;
+      () = ();
+      (S { a, .. },) = (S { a: 2 },);
+      ((S { a, .. },),) = ((S { a: 3 },),);
+    }
+    fn following() {}`;
+  const assignees = [
+    ['tuple_expression', '(a,)'],
+    ['parenthesized_expression', '(a)'],
+    ['unit_expression', '()'],
+    ['tuple_expression', '(S { a, .. },)'],
+    ['tuple_expression', '((S { a, .. },),)'],
+  ];
+  let tree: Tree | undefined;
+  try {
+    tree = parser.parse(source)!;
+    checkValidTree(tree);
+    for (const [before, after, invalid] of [
+      ['(a,)', '(a,,)', true],
+      ['(a,,)', '(a,)', false],
+      ['(S { a, .. },)', '(S { a, .. },,)', true],
+      ['(S { a, .. },,)', '(S { a, .. },)', false],
+    ] as const) {
+      const start = source.indexOf(before);
+      const next = source.slice(0, start) + after + source.slice(start + before.length);
+      tree.edit(
+        new Edit({
+          startIndex: start,
+          oldEndIndex: start + before.length,
+          newEndIndex: start + after.length,
+          startPosition: position(source, start),
+          oldEndPosition: position(source, start + before.length),
+          newEndPosition: position(next, start + after.length),
+        })
+      );
+      const previous: Tree = tree;
+      tree = parser.parse(next, previous)!;
+      previous.delete();
+      source = next;
+      const fresh = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(invalid);
+        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+        expect(tree.rootNode.descendantsOfType('function_item').at(-1)!.childForFieldName('name')!.text).toBe(
+          'following'
+        );
+        if (!invalid) checkValidTree(tree);
+      } finally {
+        fresh.delete();
+      }
+    }
+  } finally {
+    tree?.delete();
+    query.delete();
+    parser.delete();
+  }
+
+  function checkValidTree(current: Tree): void {
+    expect(current.rootNode.hasError).toBe(false);
+    expect(query.captures(current.rootNode).map(({ node }) => [node.type, node.text])).toEqual(assignees);
+    expect(current.rootNode.descendantsOfType('remaining_field_pattern')).toHaveLength(2);
+  }
+});

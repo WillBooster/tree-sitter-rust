@@ -1317,10 +1317,9 @@ module.exports = grammar({
         seq(
           '(',
           repeat(prec(PREC.call, $.attribute_item)),
-          $._assignee_expression,
-          ',',
-          sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression)),
-          optional(','),
+          seq($._assignee_expression, ','),
+          repeat(seq(repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression, ',')),
+          optional(seq(repeat(prec(PREC.call, $.attribute_item)), $._assignee_expression)),
           ')'
         )
       ),
