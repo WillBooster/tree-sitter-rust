@@ -35,7 +35,8 @@ enum TokenType {
     ORPHAN_LINE_DOC_COMMENT_START,
     ORPHAN_BLOCK_DOC_COMMENT_START,
     ORPHAN_DOC_MISSING_OWNER,
-    TRAILING_TYPE_BOUND_PLUS
+    TRAILING_TYPE_BOUND_PLUS,
+    SHEBANG
 };
 
 #include "frontmatter.h"
@@ -56,13 +57,15 @@ unsigned tree_sitter_rust_external_scanner_serialize(void *payload, char *buffer
     buffer[1] = (char)scanner->literal_suffix_pending;
     for (unsigned i = 0; i < 4; i++) buffer[2 + i] = (char)(scanner->frontmatter.fence_length >> (8 * i));
     buffer[6] = scanner->frontmatter.allowed;
-    return 7;
+    buffer[7] = scanner->frontmatter.shebang_allowed;
+    return 8;
 }
 
 void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *scanner = (Scanner *)payload;
     scanner->frontmatter.fence_length = 0;
     scanner->frontmatter.allowed = false;
+    scanner->frontmatter.shebang_allowed = length >= 8 && buffer[7];
     scanner->opening_hash_count = 0;
     scanner->literal_suffix_pending = 0;
     if (length >= 7) scanner->frontmatter.allowed = buffer[6];
@@ -387,7 +390,8 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     }
 
     if (valid_symbols[FRONTMATTER_CONTEXT] || valid_symbols[FRONTMATTER_CONTENT] ||
-        valid_symbols[FRONTMATTER_HEADER_END] || valid_symbols[FRONTMATTER_END]) {
+        valid_symbols[FRONTMATTER_HEADER_END] || valid_symbols[FRONTMATTER_END] ||
+        (valid_symbols[SHEBANG] && lexer->lookahead == '#')) {
         return scan_frontmatter_token(&scanner->frontmatter, lexer, valid_symbols);
     }
 

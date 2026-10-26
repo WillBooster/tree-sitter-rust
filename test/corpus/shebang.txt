@@ -1,0 +1,43 @@
+==================
+Inner attribute across nested comments and lines
+==================
+#!// [ is in a comment
+/* [ /* nested */ ] */
+[allow(dead_code)]
+fn f() {}
+
+---
+
+(source_file
+  (inner_attribute_item
+    (line_comment)
+    (block_comment)
+    (attribute (identifier) arguments: (token_tree (identifier))))
+  (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Documentation-shaped shebang command
+==================
+#!/** doc */ [
+fn f() {}
+
+---
+
+(source_file
+  (shebang)
+  (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Ordinary quadruple slash before an inner attribute
+==================
+#!//// ordinary comment
+[allow(dead_code)]
+fn f() {}
+
+---
+
+(source_file
+  (inner_attribute_item
+    (line_comment)
+    (attribute (identifier) arguments: (token_tree (identifier))))
+  (function_item name: (identifier) parameters: (parameters) body: (block)))

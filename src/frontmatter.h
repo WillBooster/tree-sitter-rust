@@ -7,6 +7,7 @@
 typedef struct {
     uint32_t fence_length;
     bool allowed;
+    bool shebang_allowed;
 } Frontmatter;
 
 static bool frontmatter_space(int32_t c);
@@ -15,11 +16,14 @@ static bool frontmatter_header_valid(TSLexer *lexer);
 
 typedef struct {
     bool after_first_line;
+    bool mark_line_end;
     int32_t next_line_start;
 } ShebangProbe;
 
+static bool scan_shebang(bool allowed, TSLexer *lexer);
 static bool frontmatter_shebang_prefix(TSLexer *lexer);
 static bool frontmatter_shebang_attribute(ShebangProbe *probe, TSLexer *lexer);
+static bool skip_shebang_line_comment(ShebangProbe *probe, TSLexer *lexer);
 static bool skip_frontmatter_shebang_block(ShebangProbe *probe, TSLexer *lexer);
 static void frontmatter_shebang_advance(ShebangProbe *probe, TSLexer *lexer);
 
@@ -33,11 +37,13 @@ static bool scan_frontmatter_token(Frontmatter *state, TSLexer *lexer, const boo
     if (valid_symbols[FRONTMATTER_CONTENT]) return scan_frontmatter_content(state, lexer);
     if (valid_symbols[FRONTMATTER_HEADER_END]) return scan_frontmatter_header_end(lexer);
     if (valid_symbols[FRONTMATTER_END]) return scan_frontmatter_end(state, lexer);
+    if (valid_symbols[SHEBANG]) return scan_shebang(state->shebang_allowed, lexer);
     return false;
 }
 
 static bool scan_frontmatter_context(Frontmatter *state, TSLexer *lexer) {
     lexer->mark_end(lexer);
+    state->shebang_allowed = lexer->lookahead == '#';
     if (lexer->lookahead == '#') {
         state->allowed = frontmatter_shebang_prefix(lexer);
     } else {
@@ -45,6 +51,19 @@ static bool scan_frontmatter_context(Frontmatter *state, TSLexer *lexer) {
         state->allowed = lexer->lookahead == '-';
     }
     lexer->result_symbol = FRONTMATTER_CONTEXT;
+    return true;
+}
+
+static bool scan_shebang(bool allowed, TSLexer *lexer) {
+    if (!allowed) return false;
+    lexer->advance(lexer, false);
+    if (lexer->lookahead != '!') return false;
+    lexer->advance(lexer, false);
+    ShebangProbe probe = {.mark_line_end = true, .next_line_start = -1};
+    if (frontmatter_shebang_attribute(&probe, lexer)) return false;
+    while (!probe.after_first_line && !lexer->eof(lexer)) frontmatter_shebang_advance(&probe, lexer);
+    if (!probe.after_first_line) lexer->mark_end(lexer);
+    lexer->result_symbol = SHEBANG;
     return true;
 }
 
@@ -64,11 +83,22 @@ static bool frontmatter_shebang_attribute(ShebangProbe *probe, TSLexer *lexer) {
         if (lexer->lookahead != '/') return lexer->lookahead == '[';
         frontmatter_shebang_advance(probe, lexer);
         if (lexer->lookahead == '/') {
-            while (!lexer->eof(lexer) && lexer->lookahead != '\n') frontmatter_shebang_advance(probe, lexer);
+            if (!skip_shebang_line_comment(probe, lexer)) return false;
             continue;
         }
         if (lexer->lookahead != '*' || !skip_frontmatter_shebang_block(probe, lexer)) return false;
     }
+}
+
+static bool skip_shebang_line_comment(ShebangProbe *probe, TSLexer *lexer) {
+    frontmatter_shebang_advance(probe, lexer);
+    if (lexer->lookahead == '!') return false;
+    if (lexer->lookahead == '/') {
+        frontmatter_shebang_advance(probe, lexer);
+        if (lexer->lookahead != '/') return false;
+    }
+    while (!lexer->eof(lexer) && lexer->lookahead != '\n') frontmatter_shebang_advance(probe, lexer);
+    return true;
 }
 
 static bool skip_frontmatter_shebang_block(ShebangProbe *probe, TSLexer *lexer) {
@@ -94,8 +124,11 @@ static bool skip_frontmatter_shebang_block(ShebangProbe *probe, TSLexer *lexer) 
 static void frontmatter_shebang_advance(ShebangProbe *probe, TSLexer *lexer) {
     int32_t current = lexer->lookahead;
     if (probe->after_first_line && probe->next_line_start < 0 && !rust_whitespace(current)) probe->next_line_start = current;
-    if (current == '\n') probe->after_first_line = true;
     lexer->advance(lexer, false);
+    if (current == '\n' && !probe->after_first_line) {
+        probe->after_first_line = true;
+        if (probe->mark_line_end) lexer->mark_end(lexer);
+    }
 }
 
 static bool scan_frontmatter_start(Frontmatter *state, TSLexer *lexer) {
