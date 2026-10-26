@@ -498,11 +498,14 @@ module.exports = grammar({
     inner_attribute_item: ($) => seq('#', '!', '[', $.attribute, ']'),
 
     attribute: ($) =>
-      seq(
-        $._path,
-        optional(
-          choice(seq('=', field('value', $._expression)), field('arguments', alias($.delim_token_tree, $.token_tree)))
-        )
+      choice(
+        seq(
+          $._path,
+          optional(
+            choice(seq('=', field('value', $._expression)), field('arguments', alias($.delim_token_tree, $.token_tree)))
+          )
+        ),
+        seq(alias('unsafe', $.identifier), field('arguments', alias($._parenthesized_token_tree, $.token_tree)))
       ),
 
     mod_item: ($) =>
@@ -633,8 +636,8 @@ module.exports = grammar({
         optional($.visibility_modifier),
         'extern',
         $.crate,
-        field('name', $.identifier),
-        optional(seq('as', field('alias', $.identifier))),
+        field('name', choice($.identifier, alias($.self, $.identifier))),
+        optional(seq('as', field('alias', choice($.identifier, alias('_', $.identifier))))),
         ';'
       ),
 
@@ -883,7 +886,8 @@ module.exports = grammar({
 
     use_list: ($) => seq('{', sepBy(',', choice($._use_clause)), optional(','), '}'),
 
-    use_as_clause: ($) => seq(field('path', $._path), 'as', field('alias', $.identifier)),
+    use_as_clause: ($) =>
+      seq(field('path', $._path), 'as', field('alias', choice($.identifier, alias('_', $.identifier)))),
 
     use_wildcard: ($) => seq(optional(seq(optional($._path), '::')), '*'),
 
@@ -979,6 +983,7 @@ module.exports = grammar({
             'function',
             choice(
               $.identifier,
+              alias('Self', $.identifier),
               $._reserved_identifier,
               alias(choice(...primitiveTypes), $.identifier),
               $.scoped_identifier,
@@ -998,6 +1003,7 @@ module.exports = grammar({
             'type',
             choice(
               $._type_identifier,
+              alias('Self', sym('type_identifier')),
               alias(choice(...primitiveTypes), sym('type_identifier')),
               alias(choice(...reservedIdentifiers), $.identifier),
               $.scoped_type_identifier
@@ -1013,6 +1019,7 @@ module.exports = grammar({
           'type',
           choice(
             $._type_identifier,
+            alias('Self', sym('type_identifier')),
             alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier')),
             $.scoped_identifier
           )
@@ -1039,7 +1046,13 @@ module.exports = grammar({
       ),
 
     use_bounds: ($) =>
-      seq('use', token(prec(1, '<')), sepBy(',', choice($.lifetime, $._type_identifier)), optional(','), '>'),
+      seq(
+        'use',
+        token(prec(1, '<')),
+        sepBy(',', choice($.lifetime, $._type_identifier, alias('Self', sym('type_identifier')))),
+        optional(','),
+        '>'
+      ),
 
     type_arguments: ($) =>
       seq(
@@ -1641,6 +1654,7 @@ module.exports = grammar({
         $._literal_pattern,
         alias(choice(...primitiveTypes), $.identifier),
         $.identifier,
+        alias('Self', $.identifier),
         $.scoped_identifier,
         $.generic_pattern,
         $.tuple_pattern,
@@ -1665,6 +1679,7 @@ module.exports = grammar({
       seq(
         choice(
           $.identifier,
+          alias('Self', $.identifier),
           $._reserved_identifier,
           alias(choice(...primitiveTypes), $.identifier),
           $.scoped_identifier
@@ -1684,6 +1699,7 @@ module.exports = grammar({
           'type',
           choice(
             $.identifier,
+            alias('Self', $.identifier),
             $._reserved_identifier,
             alias(choice(...primitiveTypes), $.identifier),
             $.scoped_identifier,
@@ -1702,6 +1718,7 @@ module.exports = grammar({
           'type',
           choice(
             $._type_identifier,
+            alias('Self', sym('type_identifier')),
             alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier')),
             $.scoped_type_identifier,
             alias($._generic_struct_pattern_type, $.generic_type)
@@ -1719,6 +1736,7 @@ module.exports = grammar({
           'type',
           choice(
             $._type_identifier,
+            alias('Self', sym('type_identifier')),
             alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier')),
             $.scoped_type_identifier
           )

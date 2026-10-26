@@ -1,0 +1,120 @@
+==================
+Reserved context: imports
+==================
+use std::fmt::Debug as _; use std::fmt::{Display as _, Write as _}; extern crate core as _; extern crate self as current_crate;
+fn after() {}
+
+---
+
+(source_file (use_declaration argument: (use_as_clause path: (scoped_identifier path: (scoped_identifier path: (identifier) name: (identifier)) name: (identifier)) alias: (identifier))) (use_declaration argument: (scoped_use_list path: (scoped_identifier path: (identifier) name: (identifier)) list: (use_list (use_as_clause path: (identifier) alias: (identifier)) (use_as_clause path: (identifier) alias: (identifier))))) (extern_crate_declaration (crate) name: (identifier) alias: (identifier)) (extern_crate_declaration (crate) name: (identifier) alias: (identifier)) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: struct-pattern
+==================
+struct S { value:i32 } impl S { fn take(self)->i32 { let Self { value } = self; value } fn parameter(Self { value }: Self)->i32 { value } fn condition(self) { if let Self { value } = self { let _=value; } } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier) body: (field_declaration_list (field_declaration name: (field_identifier) type: (primitive_type)))) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters (self_parameter (self))) return_type: (primitive_type) body: (block (let_declaration pattern: (struct_pattern type: (type_identifier) (field_pattern name: (shorthand_field_identifier))) value: (self)) (identifier))) (function_item name: (identifier) parameters: (parameters (parameter pattern: (struct_pattern type: (type_identifier) (field_pattern name: (shorthand_field_identifier))) type: (type_identifier))) return_type: (primitive_type) body: (block (identifier))) (function_item name: (identifier) parameters: (parameters (self_parameter (self))) body: (block (expression_statement (if_expression condition: (let_condition pattern: (struct_pattern type: (type_identifier) (field_pattern name: (shorthand_field_identifier))) value: (self)) consequence: (block (let_declaration value: (identifier))))))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: tuple-pattern
+==================
+struct S(i32); impl S { fn take(self)->i32 { let Self(value) = self; value } fn parameter(Self(value): Self)->i32 { value } fn condition(self) { if let Self(value) = self { let _=value; } } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier) body: (ordered_field_declaration_list type: (primitive_type))) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters (self_parameter (self))) return_type: (primitive_type) body: (block (let_declaration pattern: (tuple_struct_pattern type: (identifier) (identifier)) value: (self)) (identifier))) (function_item name: (identifier) parameters: (parameters (parameter pattern: (tuple_struct_pattern type: (identifier) (identifier)) type: (type_identifier))) return_type: (primitive_type) body: (block (identifier))) (function_item name: (identifier) parameters: (parameters (self_parameter (self))) body: (block (expression_statement (if_expression condition: (let_condition pattern: (tuple_struct_pattern type: (identifier) (identifier)) value: (self)) consequence: (block (let_declaration value: (identifier))))))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: unit-pattern
+==================
+struct S; impl S { fn take(self) { let Self = self; } fn matches(self)->bool { match self { Self => true } } fn parameter(Self: Self) {} }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier)) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters (self_parameter (self))) body: (block (let_declaration pattern: (identifier) value: (self)))) (function_item name: (identifier) parameters: (parameters (self_parameter (self))) return_type: (primitive_type) body: (block (expression_statement (match_expression value: (self) body: (match_block (match_arm pattern: (match_pattern (identifier)) value: (boolean_literal))))))) (function_item name: (identifier) parameters: (parameters (parameter pattern: (identifier) type: (type_identifier))) body: (block)))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: capture
+==================
+trait T { fn f() -> impl Sized + use<Self>; }
+fn after() {}
+
+---
+
+(source_file (trait_item name: (type_identifier) body: (declaration_list (function_signature_item name: (identifier) parameters: (parameters) return_type: (bounded_type (abstract_type trait: (type_identifier)) (use_bounds (type_identifier)))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: unsafe-attribute
+==================
+#[unsafe(no_mangle)] pub extern "C" fn foo() {}
+fn after() {}
+
+---
+
+(source_file (attributed_declaration (attribute_item (attribute (identifier) arguments: (token_tree (identifier)))) declaration: (function_item (visibility_modifier) (function_modifiers (extern_modifier (string_literal (string_content)))) name: (identifier) parameters: (parameters) body: (block))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-empty-struct-pattern
+==================
+struct S { x:u8 } impl S { fn f(Self::<> {x}: Self)->u8 {x} }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier) body: (field_declaration_list (field_declaration name: (field_identifier) type: (primitive_type)))) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters (parameter pattern: (struct_pattern type: (generic_type type: (type_identifier) type_arguments: (type_arguments)) (field_pattern name: (shorthand_field_identifier))) type: (type_identifier))) return_type: (primitive_type) body: (block (identifier))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-empty-tuple-pattern
+==================
+struct S(u8); impl S { fn f(Self::<>(x): Self)->u8 {x} }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier) body: (ordered_field_declaration_list type: (primitive_type))) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters (parameter pattern: (tuple_struct_pattern type: (generic_type type: (type_identifier) type_arguments: (type_arguments)) (identifier)) type: (type_identifier))) return_type: (primitive_type) body: (block (identifier))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-empty-struct-expression
+==================
+struct S { x:u8 } impl S { fn f()->Self { Self::<> { x:1 } } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier) body: (field_declaration_list (field_declaration name: (field_identifier) type: (primitive_type)))) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters) return_type: (type_identifier) body: (block (struct_expression name: (generic_type_with_turbofish type: (type_identifier) type_arguments: (type_arguments)) body: (field_initializer_list (field_initializer field: (field_identifier) value: (integer_literal)))))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-empty-tuple-expression
+==================
+struct S(u8); impl S { fn f()->Self { Self::<>(1) } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier) body: (ordered_field_declaration_list type: (primitive_type))) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters) return_type: (type_identifier) body: (block (call_expression function: (generic_function function: (identifier) type_arguments: (type_arguments)) arguments: (arguments (integer_literal))))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-empty-unit-expression
+==================
+struct S; impl S { fn f()->Self { Self::<> } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier)) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters) return_type: (type_identifier) body: (block (generic_function function: (identifier) type_arguments: (type_arguments)))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-empty-type
+==================
+struct S; impl S { fn f()->Self<> { Self } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier)) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters) return_type: (generic_type type: (type_identifier) type_arguments: (type_arguments)) body: (block (identifier))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
