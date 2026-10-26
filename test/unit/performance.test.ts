@@ -26,6 +26,7 @@ test('uses a Wasm build built from the current parser', () => {
 // Thread CPU excludes concurrent test workers and background Wasm compilation/collection.
 // The ratio allows headroom over tenfold input growth while detecting quadratic work.
 test.each([
+  ['shebang attribute lookahead', '#!\n', '/* ordinary */ ', '[allow(dead_code)] fn f() {}', false],
   ['declaration attributes', 'fn f() { ', '#[a] ', 'let x = 1; }', false],
   ['expression attributes', 'fn f() { let x = ', '#[a] ', '1 + 2; }', false],
   ['block statement attributes', 'fn f() { ', '#[a] ', 'if true {} after(); }', false],

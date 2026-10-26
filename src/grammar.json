@@ -14545,10 +14545,6 @@
       "value": "(r#)?[_\\p{XID_Start}][_\\p{XID_Continue}]*",
       "flags": "u"
     },
-    "shebang": {
-      "type": "PATTERN",
-      "value": "#![\\r\\f\\t\\v ]*([^\\[\\n].*)?\\n"
-    },
     "_reserved_identifier": {
       "type": "ALIAS",
       "content": {
@@ -15149,6 +15145,10 @@
     {
       "type": "SYMBOL",
       "name": "_trailing_type_bound_plus"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "shebang"
     }
   ],
   "inline": [

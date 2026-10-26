@@ -155,6 +155,7 @@ module.exports = grammar({
     sym('_orphan_block_doc_comment_start'),
     sym('_orphan_doc_missing_owner'),
     sym('_trailing_type_bound_plus'),
+    sym('shebang'),
   ],
 
   supertypes: ($) => [
@@ -220,7 +221,7 @@ module.exports = grammar({
 
   rules: {
     source_file: ($) =>
-      seq(sym('_frontmatter_context'), optional($.shebang), optional($.frontmatter), repeat($._statement)),
+      seq(sym('_frontmatter_context'), optional(sym('shebang')), optional($.frontmatter), repeat($._statement)),
 
     _statement: ($) => choice($.expression_statement, $._declaration_statement),
 
@@ -1869,9 +1870,6 @@ module.exports = grammar({
       ),
 
     identifier: () => /(r#)?[_\p{XID_Start}][_\p{XID_Continue}]*/u,
-
-    // oxlint-disable-next-line no-useless-escape -- tree-sitter's regex parser rejects an unescaped `[` in a character class.
-    shebang: () => /#![\r\f\t\v ]*([^\[\n].*)?\n/,
 
     _reserved_identifier: ($) => alias(choice(...reservedIdentifiers, 'auto', 'macro_rules'), $.identifier),
 
