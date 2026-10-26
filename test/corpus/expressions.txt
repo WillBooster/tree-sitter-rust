@@ -727,7 +727,7 @@ match x {
 
     #[attr1]
     3 => "three",
-    macro!(4) => "four",
+    r#macro!(4) => "four",
     _ => "something else",
 }
 

@@ -114,6 +114,56 @@ const TOKEN_TREE_NON_SPECIAL_PUNCTUATION = [
 
 const primitiveTypes = [...numericTypes, 'bool', 'str', 'char'];
 const reservedIdentifiers = ['default', 'union', 'gen', 'raw'];
+const globalKeywords = [
+  '_',
+  'as',
+  'break',
+  'const',
+  'continue',
+  'crate',
+  'else',
+  'enum',
+  'extern',
+  'false',
+  'fn',
+  'for',
+  'if',
+  'impl',
+  'in',
+  'let',
+  'loop',
+  'match',
+  'mod',
+  'move',
+  'mut',
+  'pub',
+  'ref',
+  'return',
+  'self',
+  'Self',
+  'static',
+  'struct',
+  'super',
+  'trait',
+  'true',
+  'type',
+  'unsafe',
+  'use',
+  'where',
+  'while',
+  'abstract',
+  'become',
+  'box',
+  'do',
+  'final',
+  'macro',
+  'override',
+  'priv',
+  'typeof',
+  'unsized',
+  'virtual',
+  'yield',
+];
 const fieldIdentifierKeywords = [...reservedIdentifiers, ...primitiveTypes, 'auto'];
 
 // oxlint-disable-next-line unicorn/prefer-module -- This package is CommonJS, so tree-sitter loads grammar.js as CommonJS.
@@ -213,8 +263,8 @@ module.exports = grammar({
   ],
 
   reserved: {
-    global: () => [],
-    struct_name: () => ['else'],
+    global: () => globalKeywords,
+    token_tree: () => [],
   },
 
   word: ($) => $.identifier,
@@ -380,7 +430,7 @@ module.exports = grammar({
         alias($._outer_line_comment, $.line_comment),
         alias($._outer_block_comment, $.block_comment),
         $._literal,
-        $.identifier,
+        reserved('token_tree', $.identifier),
         $.mutable_specifier,
         $.self,
         $.super,
@@ -389,6 +439,14 @@ module.exports = grammar({
         alias(choice(...extendedFloatTypes), $.identifier),
         prec.right(repeat1(choice(...TOKEN_TREE_NON_SPECIAL_PUNCTUATION))),
         "'",
+        'abstract',
+        'do',
+        'final',
+        'override',
+        'priv',
+        'typeof',
+        'unsized',
+        'virtual',
         'as',
         'async',
         'await',
@@ -584,7 +642,7 @@ module.exports = grammar({
       seq(
         optional($.visibility_modifier),
         'const',
-        field('name', choice($.identifier, $._reserved_identifier)),
+        field('name', choice($.identifier, $._reserved_identifier, alias('_', $.identifier))),
         ':',
         field('type', $._type),
         optional(seq('=', field('value', $._expression))),
@@ -880,7 +938,7 @@ module.exports = grammar({
 
     qualified_type: ($) => seq(field('type', $._type), 'as', field('alias', $._type)),
 
-    lifetime: ($) => prec(1, seq("'", $.identifier)),
+    lifetime: ($) => prec(1, seq("'", choice($.identifier, alias(choice('static', '_'), $.identifier)))),
 
     array_type: ($) => seq('[', field('element', $._type), optional(seq(';', field('length', $._expression))), ']'),
 
@@ -1080,6 +1138,7 @@ module.exports = grammar({
         $.yield_expression,
         $._literal,
         prec.left($.identifier),
+        alias(choice('_', 'Self'), $.identifier),
         alias(choice(...primitiveTypes), $.identifier),
         prec.left($._reserved_identifier),
         $.self,
@@ -1368,7 +1427,8 @@ module.exports = grammar({
 
     _struct_expression_name: ($) =>
       choice(
-        reserved('struct_name', $._type_identifier),
+        $._type_identifier,
+        alias('Self', sym('type_identifier')),
         prec.dynamic(-1, alias(choice(...primitiveTypes, ...reservedIdentifiers), sym('type_identifier'))),
         alias($.scoped_type_identifier_in_expression_position, $.scoped_type_identifier),
         $.generic_type_with_turbofish
@@ -1860,6 +1920,7 @@ module.exports = grammar({
     _path: ($) =>
       choice(
         $.self,
+        alias('Self', $.identifier),
         alias(choice(...primitiveTypes), $.identifier),
         $.metavariable,
         $.super,
@@ -1875,7 +1936,7 @@ module.exports = grammar({
 
     _type_identifier: ($) => alias(choice($.identifier, 'auto', 'macro_rules'), sym('type_identifier')),
     _type_identifier_in_type_position: ($) =>
-      choice($._type_identifier, alias(choice(...reservedIdentifiers), sym('type_identifier'))),
+      choice($._type_identifier, alias(choice(...reservedIdentifiers, 'Self'), sym('type_identifier'))),
     _field_identifier: ($) => alias($.identifier, sym('field_identifier')),
 
     self: () => 'self',

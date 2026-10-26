@@ -1047,8 +1047,12 @@
           "name": "_literal"
         },
         {
-          "type": "SYMBOL",
-          "name": "identifier"
+          "type": "RESERVED",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          },
+          "context_name": "token_tree"
         },
         {
           "type": "SYMBOL",
@@ -1357,6 +1361,38 @@
         {
           "type": "STRING",
           "value": "'"
+        },
+        {
+          "type": "STRING",
+          "value": "abstract"
+        },
+        {
+          "type": "STRING",
+          "value": "do"
+        },
+        {
+          "type": "STRING",
+          "value": "final"
+        },
+        {
+          "type": "STRING",
+          "value": "override"
+        },
+        {
+          "type": "STRING",
+          "value": "priv"
+        },
+        {
+          "type": "STRING",
+          "value": "typeof"
+        },
+        {
+          "type": "STRING",
+          "value": "unsized"
+        },
+        {
+          "type": "STRING",
+          "value": "virtual"
         },
         {
           "type": "STRING",
@@ -2660,6 +2696,15 @@
               {
                 "type": "SYMBOL",
                 "name": "_reserved_identifier"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "_"
+                },
+                "named": true,
+                "value": "identifier"
               }
             ]
           }
@@ -5543,8 +5588,31 @@
             "value": "'"
           },
           {
-            "type": "SYMBOL",
-            "name": "identifier"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "static"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "_"
+                    }
+                  ]
+                },
+                "named": true,
+                "value": "identifier"
+              }
+            ]
           }
         ]
       }
@@ -7508,6 +7576,24 @@
             "type": "SYMBOL",
             "name": "identifier"
           }
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "_"
+              },
+              {
+                "type": "STRING",
+                "value": "Self"
+              }
+            ]
+          },
+          "named": true,
+          "value": "identifier"
         },
         {
           "type": "ALIAS",
@@ -10156,12 +10242,17 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "RESERVED",
+          "type": "SYMBOL",
+          "name": "_type_identifier"
+        },
+        {
+          "type": "ALIAS",
           "content": {
-            "type": "SYMBOL",
-            "name": "_type_identifier"
+            "type": "STRING",
+            "value": "Self"
           },
-          "context_name": "struct_name"
+          "named": true,
+          "value": "type_identifier"
         },
         {
           "type": "PREC_DYNAMIC",
@@ -14431,6 +14522,15 @@
         {
           "type": "ALIAS",
           "content": {
+            "type": "STRING",
+            "value": "Self"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
             "type": "CHOICE",
             "members": [
               {
@@ -14628,6 +14728,10 @@
               {
                 "type": "STRING",
                 "value": "raw"
+              },
+              {
+                "type": "STRING",
+                "value": "Self"
               }
             ]
           },
@@ -15176,12 +15280,200 @@
     "_pattern"
   ],
   "reserved": {
-    "global": [],
-    "struct_name": [
+    "global": [
+      {
+        "type": "STRING",
+        "value": "_"
+      },
+      {
+        "type": "STRING",
+        "value": "as"
+      },
+      {
+        "type": "STRING",
+        "value": "break"
+      },
+      {
+        "type": "STRING",
+        "value": "const"
+      },
+      {
+        "type": "STRING",
+        "value": "continue"
+      },
+      {
+        "type": "STRING",
+        "value": "crate"
+      },
       {
         "type": "STRING",
         "value": "else"
+      },
+      {
+        "type": "STRING",
+        "value": "enum"
+      },
+      {
+        "type": "STRING",
+        "value": "extern"
+      },
+      {
+        "type": "STRING",
+        "value": "false"
+      },
+      {
+        "type": "STRING",
+        "value": "fn"
+      },
+      {
+        "type": "STRING",
+        "value": "for"
+      },
+      {
+        "type": "STRING",
+        "value": "if"
+      },
+      {
+        "type": "STRING",
+        "value": "impl"
+      },
+      {
+        "type": "STRING",
+        "value": "in"
+      },
+      {
+        "type": "STRING",
+        "value": "let"
+      },
+      {
+        "type": "STRING",
+        "value": "loop"
+      },
+      {
+        "type": "STRING",
+        "value": "match"
+      },
+      {
+        "type": "STRING",
+        "value": "mod"
+      },
+      {
+        "type": "STRING",
+        "value": "move"
+      },
+      {
+        "type": "STRING",
+        "value": "mut"
+      },
+      {
+        "type": "STRING",
+        "value": "pub"
+      },
+      {
+        "type": "STRING",
+        "value": "ref"
+      },
+      {
+        "type": "STRING",
+        "value": "return"
+      },
+      {
+        "type": "STRING",
+        "value": "self"
+      },
+      {
+        "type": "STRING",
+        "value": "Self"
+      },
+      {
+        "type": "STRING",
+        "value": "static"
+      },
+      {
+        "type": "STRING",
+        "value": "struct"
+      },
+      {
+        "type": "STRING",
+        "value": "super"
+      },
+      {
+        "type": "STRING",
+        "value": "trait"
+      },
+      {
+        "type": "STRING",
+        "value": "true"
+      },
+      {
+        "type": "STRING",
+        "value": "type"
+      },
+      {
+        "type": "STRING",
+        "value": "unsafe"
+      },
+      {
+        "type": "STRING",
+        "value": "use"
+      },
+      {
+        "type": "STRING",
+        "value": "where"
+      },
+      {
+        "type": "STRING",
+        "value": "while"
+      },
+      {
+        "type": "STRING",
+        "value": "abstract"
+      },
+      {
+        "type": "STRING",
+        "value": "become"
+      },
+      {
+        "type": "STRING",
+        "value": "box"
+      },
+      {
+        "type": "STRING",
+        "value": "do"
+      },
+      {
+        "type": "STRING",
+        "value": "final"
+      },
+      {
+        "type": "STRING",
+        "value": "macro"
+      },
+      {
+        "type": "STRING",
+        "value": "override"
+      },
+      {
+        "type": "STRING",
+        "value": "priv"
+      },
+      {
+        "type": "STRING",
+        "value": "typeof"
+      },
+      {
+        "type": "STRING",
+        "value": "unsized"
+      },
+      {
+        "type": "STRING",
+        "value": "virtual"
+      },
+      {
+        "type": "STRING",
+        "value": "yield"
       }
-    ]
+    ],
+    "token_tree": []
   }
 }
