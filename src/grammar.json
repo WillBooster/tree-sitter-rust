@@ -4688,8 +4688,13 @@
             "type": "FIELD",
             "name": "name",
             "content": {
-              "type": "SYMBOL",
-              "name": "lifetime"
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_lifetime_declaration"
+              },
+              "named": true,
+              "value": "lifetime"
             }
           },
           {
@@ -5690,6 +5695,14 @@
                     {
                       "type": "STRING",
                       "value": "_"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "r#static"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "r#_"
                     }
                   ]
                 },
@@ -5697,6 +5710,27 @@
                 "value": "identifier"
               }
             ]
+          }
+        ]
+      }
+    },
+    "_lifetime_declaration": {
+      "type": "PREC",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "'"
+          },
+          {
+            "type": "RESERVED",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "context_name": "lifetime_declaration"
           }
         ]
       }
@@ -5774,8 +5808,13 @@
                         "type": "PREC",
                         "value": 1,
                         "content": {
-                          "type": "SYMBOL",
-                          "name": "lifetime"
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_lifetime_declaration"
+                          },
+                          "named": true,
+                          "value": "lifetime"
                         }
                       },
                       {
@@ -5791,8 +5830,13 @@
                               "type": "PREC",
                               "value": 1,
                               "content": {
-                                "type": "SYMBOL",
-                                "name": "lifetime"
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "_lifetime_declaration"
+                                },
+                                "named": true,
+                                "value": "lifetime"
                               }
                             }
                           ]
@@ -15666,6 +15710,208 @@
         "value": "yield"
       }
     ],
-    "token_tree": []
+    "token_tree": [],
+    "lifetime_declaration": [
+      {
+        "type": "STRING",
+        "value": "_"
+      },
+      {
+        "type": "STRING",
+        "value": "as"
+      },
+      {
+        "type": "STRING",
+        "value": "break"
+      },
+      {
+        "type": "STRING",
+        "value": "const"
+      },
+      {
+        "type": "STRING",
+        "value": "continue"
+      },
+      {
+        "type": "STRING",
+        "value": "crate"
+      },
+      {
+        "type": "STRING",
+        "value": "else"
+      },
+      {
+        "type": "STRING",
+        "value": "enum"
+      },
+      {
+        "type": "STRING",
+        "value": "extern"
+      },
+      {
+        "type": "STRING",
+        "value": "false"
+      },
+      {
+        "type": "STRING",
+        "value": "fn"
+      },
+      {
+        "type": "STRING",
+        "value": "for"
+      },
+      {
+        "type": "STRING",
+        "value": "if"
+      },
+      {
+        "type": "STRING",
+        "value": "impl"
+      },
+      {
+        "type": "STRING",
+        "value": "in"
+      },
+      {
+        "type": "STRING",
+        "value": "let"
+      },
+      {
+        "type": "STRING",
+        "value": "loop"
+      },
+      {
+        "type": "STRING",
+        "value": "match"
+      },
+      {
+        "type": "STRING",
+        "value": "mod"
+      },
+      {
+        "type": "STRING",
+        "value": "move"
+      },
+      {
+        "type": "STRING",
+        "value": "mut"
+      },
+      {
+        "type": "STRING",
+        "value": "pub"
+      },
+      {
+        "type": "STRING",
+        "value": "ref"
+      },
+      {
+        "type": "STRING",
+        "value": "return"
+      },
+      {
+        "type": "STRING",
+        "value": "self"
+      },
+      {
+        "type": "STRING",
+        "value": "Self"
+      },
+      {
+        "type": "STRING",
+        "value": "static"
+      },
+      {
+        "type": "STRING",
+        "value": "struct"
+      },
+      {
+        "type": "STRING",
+        "value": "super"
+      },
+      {
+        "type": "STRING",
+        "value": "trait"
+      },
+      {
+        "type": "STRING",
+        "value": "true"
+      },
+      {
+        "type": "STRING",
+        "value": "type"
+      },
+      {
+        "type": "STRING",
+        "value": "unsafe"
+      },
+      {
+        "type": "STRING",
+        "value": "use"
+      },
+      {
+        "type": "STRING",
+        "value": "where"
+      },
+      {
+        "type": "STRING",
+        "value": "while"
+      },
+      {
+        "type": "STRING",
+        "value": "abstract"
+      },
+      {
+        "type": "STRING",
+        "value": "become"
+      },
+      {
+        "type": "STRING",
+        "value": "box"
+      },
+      {
+        "type": "STRING",
+        "value": "do"
+      },
+      {
+        "type": "STRING",
+        "value": "final"
+      },
+      {
+        "type": "STRING",
+        "value": "macro"
+      },
+      {
+        "type": "STRING",
+        "value": "override"
+      },
+      {
+        "type": "STRING",
+        "value": "priv"
+      },
+      {
+        "type": "STRING",
+        "value": "typeof"
+      },
+      {
+        "type": "STRING",
+        "value": "unsized"
+      },
+      {
+        "type": "STRING",
+        "value": "virtual"
+      },
+      {
+        "type": "STRING",
+        "value": "yield"
+      },
+      {
+        "type": "STRING",
+        "value": "r#static"
+      },
+      {
+        "type": "STRING",
+        "value": "r#_"
+      }
+    ]
   }
 }
