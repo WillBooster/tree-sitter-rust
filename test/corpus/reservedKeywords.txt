@@ -1,0 +1,22 @@
+==================
+Raw keyword names and special lifetime paths
+==================
+struct r#while;
+impl r#while {
+    fn r#if(value: &'static str) -> &'_ str { value }
+    fn new() -> Self { Self {} }
+}
+fn after() {}
+
+---
+
+(source_file
+  (struct_item name: (type_identifier))
+  (impl_item type: (type_identifier) body: (declaration_list
+    (function_item name: (identifier) parameters: (parameters
+      (parameter pattern: (identifier) type: (reference_type (lifetime (identifier)) type: (primitive_type))))
+      return_type: (reference_type (lifetime (identifier)) type: (primitive_type))
+      body: (block (identifier)))
+    (function_item name: (identifier) parameters: (parameters) return_type: (type_identifier)
+      body: (block (struct_expression name: (type_identifier) body: (field_initializer_list))))))
+  (function_item name: (identifier) parameters: (parameters) body: (block)))

@@ -1,0 +1,22 @@
+==================
+Terminal self imports
+==================
+use std::io::self;
+use std::io::self as io2;
+fn after() {}
+
+---
+
+(source_file (use_declaration argument: (scoped_identifier path: (scoped_identifier path: (identifier) name: (identifier)) name: (identifier))) (use_declaration argument: (use_as_clause path: (scoped_identifier path: (scoped_identifier path: (identifier) name: (identifier)) name: (identifier)) alias: (identifier))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Terminal self in a local module import
+==================
+mod foo {}
+use foo::self as bar;
+fn after() {}
+
+---
+
+(source_file (mod_item name: (identifier) body: (declaration_list)) (use_declaration argument: (use_as_clause path: (scoped_identifier path: (identifier) name: (identifier)) alias: (identifier))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+

@@ -1,0 +1,11 @@
+==================
+Macro reserved-word identifier captures
+==================
+macro_rules! keyword_table { ($keyword:ident) => { abstract do final override priv typeof unsized virtual $keyword }; }
+macro_rules! consume { ($($word:tt)*) => {}; }
+consume!(abstract do final override priv typeof unsized virtual);
+fn after() {}
+
+---
+
+(source_file (macro_definition name: (identifier) (macro_rule left: (token_tree_pattern (token_binding_pattern name: (metavariable) type: (fragment_specifier))) right: (token_tree (identifier) (identifier) (identifier) (identifier) (identifier) (identifier) (identifier) (identifier) (metavariable)))) (macro_definition name: (identifier) (macro_rule left: (token_tree_pattern (token_repetition_pattern (token_binding_pattern name: (metavariable) type: (fragment_specifier)))) right: (token_tree))) (expression_statement (macro_invocation macro: (identifier) (token_tree (identifier) (identifier) (identifier) (identifier) (identifier) (identifier) (identifier) (identifier)))) (function_item name: (identifier) parameters: (parameters) body: (block)))
