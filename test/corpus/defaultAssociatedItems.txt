@@ -1,0 +1,53 @@
+================================================================================
+Default associated constants and types
+================================================================================
+
+#![feature(specialization)]
+#![allow(incomplete_features, dead_code)]
+trait T { const X: u8; type A; }
+impl<Ty> T for Ty {
+    default const X: u8 = 1;
+    default type A = u8;
+}
+fn main() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier))))
+  (inner_attribute_item
+    (attribute
+      (identifier)
+      (token_tree
+        (identifier)
+        (identifier))))
+  (trait_item
+    (type_identifier)
+    (declaration_list
+      (const_item
+        (identifier)
+        (primitive_type))
+      (associated_type
+        (type_identifier))))
+  (impl_item
+    (type_parameters
+      (type_parameter
+        (type_identifier)))
+    (type_identifier)
+    (type_identifier)
+    (declaration_list
+      (const_item
+        (identifier)
+        (primitive_type)
+        (integer_literal))
+      (type_item
+        (type_identifier)
+        (primitive_type))))
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))
