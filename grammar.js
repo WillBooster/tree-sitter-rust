@@ -310,7 +310,11 @@ module.exports = grammar({
       ),
 
     _associated_attributable_declaration: ($) =>
-      attributableDeclaration($, alias($._associated_const_item, $.const_item)),
+      attributableDeclaration(
+        $,
+        alias($._associated_const_item, $.const_item),
+        alias($._associated_type_item, $.type_item)
+      ),
 
     _associated_attributed_declaration: ($) =>
       seq($._outer_attributes, field('declaration', $._associated_attributable_declaration)),
@@ -634,7 +638,9 @@ module.exports = grammar({
     const_item: ($) => constItem($, choice($.identifier, $._reserved_identifier, alias('_', $.identifier))),
 
     _associated_const_item: ($) =>
-      constItem($, choice(reserved('associated_const_name', $.identifier), $._reserved_identifier)),
+      constItem($, choice(reserved('associated_const_name', $.identifier), $._reserved_identifier), [
+        optional('default'),
+      ]),
 
     static_item: ($) => seq(optional($.visibility_modifier), $._static_declaration),
 
@@ -653,18 +659,9 @@ module.exports = grammar({
         ';'
       ),
 
-    type_item: ($) =>
-      seq(
-        optional($.visibility_modifier),
-        'type',
-        field('name', $._type_identifier),
-        field('type_parameters', optional($.type_parameters)),
-        optional($.where_clause),
-        '=',
-        field('type', $._type),
-        optional($.where_clause),
-        ';'
-      ),
+    type_item: ($) => typeItem($),
+
+    _associated_type_item: ($) => typeItem($, [optional('default')]),
 
     function_item: ($) =>
       seq(
@@ -2000,8 +1997,9 @@ module.exports = grammar({
 /**
  * @param {import('@willbooster/web-tree-sitter/dsl').GrammarSymbols<'empty_statement' | 'inner_attribute_item' | 'macro_invocation' | 'macro_definition' | 'decl_macro' | 'mod_item' | 'foreign_mod_item' | 'struct_item' | 'union_item' | 'enum_item' | 'type_item' | 'function_item' | 'function_signature_item' | 'impl_item' | 'trait_item' | 'trait_alias' | 'associated_type' | 'let_declaration' | 'use_declaration' | 'extern_crate_declaration' | 'static_item' | '_safe_function_signature_item' | '_qualified_static_item'>} $
  * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} constant
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} [typeAlias]
  */
-function attributableDeclaration($, constant) {
+function attributableDeclaration($, constant, typeAlias = $.type_item) {
   return choice(
     constant,
     $.macro_invocation,
@@ -2012,7 +2010,7 @@ function attributableDeclaration($, constant) {
     $.struct_item,
     $.union_item,
     $.enum_item,
-    $.type_item,
+    typeAlias,
     $.function_item,
     $.function_signature_item,
     $.impl_item,
@@ -2031,15 +2029,36 @@ function attributableDeclaration($, constant) {
 /**
  * @param {import('@willbooster/web-tree-sitter/dsl').GrammarSymbols<'visibility_modifier' | '_type' | '_expression'>} $
  * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} name
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral[]} [modifier]
  */
-function constItem($, name) {
+function constItem($, name, modifier = []) {
   return seq(
     optional($.visibility_modifier),
+    ...modifier,
     'const',
     field('name', name),
     ':',
     field('type', $._type),
     optional(seq('=', field('value', $._expression))),
+    ';'
+  );
+}
+
+/**
+ * @param {import('@willbooster/web-tree-sitter/dsl').GrammarSymbols<'visibility_modifier' | '_type_identifier' | 'type_parameters' | 'where_clause' | '_type'>} $
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral[]} [modifier]
+ */
+function typeItem($, modifier = []) {
+  return seq(
+    optional($.visibility_modifier),
+    ...modifier,
+    'type',
+    field('name', $._type_identifier),
+    field('type_parameters', optional($.type_parameters)),
+    optional($.where_clause),
+    '=',
+    field('type', $._type),
+    optional($.where_clause),
     ';'
   );
 }
