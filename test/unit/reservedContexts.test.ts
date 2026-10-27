@@ -85,11 +85,33 @@ const cases = [
     query: '(generic_type type: (type_identifier) @special)',
     expected: ['Self'],
   },
+
+  {
+    name: 'self-turbofish-return-type',
+    source: 'struct S; impl S { fn f() -> Self::<> { Self } }\nfn after() {}\n',
+    query: '(function_item return_type: (generic_type type: (type_identifier) @special))',
+    expected: ['Self'],
+    genericSuffix: '::<>',
+  },
+  {
+    name: 'self-turbofish-parameter-type',
+    source: 'struct S; impl S { fn f(_: Self::<>) {} }\nfn after() {}\n',
+    query: '(parameter type: (generic_type type: (type_identifier) @special))',
+    expected: ['Self'],
+    genericSuffix: '::<>',
+  },
+  {
+    name: 'self-turbofish-local-type',
+    source: 'struct S; impl S { fn f() { let _: Self::<> = Self; } }\nfn after() {}\n',
+    query: '(let_declaration type: (generic_type type: (type_identifier) @special))',
+    expected: ['Self'],
+    genericSuffix: '::<>',
+  },
 ];
 
 test.each(cases)(
   'preserves valid keyword context $name and edits its query range',
-  ({ source: initial, query: pattern, expected }) => {
+  ({ source: initial, query: pattern, expected, genericSuffix }) => {
     const parser = new Parser().setLanguage(language);
     const query = new Query(language, pattern);
     const functions = new Query(language, '(function_item name: (identifier) @name)');
@@ -144,6 +166,14 @@ test.each(cases)(
         expect(source.slice(node.startIndex, node.endIndex)).toBe(node.text);
         expect(node.startPosition).toEqual(position(source, node.startIndex));
         expect(node.endPosition).toEqual(position(source, node.endIndex));
+        if (genericSuffix) {
+          const type = node.parent!;
+          expect(type.type).toBe('generic_type');
+          expect(type.text).toBe(node.text + genericSuffix);
+          expect(type.startIndex).toBe(node.startIndex);
+          expect(type.endIndex).toBe(node.endIndex + genericSuffix.length);
+          expect(type.childForFieldName('type_arguments')!.text).toBe('<>');
+        }
       }
       const after = functions.captures(current.rootNode).find(({ node }) => node.text === 'after')!.node;
       expect(after.startIndex).toBe(source.lastIndexOf('after'));

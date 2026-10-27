@@ -439,14 +439,7 @@ module.exports = grammar({
         alias(choice(...extendedFloatTypes), $.identifier),
         prec.right(repeat1(choice(...TOKEN_TREE_NON_SPECIAL_PUNCTUATION))),
         "'",
-        'abstract',
-        'do',
-        'final',
-        'override',
-        'priv',
-        'typeof',
-        'unsized',
-        'virtual',
+        alias(choice('abstract', 'do', 'final', 'override', 'priv', 'typeof', 'unsized', 'virtual'), $.identifier),
         'as',
         'async',
         'await',
@@ -1226,7 +1219,7 @@ module.exports = grammar({
           optional(choice($._path, $.bracketed_type, alias($.generic_type_with_turbofish, $.generic_type)))
         ),
         '::',
-        field('name', choice($.identifier, $._reserved_identifier, $.super))
+        field('name', choice($.identifier, $._reserved_identifier, $.super, alias($.self, $.identifier)))
       ),
 
     scoped_type_identifier_in_expression_position: ($) =>
@@ -1984,6 +1977,7 @@ module.exports = grammar({
             'type',
             choice(
               $._type_identifier,
+              alias('Self', sym('type_identifier')),
               alias(choice(...primitiveTypes), sym('type_identifier')),
               alias(choice(...reservedIdentifiers), $.identifier),
               $.scoped_type_identifier

@@ -1363,36 +1363,46 @@
           "value": "'"
         },
         {
-          "type": "STRING",
-          "value": "abstract"
-        },
-        {
-          "type": "STRING",
-          "value": "do"
-        },
-        {
-          "type": "STRING",
-          "value": "final"
-        },
-        {
-          "type": "STRING",
-          "value": "override"
-        },
-        {
-          "type": "STRING",
-          "value": "priv"
-        },
-        {
-          "type": "STRING",
-          "value": "typeof"
-        },
-        {
-          "type": "STRING",
-          "value": "unsized"
-        },
-        {
-          "type": "STRING",
-          "value": "virtual"
+          "type": "ALIAS",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "abstract"
+              },
+              {
+                "type": "STRING",
+                "value": "do"
+              },
+              {
+                "type": "STRING",
+                "value": "final"
+              },
+              {
+                "type": "STRING",
+                "value": "override"
+              },
+              {
+                "type": "STRING",
+                "value": "priv"
+              },
+              {
+                "type": "STRING",
+                "value": "typeof"
+              },
+              {
+                "type": "STRING",
+                "value": "unsized"
+              },
+              {
+                "type": "STRING",
+                "value": "virtual"
+              }
+            ]
+          },
+          "named": true,
+          "value": "identifier"
         },
         {
           "type": "STRING",
@@ -8260,6 +8270,15 @@
               {
                 "type": "SYMBOL",
                 "name": "super"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "self"
+                },
+                "named": true,
+                "value": "identifier"
               }
             ]
           }
@@ -15038,6 +15057,15 @@
                 {
                   "type": "SYMBOL",
                   "name": "_type_identifier"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "STRING",
+                    "value": "Self"
+                  },
+                  "named": true,
+                  "value": "type_identifier"
                 },
                 {
                   "type": "ALIAS",

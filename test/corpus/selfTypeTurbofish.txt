@@ -1,0 +1,30 @@
+==================
+Reserved context: self-turbofish-return-type
+==================
+struct S; impl S { fn f() -> Self::<> { Self } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier)) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters) return_type: (generic_type type: (type_identifier) type_arguments: (type_arguments)) body: (block (identifier))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-turbofish-parameter-type
+==================
+struct S; impl S { fn f(_: Self::<>) {} }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier)) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters (parameter type: (generic_type type: (type_identifier) type_arguments: (type_arguments)))) body: (block)))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+
+==================
+Reserved context: self-turbofish-local-type
+==================
+struct S; impl S { fn f() { let _: Self::<> = Self; } }
+fn after() {}
+
+---
+
+(source_file (struct_item name: (type_identifier)) (impl_item type: (type_identifier) body: (declaration_list (function_item name: (identifier) parameters: (parameters) body: (block (let_declaration type: (generic_type type: (type_identifier) type_arguments: (type_arguments)) value: (identifier)))))) (function_item name: (identifier) parameters: (parameters) body: (block)))
+

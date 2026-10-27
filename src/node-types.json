@@ -5739,10 +5739,6 @@
     "named": false
   },
   {
-    "type": "abstract",
-    "named": false
-  },
-  {
     "type": "as",
     "named": false
   },
@@ -5795,10 +5791,6 @@
     "named": false
   },
   {
-    "type": "do",
-    "named": false
-  },
-  {
     "type": "doc_comment",
     "named": true
   },
@@ -5837,10 +5829,6 @@
   {
     "type": "field_identifier",
     "named": true
-  },
-  {
-    "type": "final",
-    "named": false
   },
   {
     "type": "fn",
@@ -5939,10 +5927,6 @@
     "named": true
   },
   {
-    "type": "override",
-    "named": false
-  },
-  {
     "type": "pat",
     "named": false
   },
@@ -5957,10 +5941,6 @@
   {
     "type": "primitive_type",
     "named": true
-  },
-  {
-    "type": "priv",
-    "named": false
   },
   {
     "type": "pub",
@@ -6043,10 +6023,6 @@
     "named": true
   },
   {
-    "type": "typeof",
-    "named": false
-  },
-  {
     "type": "union",
     "named": false
   },
@@ -6055,15 +6031,7 @@
     "named": false
   },
   {
-    "type": "unsized",
-    "named": false
-  },
-  {
     "type": "use",
-    "named": false
-  },
-  {
-    "type": "virtual",
     "named": false
   },
   {
