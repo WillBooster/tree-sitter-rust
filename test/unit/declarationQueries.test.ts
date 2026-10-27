@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { Edit, Language, type Node, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
+import { position, snapshot } from '../helpers/treeSnapshot.js';
+
 test('captures concrete declarations through their public supertype', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
@@ -150,6 +152,182 @@ test('preserves attributed struct pattern fields and turbofish through role edit
     parser.delete();
   }
 });
+
+test('keeps anonymous free constants and named associated constant fields queryable', async () => {
+  await Parser.init();
+  const language = await Language.load('tree-sitter-rust.wasm');
+  const parser = new Parser().setLanguage(language);
+  const source = `const _: u8 = 1;
+mod nested { const _: u8 = 2; }
+struct S;
+impl S {
+  #[allow(unused)] pub const VALUE: u8 = { const _: u8 = 3; 4 };
+  fn method() { const _: u8 = 5; }
+}
+trait T {
+  const REQUIRED: u8;
+  const r#type: u8 = { const _: u8 = 6; 7 };
+  fn method() { const _: u8 = 8; }
+}
+fn following() {}
+`;
+  const tree = parser.parse(source)!;
+  const query = new Query(language, '(const_item name: (identifier) @name type: (_) @type)');
+  const declarations = new Query(
+    language,
+    '(_declaration_statement/const_item name: (identifier) @name) (_declaration_statement/attributed_declaration) @attributed'
+  );
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+    const captures = query.captures(tree.rootNode);
+    const names = captures.filter(({ name }) => name === 'name');
+    const declarationCaptures = declarations.captures(tree.rootNode);
+    expect(declarationCaptures.filter(({ name }) => name === 'name').map(({ node }) => node.text)).toEqual([
+      '_',
+      '_',
+      '_',
+      '_',
+      'REQUIRED',
+      'r#type',
+      '_',
+      '_',
+    ]);
+    expect(declarationCaptures.filter(({ name }) => name === 'attributed').map(({ node }) => node.text)).toEqual([
+      '#[allow(unused)] pub const VALUE: u8 = { const _: u8 = 3; 4 };',
+    ]);
+    expect(names.map(({ node }) => node.text)).toEqual(['_', '_', 'VALUE', '_', '_', 'REQUIRED', 'r#type', '_', '_']);
+    const expected = [...source.matchAll(/\bconst ([A-Za-z_][A-Za-z_0-9#]*):/g)].map((match) => {
+      const start = match.index + 'const '.length;
+      return [
+        match[1],
+        start,
+        start + match[1]!.length,
+        position(source, start),
+        position(source, start + match[1]!.length),
+      ];
+    });
+    expect(
+      names.map(({ node }) => [node.text, node.startIndex, node.endIndex, node.startPosition, node.endPosition])
+    ).toEqual(expected);
+    expect(captures.filter(({ name }) => name === 'type').map(({ node }) => node.text)).toEqual(
+      Array.from({ length: 9 }, () => 'u8')
+    );
+    const associated = tree.rootNode
+      .descendantsOfType('const_item')
+      .find((node) => node.childForFieldName('name')?.text === 'VALUE')!;
+    expect(associated.childForFieldName('value')?.text).toBe('{ const _: u8 = 3; 4 }');
+    const lists = tree.rootNode
+      .descendantsOfType(['impl_item', 'trait_item'])
+      .map((node) => node.childForFieldName('body'));
+    expect(lists.map((node) => node?.type)).toEqual(['declaration_list', 'declaration_list']);
+  } finally {
+    query.delete();
+    declarations.delete();
+    tree.delete();
+    parser.delete();
+  }
+});
+
+const associatedConstantSources = [
+  'struct S; impl S { const VALUE: u8 = 1; fn retained() {} }',
+  'struct S; impl S { pub const VALUE: u8 = 1; fn retained() {} }',
+  'struct S; impl S { #[allow(unused)] const VALUE: u8 = 1; fn retained() {} }',
+  'trait T { const VALUE: u8; fn retained() {} }',
+  'trait T { const VALUE: u8 = 1; fn retained() {} }',
+  'trait T { #[allow(unused)] const VALUE: u8; fn retained() {} }',
+  'trait T { const VALUE: u8; fn retained() {} } struct S; impl T for S { const VALUE: u8 = 1; fn retained() {} }',
+];
+
+test.each(associatedConstantSources.flatMap((source) => ['_', 'r#_'].map((name) => ({ source, name }))))(
+  'rejects associated constant name $name in $source while preserving neighboring declarations and edits',
+  async ({ source: declaration, name }) => {
+    await Parser.init();
+    const language = await Language.load('tree-sitter-rust.wasm');
+    const parser = new Parser().setLanguage(language);
+    const query = new Query(
+      language,
+      '(const_item name: (identifier) @constant) (function_item name: (identifier) @function)'
+    );
+    const queries = ['highlights', 'tags', 'injections'].map(
+      (kind) => new Query(language, readFileSync(new URL(`../../queries/${kind}.scm`, import.meta.url), 'utf8'))
+    );
+    let source = declaration + '\nfn following() {}\n';
+    const start = source.lastIndexOf('VALUE');
+    let tree = parser.parse(source)!;
+    try {
+      checkTree(tree, false);
+      for (const [before, after, invalid] of [
+        ['VALUE', name, true],
+        [name, 'VALUE', false],
+      ] as const) {
+        const next = source.slice(0, start) + after + source.slice(start + before.length);
+        tree.edit(
+          new Edit({
+            startIndex: start,
+            oldEndIndex: start + before.length,
+            newEndIndex: start + after.length,
+            startPosition: position(source, start),
+            oldEndPosition: position(source, start + before.length),
+            newEndPosition: position(next, start + after.length),
+          })
+        );
+        const previous = tree;
+        tree = parser.parse(next, previous)!;
+        previous.delete();
+        source = next;
+        const fresh = parser.parse(source)!;
+        try {
+          checkTree(tree, invalid);
+          checkTree(fresh, invalid);
+          expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+          for (const shipped of queries) {
+            const captures = (current: Tree): Array<[string, string, string, number, number]> =>
+              shipped
+                .captures(current.rootNode)
+                .map(({ name: captureName, node }) => [
+                  captureName,
+                  node.type,
+                  node.text,
+                  node.startIndex,
+                  node.endIndex,
+                ]);
+            expect(captures(tree)).toEqual(captures(fresh));
+          }
+        } finally {
+          fresh.delete();
+        }
+      }
+    } finally {
+      tree.delete();
+      query.delete();
+      for (const shipped of queries) shipped.delete();
+      parser.delete();
+    }
+
+    function checkTree(current: Tree, invalid: boolean): void {
+      expect(current.rootNode.hasError, source).toBe(invalid);
+      const functions = query.captures(current.rootNode).filter(({ name: captureName }) => captureName === 'function');
+      for (const expected of ['retained', 'following']) {
+        const nameStart = source.lastIndexOf(expected);
+        expect(
+          functions.some(
+            ({ node }) =>
+              node.text === expected && node.startIndex === nameStart && node.endIndex === nameStart + expected.length
+          )
+        ).toBe(true);
+      }
+      if (!invalid)
+        expect(
+          query
+            .captures(current.rootNode)
+            .some(
+              ({ name: captureName, node }) =>
+                captureName === 'constant' && node.text === 'VALUE' && node.startIndex === start
+            )
+        ).toBe(true);
+    }
+  }
+);
 
 function patternSnapshot(node: Node): unknown {
   return {
