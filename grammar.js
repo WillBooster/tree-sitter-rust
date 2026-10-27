@@ -211,6 +211,7 @@ module.exports = grammar({
   supertypes: ($) => [
     $._declaration_statement,
     $._foreign_declaration_statement,
+    $._associated_declaration_statement,
     $._block_statement_expression,
     $._expression,
     $._type,
@@ -248,6 +249,7 @@ module.exports = grammar({
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
+    [$._associated_const_item, $.function_modifiers],
     // Local ambiguity due to anonymous types:
     // See https://internals.rust-lang.org/t/pre-rfc-deprecating-anonymous-parameters/3710
     [$._type, $._pattern],
@@ -266,6 +268,7 @@ module.exports = grammar({
     global: () => globalKeywords,
     token_tree: () => [],
     lifetime_declaration: () => [...globalKeywords, 'r#static', 'r#_'],
+    associated_const_name: () => [...globalKeywords, 'r#_'],
   },
 
   word: ($) => $.identifier,
@@ -296,31 +299,21 @@ module.exports = grammar({
 
     attributed_declaration: ($) => seq($._outer_attributes, field('declaration', $._attributable_declaration)),
 
-    _attributable_declaration: ($) =>
+    _attributable_declaration: ($) => attributableDeclaration($, $.const_item),
+
+    _associated_declaration_statement: ($) =>
       choice(
-        $.const_item,
-        $.macro_invocation,
-        $.macro_definition,
-        $.decl_macro,
-        $.mod_item,
-        $.foreign_mod_item,
-        $.struct_item,
-        $.union_item,
-        $.enum_item,
-        $.type_item,
-        $.function_item,
-        $.function_signature_item,
-        $.impl_item,
-        $.trait_item,
-        $.trait_alias,
-        $.associated_type,
-        $.let_declaration,
-        $.use_declaration,
-        $.extern_crate_declaration,
-        $.static_item,
-        alias($._safe_function_signature_item, $.function_signature_item),
-        alias($._qualified_static_item, $.static_item)
+        $.empty_statement,
+        $.inner_attribute_item,
+        $._associated_attributable_declaration,
+        alias($._associated_attributed_declaration, $.attributed_declaration)
       ),
+
+    _associated_attributable_declaration: ($) =>
+      attributableDeclaration($, alias($._associated_const_item, $.const_item)),
+
+    _associated_attributed_declaration: ($) =>
+      seq($._outer_attributes, field('declaration', $._associated_attributable_declaration)),
 
     macro_definition: ($) => {
       const rules = seq(repeat(seq($.macro_rule, ';')), optional($.macro_rule));
@@ -519,6 +512,9 @@ module.exports = grammar({
 
     declaration_list: ($) => seq('{', repeat($._declaration_statement), '}'),
 
+    _associated_declaration_list: ($) =>
+      seq('{', repeat(alias($._associated_declaration_statement, $._declaration_statement)), '}'),
+
     // The scanner never emits `_foreign_declaration_context`: its validity enables the zero-width
     // `_foreign_declaration_start` required by qualified extern items. Keep this context marker so `safe` remains
     // an identifier outside extern blocks while qualified items still participate in declaration supertype queries.
@@ -635,16 +631,10 @@ module.exports = grammar({
         ';'
       ),
 
-    const_item: ($) =>
-      seq(
-        optional($.visibility_modifier),
-        'const',
-        field('name', choice($.identifier, $._reserved_identifier, alias('_', $.identifier))),
-        ':',
-        field('type', $._type),
-        optional(seq('=', field('value', $._expression))),
-        ';'
-      ),
+    const_item: ($) => constItem($, choice($.identifier, $._reserved_identifier, alias('_', $.identifier))),
+
+    _associated_const_item: ($) =>
+      constItem($, choice(reserved('associated_const_name', $.identifier), $._reserved_identifier)),
 
     static_item: ($) => seq(optional($.visibility_modifier), $._static_declaration),
 
@@ -759,7 +749,7 @@ module.exports = grammar({
         ),
         field('type', $._type),
         optional($.where_clause),
-        choice(field('body', $.declaration_list), ';')
+        choice(field('body', alias($._associated_declaration_list, $.declaration_list)), ';')
       ),
 
     trait_item: ($) =>
@@ -773,7 +763,7 @@ module.exports = grammar({
         field('type_parameters', optional($.type_parameters)),
         field('bounds', optional($.trait_bounds)),
         optional($.where_clause),
-        field('body', $.declaration_list)
+        field('body', alias($._associated_declaration_list, $.declaration_list))
       ),
 
     trait_alias: ($) =>
@@ -2006,6 +1996,53 @@ module.exports = grammar({
       ),
   },
 });
+
+/**
+ * @param {import('@willbooster/web-tree-sitter/dsl').GrammarSymbols<'empty_statement' | 'inner_attribute_item' | 'macro_invocation' | 'macro_definition' | 'decl_macro' | 'mod_item' | 'foreign_mod_item' | 'struct_item' | 'union_item' | 'enum_item' | 'type_item' | 'function_item' | 'function_signature_item' | 'impl_item' | 'trait_item' | 'trait_alias' | 'associated_type' | 'let_declaration' | 'use_declaration' | 'extern_crate_declaration' | 'static_item' | '_safe_function_signature_item' | '_qualified_static_item'>} $
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} constant
+ */
+function attributableDeclaration($, constant) {
+  return choice(
+    constant,
+    $.macro_invocation,
+    $.macro_definition,
+    $.decl_macro,
+    $.mod_item,
+    $.foreign_mod_item,
+    $.struct_item,
+    $.union_item,
+    $.enum_item,
+    $.type_item,
+    $.function_item,
+    $.function_signature_item,
+    $.impl_item,
+    $.trait_item,
+    $.trait_alias,
+    $.associated_type,
+    $.let_declaration,
+    $.use_declaration,
+    $.extern_crate_declaration,
+    $.static_item,
+    alias($._safe_function_signature_item, $.function_signature_item),
+    alias($._qualified_static_item, $.static_item)
+  );
+}
+
+/**
+ * @param {import('@willbooster/web-tree-sitter/dsl').GrammarSymbols<'visibility_modifier' | '_type' | '_expression'>} $
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} name
+ */
+function constItem($, name) {
+  return seq(
+    optional($.visibility_modifier),
+    'const',
+    field('name', name),
+    ':',
+    field('type', $._type),
+    optional(seq('=', field('value', $._expression))),
+    ';'
+  );
+}
 
 /**
  * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} start
