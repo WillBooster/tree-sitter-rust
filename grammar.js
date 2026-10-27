@@ -265,6 +265,7 @@ module.exports = grammar({
   reserved: {
     global: () => globalKeywords,
     token_tree: () => [],
+    lifetime_declaration: () => [...globalKeywords, 'r#static', 'r#_'],
   },
 
   word: ($) => $.identifier,
@@ -858,7 +859,11 @@ module.exports = grammar({
         )
       ),
 
-    lifetime_parameter: ($) => prec(1, seq(field('name', $.lifetime), optional(field('bounds', $.trait_bounds)))),
+    lifetime_parameter: ($) =>
+      prec(
+        1,
+        seq(field('name', alias($._lifetime_declaration, $.lifetime)), optional(field('bounds', $.trait_bounds)))
+      ),
 
     let_declaration: ($) =>
       seq(
@@ -935,11 +940,23 @@ module.exports = grammar({
 
     qualified_type: ($) => seq(field('type', $._type), 'as', field('alias', $._type)),
 
-    lifetime: ($) => prec(1, seq("'", choice($.identifier, alias(choice('static', '_'), $.identifier)))),
+    lifetime: ($) =>
+      prec(1, seq("'", choice($.identifier, alias(choice('static', '_', 'r#static', 'r#_'), $.identifier)))),
+
+    _lifetime_declaration: ($) => prec(1, seq("'", reserved('lifetime_declaration', $.identifier))),
 
     array_type: ($) => seq('[', field('element', $._type), optional(seq(';', field('length', $._expression))), ']'),
 
-    for_lifetimes: ($) => prec(1, seq('for', '<', optional(seq(sepBy1(',', prec(1, $.lifetime)), optional(','))), '>')),
+    for_lifetimes: ($) =>
+      prec(
+        1,
+        seq(
+          'for',
+          '<',
+          optional(seq(sepBy1(',', prec(1, alias($._lifetime_declaration, $.lifetime))), optional(','))),
+          '>'
+        )
+      ),
 
     function_type: ($) =>
       seq(
