@@ -86,7 +86,7 @@ test('preserves macro bindings, references and highlights around trivia', async 
   }
 });
 
-test('recognizes macro_rules invocations', async () => {
+test('recognizes macro_rules invocations with and without keyword trivia', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
@@ -102,7 +102,8 @@ test('recognizes macro_rules invocations', async () => {
       const invocation = `macro_rules! ${argumentsText}`;
       const terminator = argumentsText === '{}' ? '' : ';';
       const source = `macro_rules! macro_rules { () => {}; }\n${invocation}${terminator}\nfn following() {}`;
-      checkParse(parser, source, check);
+      for (const text of [source, replaceFirst(source, invocation, `macro_rules /* gap */ ! ${argumentsText}`)])
+        checkParse(parser, text, check);
       function check(_source: string, tree: Tree): void {
         expect(query.captures(tree.rootNode).map(({ name, node }) => [name, node.text])).toEqual([
           ['definition', 'macro_rules'],
@@ -128,20 +129,33 @@ test('recognizes macro_rules invocations', async () => {
   }
 });
 
-test('parses literal dollars and metavariables in macros', async () => {
+test('keeps literal dollars separate from metavariables through error recovery', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const tree = parser.parse(LiteralSource)!;
+  const query = new Query(language, '(metavariable) @variable');
   try {
-    expect(tree.rootNode.hasError).toBe(false);
+    for (const [source, invalid] of [
+      [LiteralSource, false],
+      [replaceFirst(LiteralSource, 'keyword!(7)', '$'), true],
+    ] as const) {
+      const tree = parser.parse(source)!;
+      try {
+        expect(tree.rootNode.hasError).toBe(invalid);
+        const variables = query.captures(tree.rootNode);
+        expect(variables.map(({ node }) => node.text)).toEqual(['$x', '$x', '$ /* name */ fn', '$ /* reference */ fn']);
+        expect(variables.every(({ node }) => !node.hasError)).toBe(true);
+      } finally {
+        tree.delete();
+      }
+    }
   } finally {
-    tree.delete();
+    query.delete();
     parser.delete();
   }
 });
 
-test('retains complete Unicode and raw macro names after dollar trivia', async () => {
+test('retains complete Unicode and raw macro names around dollar trivia', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
@@ -154,7 +168,10 @@ test('retains complete Unicode and raw macro names after dollar trivia', async (
       for (const gap of ['', ' ', '/* c */', '\n']) {
         const variable = `$${gap}${name}`;
         const source = `macro_rules! m { (${variable}:expr) => { ${variable} }; } fn main() { assert_eq!(m!(7), 7); }`;
-        checkParse(parser, source, (text, tree) => {
+        for (const text of [source, replaceFirst(source, variable, `$/* extra */${gap}${name}`)])
+          checkParse(parser, text, check);
+
+        function check(text: string, tree: Tree): void {
           const bindingStart = text.indexOf('(') + 1;
           const bindingEnd = text.indexOf(':expr');
           const referenceStart = text.indexOf('=> { ') + 5;
@@ -164,7 +181,7 @@ test('retains complete Unicode and raw macro names after dollar trivia', async (
             ['binding', text.slice(bindingStart, bindingEnd), bindingStart, bindingEnd],
             ['reference', variable, referenceStart, referenceStart + variable.length],
           ]);
-        });
+        }
       }
     }
   } finally {
@@ -201,17 +218,20 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
         `macro_rules! m { ($d:tt $l:literal) => { 7 }; } fn main() { assert_eq!(m!($ ${literal}), 7); }`,
       ]) {
         const start = source.indexOf(literal);
-        checkParse(parser, source, (_text, tree) => {
+        for (const text of [source, replaceFirst(source, literal, '"plain"')]) checkParse(parser, text, check);
+
+        function check(text: string, tree: Tree): void {
+          const currentLiteral = text === source ? literal : '"plain"';
           const captures = query.captures(tree.rootNode);
           expect(
             captures
               .filter(({ name }) => name === 'literal')
               .map(({ node }) => [node.text, node.startIndex, node.endIndex])
-          ).toEqual([[literal, start, start + literal.length]]);
+          ).toEqual([[currentLiteral, start, start + currentLiteral.length]]);
           expect(captures.filter(({ name }) => name === 'variable').map(({ node }) => node.text)).toEqual(
             source.includes('$d:tt') ? ['$d', '$l'] : []
           );
-        });
+        }
       }
     }
   } finally {
@@ -249,7 +269,16 @@ test.each(['*', '+', '?'].flatMap((operator) => [true, false].map((matcher) => (
           const source = matcher
             ? `macro_rules! m { (${pattern} /* pattern end */ // tail\n#[allow(x)]) => { 1 }; }`
             : `macro_rules! m { (${pattern} /* pattern end */) => { ${reference} /* reference end */ // tail\n#[allow(x)] }; }`;
-          checkParse(parser, source, check);
+          const texts = [source, replaceFirst(source, '// tail\n', '/* tail */ ')];
+          if (separator)
+            texts.push(
+              replaceFirst(
+                source,
+                `)${gap}${separator}`,
+                `)${gap === '/* before */' ? '// edited\n' : '/* edited */'}${separator}`
+              )
+            );
+          for (const text of texts) checkParse(parser, text, check);
 
           function check(text: string, tree: Tree): void {
             const expected = [['pattern', '/* pattern end */']];
@@ -297,12 +326,14 @@ test('preserves repetition separators and following comment captures', async () 
             const pattern = matcher ? `$($a:tt)${separator}${gap}${operator}` : `$($a:tt),${operator}`;
             const reference = matcher ? `$($a)${operator}` : `$($a)${separator}${gap}${operator}`;
             const source = `macro_rules! m { (${pattern}) => { stringify!(${reference}) }; } fn main() { assert!(!m!(a ${matcher ? separator : ','} b).is_empty()); }`;
-            checkParse(parser, source, check);
+            const edited = separator === '/' ? ' /* edited */ ' : '/* edited */';
+            for (const text of [source, replaceFirst(source, gap, edited)]) checkParse(parser, text, check);
 
             function check(text: string, tree: Tree): void {
               const expected = [pattern, reference].map((value) => {
-                const start = text.indexOf(value);
-                return [value, start, start + value.length];
+                const current = value.includes(gap) ? value.replace(gap, text.includes(edited) ? edited : gap) : value;
+                const start = text.indexOf(current);
+                return [current, start, start + current.length];
               });
               const captures = query.captures(tree.rootNode);
               expect(
@@ -310,7 +341,7 @@ test('preserves repetition separators and following comment captures', async () 
                   .filter(({ name }) => name !== 'comment')
                   .map(({ node }) => [node.text, node.startIndex, node.endIndex])
               ).toEqual(expected);
-              const currentComment = comment.trim();
+              const currentComment = text.includes(edited) ? '/* edited */' : comment.trim();
               const start = text.indexOf(currentComment);
               const expectedComment = [[currentComment, start, start + currentComment.length]];
               expect(
@@ -344,4 +375,10 @@ function checkParse(parser: Parser, source: string, check: (source: string, tree
   } finally {
     tree.delete();
   }
+}
+
+function replaceFirst(source: string, before: string, after: string): string {
+  const start = source.indexOf(before);
+  expect(start).toBeGreaterThanOrEqual(0);
+  return source.slice(0, start) + after + source.slice(start + before.length);
 }

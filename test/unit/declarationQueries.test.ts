@@ -200,9 +200,9 @@ const associatedConstantSources = [
   'trait T { const VALUE: u8; fn retained() {} } struct S; impl T for S { const VALUE: u8 = 1; fn retained() {} }',
 ];
 
-test.each(associatedConstantSources)(
-  'captures the associated constant and neighboring declarations in %s',
-  async (declaration) => {
+test.each(associatedConstantSources.flatMap((source) => ['VALUE', '_', 'r#_'].map((name) => ({ source, name }))))(
+  'parses associated constant name $name in $source and preserves neighboring declarations',
+  async ({ source: declaration, name }) => {
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
     const parser = new Parser().setLanguage(language);
@@ -210,20 +210,14 @@ test.each(associatedConstantSources)(
       language,
       '(const_item name: (identifier) @constant) (function_item name: (identifier) @function)'
     );
-    const source = declaration + '\nfn following() {}\n';
-    const start = source.lastIndexOf('VALUE');
+    const start = declaration.lastIndexOf('VALUE');
+    const source =
+      declaration.slice(0, start) + name + declaration.slice(start + 'VALUE'.length) + '\nfn following() {}\n';
+    const invalid = name !== 'VALUE';
     const tree = parser.parse(source)!;
     try {
-      checkTree(tree);
-    } finally {
-      tree.delete();
-      query.delete();
-      parser.delete();
-    }
-
-    function checkTree(current: Tree): void {
-      expect(current.rootNode.hasError, source).toBe(false);
-      const functions = query.captures(current.rootNode).filter(({ name: captureName }) => captureName === 'function');
+      expect(tree.rootNode.hasError, source).toBe(invalid);
+      const functions = query.captures(tree.rootNode).filter(({ name: captureName }) => captureName === 'function');
       for (const expected of ['retained', 'following']) {
         const nameStart = source.lastIndexOf(expected);
         expect(
@@ -233,14 +227,19 @@ test.each(associatedConstantSources)(
           )
         ).toBe(true);
       }
-      expect(
-        query
-          .captures(current.rootNode)
-          .some(
-            ({ name: captureName, node }) =>
-              captureName === 'constant' && node.text === 'VALUE' && node.startIndex === start
-          )
-      ).toBe(true);
+      if (!invalid)
+        expect(
+          query
+            .captures(tree.rootNode)
+            .some(
+              ({ name: captureName, node }) =>
+                captureName === 'constant' && node.text === 'VALUE' && node.startIndex === start
+            )
+        ).toBe(true);
+    } finally {
+      tree.delete();
+      query.delete();
+      parser.delete();
     }
   }
 );

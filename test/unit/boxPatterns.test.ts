@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-test('parses boxed bindings, alternatives and keyword highlighting', async () => {
+test('parses boxed bindings, alternatives and keyword highlighting around trivia', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
@@ -24,12 +24,16 @@ test('parses boxed bindings, alternatives and keyword highlighting', async () =>
       tokens!(box, r#box);
     }
     fn r#box() {}`;
-  let tree: Tree | undefined;
   try {
-    tree = parser.parse(source)!;
-    checkTree(tree);
+    for (const text of [source, source.replace('box scalar', 'box /* gap */ scalar')]) {
+      const tree = parser.parse(text)!;
+      try {
+        checkTree(tree);
+      } finally {
+        tree.delete();
+      }
+    }
   } finally {
-    tree?.delete();
     highlights.delete();
     query.delete();
     parser.delete();

@@ -109,43 +109,55 @@ const cases = [
   },
 ];
 
-test.each(cases)('preserves valid keyword context $name', ({ source, query: pattern, expected, genericSuffix }) => {
-  const parser = new Parser().setLanguage(language);
-  const query = new Query(language, pattern);
-  const functions = new Query(language, '(function_item name: (identifier) @name)');
-  const tree = parser.parse(source)!;
-  try {
-    checkTree(tree);
-  } finally {
-    tree.delete();
-    functions.delete();
-    query.delete();
-    parser.delete();
-  }
-
-  function checkTree(current: Tree): void {
-    expect(current.rootNode.hasError, source).toBe(false);
-    const captures = query.captures(current.rootNode);
-    expect(captures.map(({ node }) => node.text)).toEqual(expected);
-    for (const { node } of captures) {
-      expect(source.slice(node.startIndex, node.endIndex)).toBe(node.text);
-      expect(node.startPosition).toEqual(position(source, node.startIndex));
-      expect(node.endPosition).toEqual(position(source, node.endIndex));
-      if (genericSuffix) {
-        const type = node.parent!;
-        expect(type.type).toBe('generic_type');
-        expect(type.text).toBe(node.text + genericSuffix);
-        expect(type.startIndex).toBe(node.startIndex);
-        expect(type.endIndex).toBe(node.endIndex + genericSuffix.length);
-        expect(type.childForFieldName('type_arguments')!.text).toBe('<>');
+test.each(cases)(
+  'preserves valid keyword context $name and its replacement',
+  ({ source: initial, query: pattern, expected, genericSuffix }) => {
+    const parser = new Parser().setLanguage(language);
+    const query = new Query(language, pattern);
+    const functions = new Query(language, '(function_item name: (identifier) @name)');
+    const tree = parser.parse(initial)!;
+    try {
+      checkTree(tree, initial, expected);
+      const target = query.captures(tree.rootNode)[0]!.node;
+      const replacement = target.text === '_' ? 'renamed' : target.text === 'unsafe' ? 'r#unsafe' : 'S';
+      const source = initial.slice(0, target.startIndex) + replacement + initial.slice(target.endIndex);
+      const replaced = parser.parse(source)!;
+      try {
+        checkTree(replaced, source, [replacement, ...expected.slice(1)]);
+      } finally {
+        replaced.delete();
       }
+    } finally {
+      tree.delete();
+      functions.delete();
+      query.delete();
+      parser.delete();
     }
-    const after = functions.captures(current.rootNode).find(({ node }) => node.text === 'after')!.node;
-    expect(after.startIndex).toBe(source.lastIndexOf('after'));
-    expect(after.endIndex).toBe(after.startIndex + 5);
-    expect(current.rootNode.descendantsOfType('range_pattern')).toHaveLength(0);
+
+    function checkTree(current: Tree, source: string, texts: string[]): void {
+      expect(current.rootNode.hasError, source).toBe(false);
+      const captures = query.captures(current.rootNode);
+      expect(captures.map(({ node }) => node.text)).toEqual(texts);
+      for (const { node } of captures) {
+        expect(source.slice(node.startIndex, node.endIndex)).toBe(node.text);
+        expect(node.startPosition).toEqual(position(source, node.startIndex));
+        expect(node.endPosition).toEqual(position(source, node.endIndex));
+        if (genericSuffix) {
+          const type = node.parent!;
+          expect(type.type).toBe('generic_type');
+          expect(type.text).toBe(node.text + genericSuffix);
+          expect(type.startIndex).toBe(node.startIndex);
+          expect(type.endIndex).toBe(node.endIndex + genericSuffix.length);
+          expect(type.childForFieldName('type_arguments')!.text).toBe('<>');
+        }
+      }
+      const after = functions.captures(current.rootNode).find(({ node }) => node.text === 'after')!.node;
+      expect(after.startIndex).toBe(source.lastIndexOf('after'));
+      expect(after.endIndex).toBe(after.startIndex + 5);
+      expect(current.rootNode.descendantsOfType('range_pattern')).toHaveLength(0);
+    }
   }
-});
+);
 
 const invalidContexts = [
   'use std::fmt::Debug as self;\nfn after() {}\n',

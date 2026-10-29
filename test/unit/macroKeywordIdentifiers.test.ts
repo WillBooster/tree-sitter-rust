@@ -22,16 +22,22 @@ test('retains macro keyword identifiers, macro names and metavariables', () => {
 macro_rules! consume { ($($word:tt)*) => {}; }
 consume!(${words.join(' ')});
 fn after() {}`;
-  const tree = parser.parse(source)!;
   try {
-    checkTree(tree, [...words, ...words]);
+    for (const word of ['abstract', 'r#abstract']) {
+      const text = source.replace('abstract', word);
+      const tree = parser.parse(text)!;
+      try {
+        checkTree(tree, text, [word, ...words.slice(1), ...words]);
+      } finally {
+        tree.delete();
+      }
+    }
   } finally {
-    tree.delete();
     query.delete();
     parser.delete();
   }
 
-  function checkTree(current: Tree, expectedWords: string[]): void {
+  function checkTree(current: Tree, source: string, expectedWords: string[]): void {
     expect(current.rootNode.hasError, source).toBe(false);
     const captures = query.captures(current.rootNode);
     const wordCaptures = captures.filter(({ name }) => name === 'word');

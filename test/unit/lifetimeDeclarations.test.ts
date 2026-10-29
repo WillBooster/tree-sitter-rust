@@ -18,37 +18,46 @@ const declarationSources = [
   "fn take<T>() where for<'slot> T: Sized {}",
 ];
 
-test('captures lifetime declarations while retaining following items', () => {
-  const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(lifetime_parameter name: (lifetime) @declaration) (for_lifetimes (lifetime) @declaration) (function_item name: (identifier) @function)'
-  );
-  try {
-    for (const declaration of declarationSources) {
-      const source = declaration + '\nfn after() {}\n';
-      const tree = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError, source).toBe(false);
-        const after = query
-          .captures(tree.rootNode)
-          .find(({ name, node }) => name === 'function' && node.text === 'after')!.node;
-        expect([after.startIndex, after.endIndex]).toEqual([
-          source.lastIndexOf('after'),
-          source.lastIndexOf('after') + 5,
-        ]);
-        expect(
-          query.captures(tree.rootNode).some(({ name, node }) => name === 'declaration' && node.text === "'slot")
-        ).toBe(true);
-      } finally {
-        tree.delete();
+test.each(["'slot", "'static", "'_", "'r#static", "'r#_"])(
+  'parses lifetime declaration %s while retaining following items',
+  (name) => {
+    const parser = new Parser().setLanguage(language);
+    const query = new Query(
+      language,
+      '(lifetime_parameter name: (lifetime) @declaration) (for_lifetimes (lifetime) @declaration) (function_item name: (identifier) @function)'
+    );
+    const invalid = name !== "'slot";
+    try {
+      for (const declaration of declarationSources) {
+        const start = declaration.indexOf("'slot");
+        const source =
+          declaration.slice(0, start) + name + declaration.slice(start + "'slot".length) + '\nfn after() {}\n';
+        const tree = parser.parse(source)!;
+        try {
+          expect(tree.rootNode.hasError, source).toBe(invalid);
+          const after = query
+            .captures(tree.rootNode)
+            .find(({ name: captureName, node }) => captureName === 'function' && node.text === 'after')!.node;
+          expect([after.startIndex, after.endIndex]).toEqual([
+            source.lastIndexOf('after'),
+            source.lastIndexOf('after') + 5,
+          ]);
+          if (!invalid)
+            expect(
+              query
+                .captures(tree.rootNode)
+                .some(({ name: captureName, node }) => captureName === 'declaration' && node.text === "'slot")
+            ).toBe(true);
+        } finally {
+          tree.delete();
+        }
       }
+    } finally {
+      query.delete();
+      parser.delete();
     }
-  } finally {
-    query.delete();
-    parser.delete();
   }
-});
+);
 
 test('preserves raw lifetime references, ordinary raw names and macro captures', () => {
   const source = `macro_rules! names { ($($word:tt)*) => {}; }
