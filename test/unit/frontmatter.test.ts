@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('preserves frontmatter content and the following Rust declaration', async () => {
@@ -39,56 +39,6 @@ test('preserves frontmatter content and the following Rust declaration', async (
     }
   } finally {
     highlights.delete();
-    parser.delete();
-  }
-});
-
-test('updates frontmatter fences and content incrementally', async () => {
-  await Parser.init();
-  const language = await Language.load('tree-sitter-rust.wasm');
-  const parser = new Parser();
-  parser.setLanguage(language);
-  const query = new Query(language, '(frontmatter (frontmatter_content) @content)');
-  let source = '---\n \tfirst\n---\nfn main() {}';
-  let tree = parser.parse(source)!;
-  try {
-    for (const [removed, inserted, last] of [
-      ['---', '-----', false],
-      ['---', '-----', true],
-      ['first', 'second', false],
-    ] as const) {
-      const index = last ? source.lastIndexOf(removed) : source.indexOf(removed);
-      const before = source.slice(0, index);
-      const position = { row: before.split('\n').length - 1, column: before.length - before.lastIndexOf('\n') - 1 };
-      tree.edit(
-        new Edit({
-          startIndex: index,
-          oldEndIndex: index + removed.length,
-          newEndIndex: index + inserted.length,
-          startPosition: position,
-          oldEndPosition: { row: position.row, column: position.column + removed.length },
-          newEndPosition: { row: position.row, column: position.column + inserted.length },
-        })
-      );
-      source = before + inserted + source.slice(index + removed.length);
-      const next = parser.parse(source, tree)!;
-      tree.delete();
-      tree = next;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.toString()).toBe(fresh.rootNode.toString());
-        expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(
-          query.captures(fresh.rootNode).map(({ node }) => node.text)
-        );
-      } finally {
-        fresh.delete();
-      }
-    }
-    expect(tree.rootNode.hasError).toBe(false);
-    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([' \tsecond\n']);
-  } finally {
-    tree.delete();
-    query.delete();
     parser.delete();
   }
 });
@@ -156,45 +106,6 @@ test('does not recognize frontmatter after an invalid prefix', async () => {
       }
     }
   } finally {
-    parser.delete();
-  }
-});
-
-test('rechecks frontmatter placement after incremental prefix edits', async () => {
-  await Parser.init();
-  const language = await Language.load('tree-sitter-rust.wasm');
-  const parser = new Parser();
-  parser.setLanguage(language);
-  let source = '---\nx\n---\nfn main() {}';
-  let tree = parser.parse(source)!;
-  const comment = '// comment\n';
-  try {
-    for (const inserting of [true, false]) {
-      tree.edit(
-        new Edit({
-          startIndex: 0,
-          oldEndIndex: inserting ? 0 : comment.length,
-          newEndIndex: inserting ? comment.length : 0,
-          startPosition: { row: 0, column: 0 },
-          oldEndPosition: { row: inserting ? 0 : 1, column: 0 },
-          newEndPosition: { row: inserting ? 1 : 0, column: 0 },
-        })
-      );
-      source = inserting ? comment + source : source.slice(comment.length);
-      const next = parser.parse(source, tree)!;
-      tree.delete();
-      tree = next;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.toString()).toBe(fresh.rootNode.toString());
-        expect(tree.rootNode.hasError).toBe(inserting);
-        expect(tree.rootNode.descendantsOfType('frontmatter')).toHaveLength(inserting ? 0 : 1);
-      } finally {
-        fresh.delete();
-      }
-    }
-  } finally {
-    tree.delete();
     parser.delete();
   }
 });

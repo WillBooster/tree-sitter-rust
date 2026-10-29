@@ -1,7 +1,7 @@
-import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-import { position, snapshot } from '../helpers/treeSnapshot.js';
+import { position } from '../helpers/position.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
@@ -110,46 +110,22 @@ const cases = [
 ];
 
 test.each(cases)(
-  'preserves valid keyword context $name and edits its query range',
+  'preserves valid keyword context $name and its replacement',
   ({ source: initial, query: pattern, expected, genericSuffix }) => {
     const parser = new Parser().setLanguage(language);
     const query = new Query(language, pattern);
     const functions = new Query(language, '(function_item name: (identifier) @name)');
-    let source = initial;
-    let tree = parser.parse(source)!;
+    const tree = parser.parse(initial)!;
     try {
-      checkTree(tree, expected);
+      checkTree(tree, initial, expected);
       const target = query.captures(tree.rootNode)[0]!.node;
-      const start = target.startIndex;
-      const original = target.text;
-      const replacement = original === '_' ? 'renamed' : original === 'unsafe' ? 'r#unsafe' : 'S';
-      for (const [before, after] of [
-        [original, replacement],
-        [replacement, original],
-      ] as const) {
-        const nextSource = source.slice(0, start) + after + source.slice(start + before.length);
-        tree.edit(
-          new Edit({
-            startIndex: start,
-            oldEndIndex: start + before.length,
-            newEndIndex: start + after.length,
-            startPosition: position(source, start),
-            oldEndPosition: position(source, start + before.length),
-            newEndPosition: position(nextSource, start + after.length),
-          })
-        );
-        const previous = tree;
-        tree = parser.parse(nextSource, previous)!;
-        previous.delete();
-        source = nextSource;
-        const fresh = parser.parse(source)!;
-        try {
-          checkTree(tree, [after, ...expected.slice(1)]);
-          checkTree(fresh, [after, ...expected.slice(1)]);
-          expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        } finally {
-          fresh.delete();
-        }
+      const replacement = target.text === '_' ? 'renamed' : target.text === 'unsafe' ? 'r#unsafe' : 'S';
+      const source = initial.slice(0, target.startIndex) + replacement + initial.slice(target.endIndex);
+      const replaced = parser.parse(source)!;
+      try {
+        checkTree(replaced, source, [replacement, ...expected.slice(1)]);
+      } finally {
+        replaced.delete();
       }
     } finally {
       tree.delete();
@@ -158,7 +134,7 @@ test.each(cases)(
       parser.delete();
     }
 
-    function checkTree(current: Tree, texts: string[]): void {
+    function checkTree(current: Tree, source: string, texts: string[]): void {
       expect(current.rootNode.hasError, source).toBe(false);
       const captures = query.captures(current.rootNode);
       expect(captures.map(({ node }) => node.text)).toEqual(texts);

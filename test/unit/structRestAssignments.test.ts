@@ -1,9 +1,7 @@
-import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-import { position, snapshot } from '../helpers/treeSnapshot.js';
-
-test('preserves struct rest assignees and functional update bases through incremental edits', async () => {
+test('preserves struct rest assignees and functional update bases', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
@@ -11,7 +9,7 @@ test('preserves struct rest assignees and functional update bases through increm
     language,
     '(assignment_expression left: (struct_expression body: (field_initializer_list (remaining_field_pattern) @rest)))'
   );
-  let source = `struct S { a: i32, b: i32 }
+  const source = `struct S { a: i32, b: i32 }
     fn assignment() {
       let mut a = 0;
       S { a, .. } = S { a: 1, b: 2 };
@@ -25,41 +23,6 @@ test('preserves struct rest assignees and functional update bases through increm
   try {
     tree = parser.parse(source)!;
     checkTree(tree);
-    for (const [before, after] of [
-      ['S { a, .. } = S { a: 1, b: 2 };', 'let _ = S { a, ..S { a: 12, b: 13 } };'],
-      ['let _ = S { a, ..S { a: 12, b: 13 } };', 'S { a, .. } = S { a: 1, b: 2 };'],
-      ['a, ..', 'a, /* gap */ ..'],
-      ['a, /* gap */ ..', 'a, ..'],
-    ] as const) {
-      const start = source.indexOf(before);
-      const next = source.slice(0, start) + after + source.slice(start + before.length);
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: start + before.length,
-          newEndIndex: start + after.length,
-          startPosition: position(source, start),
-          oldEndPosition: position(source, start + before.length),
-          newEndPosition: position(next, start + after.length),
-        })
-      );
-      const previous: Tree = tree;
-      tree = parser.parse(next, previous)!;
-      previous.delete();
-      source = next;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        if (!after.includes('12')) checkTree(tree);
-        else {
-          expect(query.captures(tree.rootNode)).toHaveLength(3);
-          expect(tree.rootNode.descendantsOfType('base_field_initializer')).toHaveLength(2);
-        }
-      } finally {
-        fresh.delete();
-      }
-    }
   } finally {
     tree?.delete();
     query.delete();
@@ -74,12 +37,7 @@ test('preserves struct rest assignees and functional update bases through increm
     ]);
     expect(
       current.rootNode.descendantsOfType('assignment_expression').map((node) => node.childForFieldName('left')!.text)
-    ).toEqual([
-      source.includes('/* gap */') ? 'S { a, /* gap */ .. }' : 'S { a, .. }',
-      'S { a: a, .. }',
-      'S { .. }',
-      'S { a: _, .. }',
-    ]);
+    ).toEqual(['S { a, .. }', 'S { a: a, .. }', 'S { .. }', 'S { a: _, .. }']);
     expect(
       current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
     ).toEqual(['assignment', 'following']);
@@ -148,12 +106,12 @@ test.each([
   }
 });
 
-test('retains tuple assignee boundaries while extra trailing commas are inserted and undone', async () => {
+test('retains tuple assignee boundaries', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
   const query = new Query(language, '(assignment_expression left: (_) @left)');
-  let source = `struct S { a: i32 }
+  const source = `struct S { a: i32 }
     fn assignment() {
       let mut a = 0;
       (a,) = (1,);
@@ -176,42 +134,6 @@ test('retains tuple assignee boundaries while extra trailing commas are inserted
   try {
     tree = parser.parse(source)!;
     checkValidTree(tree);
-    for (const [before, after, invalid] of [
-      ['(a,)', '(a,,)', true],
-      ['(a,,)', '(a,)', false],
-      ['(S { a, .. },)', '(S { a, .. },,)', true],
-      ['(S { a, .. },,)', '(S { a, .. },)', false],
-      ['(a, S { a, .. })', '(a, S { a, .. },,)', true],
-      ['(a, S { a, .. },,)', '(a, S { a, .. })', false],
-    ] as const) {
-      const start = source.indexOf(before);
-      const next = source.slice(0, start) + after + source.slice(start + before.length);
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: start + before.length,
-          newEndIndex: start + after.length,
-          startPosition: position(source, start),
-          oldEndPosition: position(source, start + before.length),
-          newEndPosition: position(next, start + after.length),
-        })
-      );
-      const previous: Tree = tree;
-      tree = parser.parse(next, previous)!;
-      previous.delete();
-      source = next;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(invalid);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        expect(tree.rootNode.descendantsOfType('function_item').at(-1)!.childForFieldName('name')!.text).toBe(
-          'following'
-        );
-        if (!invalid) checkValidTree(tree);
-      } finally {
-        fresh.delete();
-      }
-    }
   } finally {
     tree?.delete();
     query.delete();

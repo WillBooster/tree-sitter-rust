@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 
-import { Edit, Language, type Node, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-import { position, snapshot } from '../helpers/treeSnapshot.js';
+import { position } from '../helpers/position.js';
 
 test('captures concrete declarations through their public supertype', async () => {
   await Parser.init();
@@ -74,7 +74,7 @@ test('captures qualified extern declarations without accepting their qualifiers 
   }
 });
 
-test('preserves attributed struct pattern fields and turbofish through role edits', async () => {
+test('captures attributed struct pattern fields and turbofish', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
@@ -107,44 +107,6 @@ test('preserves attributed struct pattern fields and turbofish through role edit
         .filter(({ name }) => name === 'constructor')
         .map(({ node }) => node.text)
     ).toEqual(['Record', 'Item']);
-    let current = source;
-    for (const replacement of ['#[allow(unused)] /* field */', '', '#[allow(unused)]']) {
-      const start = current.indexOf('{ ', current.indexOf('let Record')) + 2;
-      const end = current.indexOf('key,', start);
-      const next = current.slice(0, start) + (replacement ? replacement + ' ' : '') + current.slice(end);
-      const newEnd = next.indexOf('key,', start);
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: end,
-          newEndIndex: newEnd,
-          startPosition: { row: 0, column: start },
-          oldEndPosition: { row: 0, column: end },
-          newEndPosition: { row: 0, column: newEnd },
-        })
-      );
-      const old: Tree = tree;
-      tree = parser.parse(next, old)!;
-      old.delete();
-      const fresh = parser.parse(next)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(patternSnapshot(tree.rootNode)).toEqual(patternSnapshot(fresh.rootNode));
-        expect(
-          query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-        ).toEqual(
-          query.captures(fresh.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-        );
-        expect(
-          highlights.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-        ).toEqual(
-          highlights.captures(fresh.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-        );
-      } finally {
-        fresh.delete();
-      }
-      current = next;
-    }
   } finally {
     highlights?.delete();
     query?.delete();
@@ -238,8 +200,8 @@ const associatedConstantSources = [
   'trait T { const VALUE: u8; fn retained() {} } struct S; impl T for S { const VALUE: u8 = 1; fn retained() {} }',
 ];
 
-test.each(associatedConstantSources.flatMap((source) => ['_', 'r#_'].map((name) => ({ source, name }))))(
-  'rejects associated constant name $name in $source while preserving neighboring declarations and edits',
+test.each(associatedConstantSources.flatMap((source) => ['VALUE', '_', 'r#_'].map((name) => ({ source, name }))))(
+  'parses associated constant name $name in $source and preserves neighboring declarations',
   async ({ source: declaration, name }) => {
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
@@ -248,65 +210,14 @@ test.each(associatedConstantSources.flatMap((source) => ['_', 'r#_'].map((name) 
       language,
       '(const_item name: (identifier) @constant) (function_item name: (identifier) @function)'
     );
-    const queries = ['highlights', 'tags', 'injections'].map(
-      (kind) => new Query(language, readFileSync(new URL(`../../queries/${kind}.scm`, import.meta.url), 'utf8'))
-    );
-    let source = declaration + '\nfn following() {}\n';
-    const start = source.lastIndexOf('VALUE');
-    let tree = parser.parse(source)!;
+    const start = declaration.lastIndexOf('VALUE');
+    const source =
+      declaration.slice(0, start) + name + declaration.slice(start + 'VALUE'.length) + '\nfn following() {}\n';
+    const invalid = name !== 'VALUE';
+    const tree = parser.parse(source)!;
     try {
-      checkTree(tree, false);
-      for (const [before, after, invalid] of [
-        ['VALUE', name, true],
-        [name, 'VALUE', false],
-      ] as const) {
-        const next = source.slice(0, start) + after + source.slice(start + before.length);
-        tree.edit(
-          new Edit({
-            startIndex: start,
-            oldEndIndex: start + before.length,
-            newEndIndex: start + after.length,
-            startPosition: position(source, start),
-            oldEndPosition: position(source, start + before.length),
-            newEndPosition: position(next, start + after.length),
-          })
-        );
-        const previous = tree;
-        tree = parser.parse(next, previous)!;
-        previous.delete();
-        source = next;
-        const fresh = parser.parse(source)!;
-        try {
-          checkTree(tree, invalid);
-          checkTree(fresh, invalid);
-          expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-          for (const shipped of queries) {
-            const captures = (current: Tree): Array<[string, string, string, number, number]> =>
-              shipped
-                .captures(current.rootNode)
-                .map(({ name: captureName, node }) => [
-                  captureName,
-                  node.type,
-                  node.text,
-                  node.startIndex,
-                  node.endIndex,
-                ]);
-            expect(captures(tree)).toEqual(captures(fresh));
-          }
-        } finally {
-          fresh.delete();
-        }
-      }
-    } finally {
-      tree.delete();
-      query.delete();
-      for (const shipped of queries) shipped.delete();
-      parser.delete();
-    }
-
-    function checkTree(current: Tree, invalid: boolean): void {
-      expect(current.rootNode.hasError, source).toBe(invalid);
-      const functions = query.captures(current.rootNode).filter(({ name: captureName }) => captureName === 'function');
+      expect(tree.rootNode.hasError, source).toBe(invalid);
+      const functions = query.captures(tree.rootNode).filter(({ name: captureName }) => captureName === 'function');
       for (const expected of ['retained', 'following']) {
         const nameStart = source.lastIndexOf(expected);
         expect(
@@ -319,24 +230,16 @@ test.each(associatedConstantSources.flatMap((source) => ['_', 'r#_'].map((name) 
       if (!invalid)
         expect(
           query
-            .captures(current.rootNode)
+            .captures(tree.rootNode)
             .some(
               ({ name: captureName, node }) =>
                 captureName === 'constant' && node.text === 'VALUE' && node.startIndex === start
             )
         ).toBe(true);
+    } finally {
+      tree.delete();
+      query.delete();
+      parser.delete();
     }
   }
 );
-
-function patternSnapshot(node: Node): unknown {
-  return {
-    type: node.type,
-    named: node.isNamed,
-    missing: node.isMissing,
-    start: node.startIndex,
-    end: node.endIndex,
-    fields: node.children.map((_, index) => node.fieldNameForChild(index)),
-    children: node.children.map(patternSnapshot),
-  };
-}

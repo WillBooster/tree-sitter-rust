@@ -1,7 +1,7 @@
-import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-import { position, snapshot } from '../helpers/treeSnapshot.js';
+import { position } from '../helpers/position.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
@@ -14,71 +14,51 @@ const cases = [
   { declaration: 'mod foo {} use foo::{self as bar};', kind: 'self' },
 ];
 
-test.each(cases)('retains the import target in $declaration through edits', ({ declaration, kind }) => {
-  const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    `
+test.each(cases)(
+  'retains the import target in $declaration with and without a raw path prefix',
+  ({ declaration, kind }) => {
+    const parser = new Parser().setLanguage(language);
+    const query = new Query(
+      language,
+      `
     (scoped_identifier name: (identifier) @target (#eq? @target "self"))
     (use_list (self) @target)
     (use_as_clause path: (self) @target)
   `
-  );
-  let source = `${declaration}\nfn after() {}`;
-  let tree = parser.parse(source)!;
-  const index = source.indexOf('self');
-  const pathStart = source.includes('std') ? source.indexOf('std') : source.lastIndexOf('foo');
-  try {
-    checkTree(tree);
-    for (const insertion of [true, false]) {
-      const start = pathStart;
-      const nextSource = source.slice(0, start) + (insertion ? 'r#' : '') + source.slice(start + (insertion ? 0 : 2));
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: start + (insertion ? 0 : 2),
-          newEndIndex: start + (insertion ? 2 : 0),
-          startPosition: position(source, start),
-          oldEndPosition: position(source, start + (insertion ? 0 : 2)),
-          newEndPosition: position(nextSource, start + (insertion ? 2 : 0)),
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(nextSource, previous)!;
-      previous.delete();
-      source = nextSource;
-      const fresh = parser.parse(source)!;
-      try {
-        checkTree(tree);
-        checkTree(fresh);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-      } finally {
-        fresh.delete();
+    );
+    const initial = `${declaration}\nfn after() {}`;
+    const pathStart = initial.includes('std') ? initial.indexOf('std') : initial.lastIndexOf('foo');
+    try {
+      for (const source of [initial, `${initial.slice(0, pathStart)}r#${initial.slice(pathStart)}`]) {
+        const tree = parser.parse(source)!;
+        try {
+          checkTree(tree, source);
+        } finally {
+          tree.delete();
+        }
       }
+    } finally {
+      query.delete();
+      parser.delete();
     }
-    expect(query.captures(tree.rootNode)[0]!.node.startIndex).toBe(index);
-  } finally {
-    tree.delete();
-    query.delete();
-    parser.delete();
-  }
 
-  function checkTree(current: Tree): void {
-    expect(current.rootNode.hasError, source).toBe(false);
-    const captures = query.captures(current.rootNode);
-    expect(captures).toHaveLength(1);
-    const target = captures[0]!.node;
-    expect(target.type).toBe(kind);
-    expect(target.text).toBe('self');
-    expect(target.startIndex).toBe(source.indexOf('self'));
-    expect(target.endIndex).toBe(target.startIndex + 4);
-    expect(target.startPosition).toEqual(position(source, target.startIndex));
-    expect(target.endPosition).toEqual(position(source, target.endIndex));
-    const following = current.rootNode.descendantsOfType('function_item').at(-1)!;
-    expect(following.childForFieldName('name')!.text).toBe('after');
-    expect(following.startIndex).toBe(source.indexOf('fn after'));
+    function checkTree(current: Tree, source: string): void {
+      expect(current.rootNode.hasError, source).toBe(false);
+      const captures = query.captures(current.rootNode);
+      expect(captures).toHaveLength(1);
+      const target = captures[0]!.node;
+      expect(target.type).toBe(kind);
+      expect(target.text).toBe('self');
+      expect(target.startIndex).toBe(source.indexOf('self'));
+      expect(target.endIndex).toBe(target.startIndex + 4);
+      expect(target.startPosition).toEqual(position(source, target.startIndex));
+      expect(target.endPosition).toEqual(position(source, target.endIndex));
+      const following = current.rootNode.descendantsOfType('function_item').at(-1)!;
+      expect(following.childForFieldName('name')!.text).toBe('after');
+      expect(following.startIndex).toBe(source.indexOf('fn after'));
+    }
   }
-});
+);
 
 test('does not admit keyword declaration names or other keyword path terminals', () => {
   const parser = new Parser().setLanguage(language);

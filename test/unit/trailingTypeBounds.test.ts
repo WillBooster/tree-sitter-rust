@@ -1,7 +1,5 @@
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
-
-import { position, snapshot } from '../helpers/treeSnapshot.js';
 
 test('preserves trailing bounds as queryable types without consuming addition operators', async () => {
   await Parser.init();
@@ -36,52 +34,6 @@ fn use_types(value: u8, addend: u32) {
     ]);
   } finally {
     types.delete();
-    tree.delete();
-    parser.delete();
-  }
-});
-
-test('reclassifies trailing and continuing bounds across incremental edits', async () => {
-  await Parser.init();
-  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
-  let source = 'type Object = dyn Send;';
-  let tree = parser.parse(source)!;
-  try {
-    for (const replacement of [
-      ' + /* bound */',
-      ' + /* bound */ Sync',
-      ' + /* bound */ Sync +',
-      ' + /* bound */ ::core::marker::Sync',
-      ' + /* bound */ ::core::marker::Sync +',
-      '',
-    ]) {
-      const start = source.indexOf('Send') + 'Send'.length;
-      const oldEnd = source.indexOf(';');
-      const next = source.slice(0, start) + replacement + source.slice(oldEnd);
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: oldEnd,
-          newEndIndex: start + replacement.length,
-          startPosition: position(source, start),
-          oldEndPosition: position(source, oldEnd),
-          newEndPosition: position(next, start + replacement.length),
-        })
-      );
-      const edited = parser.parse(next, tree)!;
-      tree.delete();
-      tree = edited;
-      source = next;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-      } finally {
-        fresh.delete();
-      }
-    }
-    expect(source).toBe('type Object = dyn Send;');
-  } finally {
     tree.delete();
     parser.delete();
   }

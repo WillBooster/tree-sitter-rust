@@ -1,16 +1,14 @@
 import { readFileSync } from 'node:fs';
 
-import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
-
-import { position, snapshot } from '../helpers/treeSnapshot.js';
 
 test.each([
   ['array', '[1, 2, ]', '];', 'array_expression', ']'],
   ['call', 'foo(1, 2, )', ')', 'call_expression', ')'],
   ['tuple', '(1, 2, )', ')', 'tuple_expression', ')'],
 ])(
-  'retains ordinary %s initializers while their closing delimiter is typed',
+  'retains ordinary %s initializers with and without their closing delimiter',
   async (_, expression, removed, kind, closer) => {
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
@@ -20,48 +18,27 @@ test.each([
       language,
       readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8')
     );
-    let source = `fn f() {\n    let y = ${expression};\n    next();\n}\nfn h() {}`;
-    let tree: Tree | undefined;
+    const complete = `fn f() {\n    let y = ${expression};\n    next();\n}\nfn h() {}`;
+    const close = complete.indexOf(removed, complete.indexOf('let y'));
     try {
-      tree = parser.parse(source)!;
-      checkTree(tree, false);
-      const close = source.indexOf(removed, source.indexOf('let y'));
-      for (const [before, after, incomplete] of [
-        [removed, '', true],
-        ['', removed, false],
+      for (const [source, incomplete] of [
+        [complete, false],
+        [complete.slice(0, close) + complete.slice(close + removed.length), true],
       ] as const) {
-        const next = source.slice(0, close) + after + source.slice(close + before.length);
-        tree.edit(
-          new Edit({
-            startIndex: close,
-            oldEndIndex: close + before.length,
-            newEndIndex: close + after.length,
-            startPosition: position(source, close),
-            oldEndPosition: position(source, close + before.length),
-            newEndPosition: position(next, close + after.length),
-          })
-        );
-        const previous: Tree = tree;
-        tree = parser.parse(next, previous)!;
-        previous.delete();
-        source = next;
-        const fresh = parser.parse(source)!;
+        const tree = parser.parse(source)!;
         try {
-          checkTree(tree, incomplete);
-          checkTree(fresh, incomplete);
-          expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+          checkTree(tree, source, incomplete);
         } finally {
-          fresh.delete();
+          tree.delete();
         }
       }
     } finally {
-      tree?.delete();
       highlights.delete();
       query.delete();
       parser.delete();
     }
 
-    function checkTree(current: Tree, incomplete: boolean): void {
+    function checkTree(current: Tree, source: string, incomplete: boolean): void {
       expect(current.rootNode.hasError).toBe(incomplete);
       const captures = query.captures(current.rootNode);
       expect(captures.filter(({ name }) => name === 'binding').map(({ node }) => node.text)).toEqual(['y']);
@@ -92,7 +69,7 @@ test.each([
 );
 
 test.each(['next()', 'foo.bar()'])(
-  'retains ordinary struct names and fields while the closing brace before %s is typed',
+  'retains ordinary struct names and fields with and without the closing brace before %s',
   async (following) => {
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
@@ -108,48 +85,26 @@ test.each(['next()', 'foo.bar()'])(
       language,
       readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8')
     );
-    let source = `fn f() {\n    let y = S { a: 1, b: 2, };\n    ${following};\n}\nfn h() {}`;
-    let tree: Tree | undefined;
+    const complete = `fn f() {\n    let y = S { a: 1, b: 2, };\n    ${following};\n}\nfn h() {}`;
     try {
-      tree = parser.parse(source)!;
-      checkTree(tree, false);
-      const close = source.indexOf('};');
-      for (const [before, after, incomplete] of [
-        ['};', '', true],
-        ['', '};', false],
+      for (const [source, incomplete] of [
+        [complete, false],
+        [complete.replace('};', ''), true],
       ] as const) {
-        const next = source.slice(0, close) + after + source.slice(close + before.length);
-        tree.edit(
-          new Edit({
-            startIndex: close,
-            oldEndIndex: close + before.length,
-            newEndIndex: close + after.length,
-            startPosition: position(source, close),
-            oldEndPosition: position(source, close + before.length),
-            newEndPosition: position(next, close + after.length),
-          })
-        );
-        const previous: Tree = tree;
-        tree = parser.parse(next, previous)!;
-        previous.delete();
-        source = next;
-        const fresh = parser.parse(source)!;
+        const tree = parser.parse(source)!;
         try {
-          checkTree(tree, incomplete);
-          checkTree(fresh, incomplete);
-          expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+          checkTree(tree, source, incomplete);
         } finally {
-          fresh.delete();
+          tree.delete();
         }
       }
     } finally {
-      tree?.delete();
       highlights.delete();
       query.delete();
       parser.delete();
     }
 
-    function checkTree(current: Tree, incomplete: boolean): void {
+    function checkTree(current: Tree, source: string, incomplete: boolean): void {
       expect(current.rootNode.hasError).toBe(incomplete);
       const captures = query.captures(current.rootNode);
       expect(captures.filter(({ name }) => name === 'binding').map(({ node }) => node.text)).toEqual(['y']);

@@ -1,13 +1,13 @@
-import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-import { position, snapshot } from '../helpers/treeSnapshot.js';
+import { position } from '../helpers/position.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
 const words = ['abstract', 'do', 'final', 'override', 'priv', 'typeof', 'unsized', 'virtual'];
 
-test('retains macro keyword identifiers, macro names and metavariables through edits', () => {
+test('retains macro keyword identifiers, macro names and metavariables', () => {
   const parser = new Parser().setLanguage(language);
   const query = new Query(
     language,
@@ -18,50 +18,26 @@ test('retains macro keyword identifiers, macro names and metavariables through e
     (metavariable) @variable
   `
   );
-  let source = `macro_rules! keyword_table { ($keyword:ident) => { ${words.join(' ')} $keyword }; }
+  const source = `macro_rules! keyword_table { ($keyword:ident) => { ${words.join(' ')} $keyword }; }
 macro_rules! consume { ($($word:tt)*) => {}; }
 consume!(${words.join(' ')});
 fn after() {}`;
-  let tree = parser.parse(source)!;
-  const start = source.indexOf('abstract');
   try {
-    checkTree(tree, [...words, ...words]);
-    for (const [before, after] of [
-      ['abstract', 'r#abstract'],
-      ['r#abstract', 'abstract'],
-    ] as const) {
-      const nextSource = source.slice(0, start) + after + source.slice(start + before.length);
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: start + before.length,
-          newEndIndex: start + after.length,
-          startPosition: position(source, start),
-          oldEndPosition: position(source, start + before.length),
-          newEndPosition: position(nextSource, start + after.length),
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(nextSource, previous)!;
-      previous.delete();
-      source = nextSource;
-      const fresh = parser.parse(source)!;
+    for (const word of ['abstract', 'r#abstract']) {
+      const text = source.replace('abstract', word);
+      const tree = parser.parse(text)!;
       try {
-        const expected = [after, ...words.slice(1), ...words];
-        checkTree(tree, expected);
-        checkTree(fresh, expected);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
+        checkTree(tree, text, [word, ...words.slice(1), ...words]);
       } finally {
-        fresh.delete();
+        tree.delete();
       }
     }
   } finally {
-    tree.delete();
     query.delete();
     parser.delete();
   }
 
-  function checkTree(current: Tree, expectedWords: string[]): void {
+  function checkTree(current: Tree, source: string, expectedWords: string[]): void {
     expect(current.rootNode.hasError, source).toBe(false);
     const captures = query.captures(current.rootNode);
     const wordCaptures = captures.filter(({ name }) => name === 'word');

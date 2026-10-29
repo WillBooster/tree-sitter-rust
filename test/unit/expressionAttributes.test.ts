@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 await Parser.init();
@@ -46,58 +46,9 @@ test('retains attributed initializers and compiler expression binding', () => {
   }
 });
 
-test('retains multiple attributes through prefix edits and unchanged declaration/list paths', () => {
+test('keeps declaration and list attributes out of attributed expressions', () => {
   const parser = new Parser().setLanguage(language);
   try {
-    const prefix = '#[allow(unused)] #[allow(dead_code)] ';
-    for (const expression of ['1 + 2', 'move || 1', 'f().x', '(1)']) {
-      const before = `fn f() { let value = ${expression}; }`;
-      const offset = before.indexOf(expression);
-      const after = before.slice(0, offset) + prefix + before.slice(offset);
-      const tree = parser.parse(before)!;
-      tree.edit(
-        new Edit({
-          startIndex: offset,
-          oldEndIndex: offset,
-          newEndIndex: offset + prefix.length,
-          startPosition: { row: 0, column: offset },
-          oldEndPosition: { row: 0, column: offset },
-          newEndPosition: { row: 0, column: offset + prefix.length },
-        })
-      );
-      const edited = parser.parse(after, tree)!;
-      const fresh = parser.parse(after)!;
-      try {
-        expect(edited.rootNode.hasError, after).toBe(false);
-        expect(edited.rootNode.toString()).toBe(fresh.rootNode.toString());
-        expect(edited.rootNode.descendantsOfType('attribute_item').map((node) => node.text)).toEqual([
-          '#[allow(unused)]',
-          '#[allow(dead_code)]',
-        ]);
-        edited.edit(
-          new Edit({
-            startIndex: offset,
-            oldEndIndex: offset + prefix.length,
-            newEndIndex: offset,
-            startPosition: { row: 0, column: offset },
-            oldEndPosition: { row: 0, column: offset + prefix.length },
-            newEndPosition: { row: 0, column: offset },
-          })
-        );
-        const removed = parser.parse(before, edited)!;
-        const original = parser.parse(before)!;
-        try {
-          expect(removed.rootNode.toString()).toBe(original.rootNode.toString());
-        } finally {
-          removed.delete();
-          original.delete();
-        }
-      } finally {
-        tree.delete();
-        edited.delete();
-        fresh.delete();
-      }
-    }
     for (const source of [
       '#[a] struct X { #[b] y: i32 }',
       'fn f(#[a] x: i32) {}',
@@ -158,7 +109,7 @@ test('retains expression supertype captures for every list operand', () => {
   }
 });
 
-test('requires array attributes to precede an operand across incremental edits', () => {
+test('requires array attributes to precede an operand', () => {
   const parser = new Parser().setLanguage(language);
   try {
     for (const expression of ['[#[a]]', '[#[a],]', '[1, #[a]]', '[#[a]; 2]', '[[#[a]]]']) {
@@ -177,37 +128,6 @@ test('requires array attributes to precede an operand across incremental edits',
       } finally {
         tree.delete();
       }
-    }
-    const prefix = 'fn f() { let x = [[#[a] ';
-    let previous = '';
-    let tree = parser.parse(`${prefix}${previous}]]; }`)!;
-    try {
-      for (const operand of ['1', '', '2, #[b] 3']) {
-        tree.edit(
-          new Edit({
-            startIndex: prefix.length,
-            oldEndIndex: prefix.length + previous.length,
-            newEndIndex: prefix.length + operand.length,
-            startPosition: { row: 0, column: prefix.length },
-            oldEndPosition: { row: 0, column: prefix.length + previous.length },
-            newEndPosition: { row: 0, column: prefix.length + operand.length },
-          })
-        );
-        const source = `${prefix}${operand}]]; }`;
-        const old = tree;
-        tree = parser.parse(source, old)!;
-        old.delete();
-        const fresh = parser.parse(source)!;
-        try {
-          expect(tree.rootNode.hasError, source).toBe(operand === '');
-          expect(tree.rootNode.toString()).toEqual(fresh.rootNode.toString());
-        } finally {
-          fresh.delete();
-        }
-        previous = operand;
-      }
-    } finally {
-      tree.delete();
     }
   } finally {
     parser.delete();

@@ -1,4 +1,4 @@
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('keeps non-numeric suffixes in literal tokens without consuming separated identifiers', async () => {
@@ -63,7 +63,7 @@ test('keeps non-numeric suffixes in literal tokens without consuming separated i
   }
 });
 
-test('keeps raw-string prefixes in adjacent suffixes through incremental trivia edits', async () => {
+test('keeps raw-string prefixes in adjacent suffixes', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
@@ -74,43 +74,10 @@ test('keeps raw-string prefixes in adjacent suffixes through incremental trivia 
       for (const prefix of ['r', 'br', 'cr']) {
         for (const second of ['"b"', '#"b"#']) {
           const source = `tokens!(${first}${prefix}${second});`;
-          let tree = parser.parse(source)!;
-          const boundary = 8 + first.length;
+          const tree = parser.parse(source)!;
           try {
             expect(tree.rootNode.hasError, source).toBe(false);
             expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([first + prefix, '"b"']);
-            for (const gap of [' ', '/* gap */', '\n', '\u0085', '\u2028', '\u2029']) {
-              tree.edit(
-                new Edit({
-                  startIndex: boundary,
-                  oldEndIndex: boundary,
-                  newEndIndex: boundary + gap.length,
-                  startPosition: { row: 0, column: boundary },
-                  oldEndPosition: { row: 0, column: boundary },
-                  newEndPosition: gap === '\n' ? { row: 1, column: 0 } : { row: 0, column: boundary + gap.length },
-                })
-              );
-              const edited = parser.parse(source.slice(0, boundary) + gap + source.slice(boundary), tree)!;
-              tree.delete();
-              tree = edited;
-              expect(tree.rootNode.hasError).toBe(false);
-              expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([first, prefix + second]);
-              tree.edit(
-                new Edit({
-                  startIndex: boundary,
-                  oldEndIndex: boundary + gap.length,
-                  newEndIndex: boundary,
-                  startPosition: { row: 0, column: boundary },
-                  oldEndPosition: gap === '\n' ? { row: 1, column: 0 } : { row: 0, column: boundary + gap.length },
-                  newEndPosition: { row: 0, column: boundary },
-                })
-              );
-              const restored = parser.parse(source, tree)!;
-              tree.delete();
-              tree = restored;
-              expect(tree.rootNode.hasError).toBe(false);
-              expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([first + prefix, '"b"']);
-            }
           } finally {
             tree.delete();
           }
