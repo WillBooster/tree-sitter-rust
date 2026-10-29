@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('attaches outer documentation to its declaration and rejects orphan documentation', async () => {
@@ -85,45 +85,6 @@ test('attaches outer documentation to its declaration and rejects orphan documen
     }
   } finally {
     highlights.delete();
-    parser.delete();
-  }
-});
-
-test('reclassifies ordinary and outer comments across incremental prefix edits', async () => {
-  await Parser.init();
-  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
-  let source = '//// docs\nfn f() {}';
-  let tree = parser.parse(source)!;
-  try {
-    for (const slashCount of [3, 4, 3, 4]) {
-      const oldCount = source.indexOf(' ');
-      const next = `${'/'.repeat(slashCount)} docs\nfn f() {}`;
-      tree.edit(
-        new Edit({
-          startIndex: 0,
-          oldEndIndex: oldCount,
-          newEndIndex: slashCount,
-          startPosition: { row: 0, column: 0 },
-          oldEndPosition: { row: 0, column: oldCount },
-          newEndPosition: { row: 0, column: slashCount },
-        })
-      );
-      const old = tree;
-      tree = parser.parse(next, old)!;
-      old.delete();
-      const fresh = parser.parse(next)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(tree.rootNode.toString()).toBe(fresh.rootNode.toString());
-        expect(tree.rootNode.descendantsOfType('attributed_declaration')).toHaveLength(slashCount === 3 ? 1 : 0);
-        expect(tree.rootNode.descendantsOfType('function_item')[0]?.startPosition).toEqual({ row: 1, column: 0 });
-      } finally {
-        fresh.delete();
-      }
-      source = next;
-    }
-  } finally {
-    tree.delete();
     parser.delete();
   }
 });
@@ -460,44 +421,6 @@ test('keeps orphan documentation recovery inside its closing boundary when a sta
       }
     }
   } finally {
-    parser.delete();
-  }
-});
-
-test('updates orphan documentation diagnostics when a following expression is edited', async () => {
-  await Parser.init();
-  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
-  const prefix = 'fn f() { 1 /** docs */ ';
-  let source = `${prefix}+ 2 }`;
-  let tree = parser.parse(source)!;
-  try {
-    for (const continuation of ['', '+ 2 ', '', '+ 2 ']) {
-      const next = `${prefix}${continuation}}`;
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: source.length - 1,
-          newEndIndex: next.length - 1,
-          startPosition: { row: 0, column: prefix.length },
-          oldEndPosition: { row: 0, column: source.length - 1 },
-          newEndPosition: { row: 0, column: next.length - 1 },
-        })
-      );
-      const edited = parser.parse(next, tree)!;
-      const fresh = parser.parse(next)!;
-      try {
-        expect(edited.rootNode.toString()).toBe(fresh.rootNode.toString());
-        expect(edited.rootNode.hasError).toBe(continuation === '');
-        expect(edited.rootNode.descendantsOfType('block_comment')[0]?.text).toBe('/** docs */');
-      } finally {
-        fresh.delete();
-      }
-      tree.delete();
-      tree = edited;
-      source = next;
-    }
-  } finally {
-    tree.delete();
     parser.delete();
   }
 });

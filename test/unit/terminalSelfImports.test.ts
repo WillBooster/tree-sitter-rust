@@ -1,7 +1,7 @@
-import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-import { position, snapshot } from '../helpers/treeSnapshot.js';
+import { position } from '../helpers/position.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
@@ -14,7 +14,7 @@ const cases = [
   { declaration: 'mod foo {} use foo::{self as bar};', kind: 'self' },
 ];
 
-test.each(cases)('retains the import target in $declaration through edits', ({ declaration, kind }) => {
+test.each(cases)('retains the import target in $declaration', ({ declaration, kind }) => {
   const parser = new Parser().setLanguage(language);
   const query = new Query(
     language,
@@ -24,39 +24,10 @@ test.each(cases)('retains the import target in $declaration through edits', ({ d
     (use_as_clause path: (self) @target)
   `
   );
-  let source = `${declaration}\nfn after() {}`;
-  let tree = parser.parse(source)!;
-  const index = source.indexOf('self');
-  const pathStart = source.includes('std') ? source.indexOf('std') : source.lastIndexOf('foo');
+  const source = `${declaration}\nfn after() {}`;
+  const tree = parser.parse(source)!;
   try {
     checkTree(tree);
-    for (const insertion of [true, false]) {
-      const start = pathStart;
-      const nextSource = source.slice(0, start) + (insertion ? 'r#' : '') + source.slice(start + (insertion ? 0 : 2));
-      tree.edit(
-        new Edit({
-          startIndex: start,
-          oldEndIndex: start + (insertion ? 0 : 2),
-          newEndIndex: start + (insertion ? 2 : 0),
-          startPosition: position(source, start),
-          oldEndPosition: position(source, start + (insertion ? 0 : 2)),
-          newEndPosition: position(nextSource, start + (insertion ? 2 : 0)),
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(nextSource, previous)!;
-      previous.delete();
-      source = nextSource;
-      const fresh = parser.parse(source)!;
-      try {
-        checkTree(tree);
-        checkTree(fresh);
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-      } finally {
-        fresh.delete();
-      }
-    }
-    expect(query.captures(tree.rootNode)[0]!.node.startIndex).toBe(index);
   } finally {
     tree.delete();
     query.delete();

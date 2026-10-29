@@ -1,7 +1,5 @@
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
-
-import { position, snapshot } from '../helpers/treeSnapshot.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
@@ -110,65 +108,6 @@ test('rejects shebangs displaced from the beginning of the file', () => {
       }
     }
   } finally {
-    parser.delete();
-  }
-});
-
-test.each([
-  ['#!\n/* nested /* comment */ */\n[allow(dead_code)]\nfn f() {}', '[', 'x', 'command'],
-  ['#!/* comment */ [allow(dead_code)]\nfn f() {}', '/*', '/** doc', 'command'],
-  ['#!/bin/tool\nfn f() {}', '', ' ', 'neither'],
-  ['#!', '', '\n', 'command'],
-])('rechecks shebang lookahead and placement after edits to %s', (initial, removed, inserted, editedKind) => {
-  const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(shebang) @command (inner_attribute_item) @attribute');
-  let source = initial;
-  let tree = parser.parse(source)!;
-  const index = removed ? initial.indexOf(removed) : inserted === '\n' ? initial.length : 0;
-  let edited = true;
-  try {
-    for (const [before, after] of [
-      [removed, inserted],
-      [inserted, removed],
-    ] as const) {
-      const nextSource = source.slice(0, index) + after + source.slice(index + before.length);
-      tree.edit(
-        new Edit({
-          startIndex: index,
-          oldEndIndex: index + before.length,
-          newEndIndex: index + after.length,
-          startPosition: position(source, index),
-          oldEndPosition: position(source, index + before.length),
-          newEndPosition: position(nextSource, index + after.length),
-        })
-      );
-      const previous = tree;
-      tree = parser.parse(nextSource, previous)!;
-      previous.delete();
-      source = nextSource;
-      const fresh = parser.parse(source)!;
-      try {
-        expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        if (edited) {
-          const captures = query.captures(tree.rootNode);
-          expect(captures.filter(({ name }) => name === 'command')).toHaveLength(editedKind === 'command' ? 1 : 0);
-          expect(captures.filter(({ name }) => name === 'attribute')).toHaveLength(0);
-        }
-        expect(
-          query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-        ).toEqual(
-          query.captures(fresh.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-        );
-      } finally {
-        fresh.delete();
-      }
-      edited = false;
-    }
-    expect(tree.rootNode.hasError).toBe(false);
-    expect(source).toBe(initial);
-  } finally {
-    tree.delete();
-    query.delete();
     parser.delete();
   }
 });

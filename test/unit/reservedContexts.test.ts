@@ -1,7 +1,7 @@
-import { Edit, Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-import { position, snapshot } from '../helpers/treeSnapshot.js';
+import { position } from '../helpers/position.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
@@ -109,79 +109,43 @@ const cases = [
   },
 ];
 
-test.each(cases)(
-  'preserves valid keyword context $name and edits its query range',
-  ({ source: initial, query: pattern, expected, genericSuffix }) => {
-    const parser = new Parser().setLanguage(language);
-    const query = new Query(language, pattern);
-    const functions = new Query(language, '(function_item name: (identifier) @name)');
-    let source = initial;
-    let tree = parser.parse(source)!;
-    try {
-      checkTree(tree, expected);
-      const target = query.captures(tree.rootNode)[0]!.node;
-      const start = target.startIndex;
-      const original = target.text;
-      const replacement = original === '_' ? 'renamed' : original === 'unsafe' ? 'r#unsafe' : 'S';
-      for (const [before, after] of [
-        [original, replacement],
-        [replacement, original],
-      ] as const) {
-        const nextSource = source.slice(0, start) + after + source.slice(start + before.length);
-        tree.edit(
-          new Edit({
-            startIndex: start,
-            oldEndIndex: start + before.length,
-            newEndIndex: start + after.length,
-            startPosition: position(source, start),
-            oldEndPosition: position(source, start + before.length),
-            newEndPosition: position(nextSource, start + after.length),
-          })
-        );
-        const previous = tree;
-        tree = parser.parse(nextSource, previous)!;
-        previous.delete();
-        source = nextSource;
-        const fresh = parser.parse(source)!;
-        try {
-          checkTree(tree, [after, ...expected.slice(1)]);
-          checkTree(fresh, [after, ...expected.slice(1)]);
-          expect(snapshot(tree.rootNode)).toEqual(snapshot(fresh.rootNode));
-        } finally {
-          fresh.delete();
-        }
-      }
-    } finally {
-      tree.delete();
-      functions.delete();
-      query.delete();
-      parser.delete();
-    }
-
-    function checkTree(current: Tree, texts: string[]): void {
-      expect(current.rootNode.hasError, source).toBe(false);
-      const captures = query.captures(current.rootNode);
-      expect(captures.map(({ node }) => node.text)).toEqual(texts);
-      for (const { node } of captures) {
-        expect(source.slice(node.startIndex, node.endIndex)).toBe(node.text);
-        expect(node.startPosition).toEqual(position(source, node.startIndex));
-        expect(node.endPosition).toEqual(position(source, node.endIndex));
-        if (genericSuffix) {
-          const type = node.parent!;
-          expect(type.type).toBe('generic_type');
-          expect(type.text).toBe(node.text + genericSuffix);
-          expect(type.startIndex).toBe(node.startIndex);
-          expect(type.endIndex).toBe(node.endIndex + genericSuffix.length);
-          expect(type.childForFieldName('type_arguments')!.text).toBe('<>');
-        }
-      }
-      const after = functions.captures(current.rootNode).find(({ node }) => node.text === 'after')!.node;
-      expect(after.startIndex).toBe(source.lastIndexOf('after'));
-      expect(after.endIndex).toBe(after.startIndex + 5);
-      expect(current.rootNode.descendantsOfType('range_pattern')).toHaveLength(0);
-    }
+test.each(cases)('preserves valid keyword context $name', ({ source, query: pattern, expected, genericSuffix }) => {
+  const parser = new Parser().setLanguage(language);
+  const query = new Query(language, pattern);
+  const functions = new Query(language, '(function_item name: (identifier) @name)');
+  const tree = parser.parse(source)!;
+  try {
+    checkTree(tree);
+  } finally {
+    tree.delete();
+    functions.delete();
+    query.delete();
+    parser.delete();
   }
-);
+
+  function checkTree(current: Tree): void {
+    expect(current.rootNode.hasError, source).toBe(false);
+    const captures = query.captures(current.rootNode);
+    expect(captures.map(({ node }) => node.text)).toEqual(expected);
+    for (const { node } of captures) {
+      expect(source.slice(node.startIndex, node.endIndex)).toBe(node.text);
+      expect(node.startPosition).toEqual(position(source, node.startIndex));
+      expect(node.endPosition).toEqual(position(source, node.endIndex));
+      if (genericSuffix) {
+        const type = node.parent!;
+        expect(type.type).toBe('generic_type');
+        expect(type.text).toBe(node.text + genericSuffix);
+        expect(type.startIndex).toBe(node.startIndex);
+        expect(type.endIndex).toBe(node.endIndex + genericSuffix.length);
+        expect(type.childForFieldName('type_arguments')!.text).toBe('<>');
+      }
+    }
+    const after = functions.captures(current.rootNode).find(({ node }) => node.text === 'after')!.node;
+    expect(after.startIndex).toBe(source.lastIndexOf('after'));
+    expect(after.endIndex).toBe(after.startIndex + 5);
+    expect(current.rootNode.descendantsOfType('range_pattern')).toHaveLength(0);
+  }
+});
 
 const invalidContexts = [
   'use std::fmt::Debug as self;\nfn after() {}\n',

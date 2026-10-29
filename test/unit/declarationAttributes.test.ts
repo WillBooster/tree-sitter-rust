@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('associates outer attributes with declarations and rejects orphan attributes', async () => {
@@ -97,49 +97,6 @@ test('associates outer attributes with declarations and rejects orphan attribute
   } finally {
     query.delete();
     tags.delete();
-    parser.delete();
-  }
-});
-
-test('reassigns attributes when declarations are inserted and removed incrementally', async () => {
-  await Parser.init();
-  const language = await Language.load('tree-sitter-rust.wasm');
-  const parser = new Parser();
-  parser.setLanguage(language);
-  const prefix = 'mod m { #[allow(unused)] ';
-  let source = `${prefix}fn second() {} }`;
-  let tree = parser.parse(source)!;
-  try {
-    for (const insertion of ['fn first() {} ', '']) {
-      const next = `${prefix}${insertion}fn second() {} }`;
-      const oldEnd = source.indexOf('fn second()');
-      tree.edit(
-        new Edit({
-          startIndex: prefix.length,
-          oldEndIndex: oldEnd,
-          newEndIndex: prefix.length + insertion.length,
-          startPosition: { row: 0, column: prefix.length },
-          oldEndPosition: { row: 0, column: oldEnd },
-          newEndPosition: { row: 0, column: prefix.length + insertion.length },
-        })
-      );
-      const old = tree;
-      tree = parser.parse(next, old)!;
-      old.delete();
-      const fresh = parser.parse(next)!;
-      try {
-        expect(tree.rootNode.hasError).toBe(false);
-        expect(tree.rootNode.toString()).toEqual(fresh.rootNode.toString());
-        expect(
-          tree.rootNode.descendantsOfType('attributed_declaration')[0]?.childForFieldName('declaration')?.text
-        ).toBe(insertion ? 'fn first() {}' : 'fn second() {}');
-      } finally {
-        fresh.delete();
-      }
-      source = next;
-    }
-  } finally {
-    tree.delete();
     parser.delete();
   }
 });

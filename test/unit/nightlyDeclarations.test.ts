@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { Edit, Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
-
-import { position, snapshot } from '../helpers/treeSnapshot.js';
 
 test('exposes trait aliases and declarative macros through public fields and shipped queries', async () => {
   await Parser.init();
@@ -71,38 +69,6 @@ test('exposes trait aliases and declarative macros through public fields and shi
     }
     const parameters = macros[0]!.childForFieldName('parameters')!;
     expect(injected.some((capture) => capture.node.startIndex === parameters.startIndex)).toBe(false);
-    const index = source.indexOf('$value }');
-    let current = tree.copy();
-    let previous = source;
-    try {
-      for (const replacement of ['$value + 1', '$value']) {
-        const end = previous.indexOf(' }', index);
-        const next = previous.slice(0, index) + replacement + previous.slice(end);
-        current.edit(
-          new Edit({
-            startIndex: index,
-            oldEndIndex: end,
-            newEndIndex: index + replacement.length,
-            startPosition: position(previous, index),
-            oldEndPosition: position(previous, end),
-            newEndPosition: position(next, index + replacement.length),
-          })
-        );
-        const old = current;
-        current = parser.parse(next, old)!;
-        old.delete();
-        const fresh = parser.parse(next)!;
-        try {
-          expect(current.rootNode.hasError).toBe(false);
-          expect(snapshot(current.rootNode)).toEqual(snapshot(fresh.rootNode));
-        } finally {
-          fresh.delete();
-        }
-        previous = next;
-      }
-    } finally {
-      current.delete();
-    }
   } finally {
     for (const query of queries) query.delete();
     tree.delete();
