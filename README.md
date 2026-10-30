@@ -5,7 +5,7 @@
 [![Test](https://github.com/WillBooster/tree-sitter-rust/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/tree-sitter-rust/actions/workflows/test.yml)
 [![Test rust](https://github.com/WillBooster/tree-sitter-rust/actions/workflows/test-rust.yml/badge.svg)](https://github.com/WillBooster/tree-sitter-rust/actions/workflows/test-rust.yml)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-[![wbfy](https://img.shields.io/badge/wbfy-20.49.0-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
+[![wbfy](https://img.shields.io/badge/wbfy-20.51.1-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
 [![crates.io](https://img.shields.io/crates/v/willbooster-tree-sitter-rust.svg)](https://crates.io/crates/willbooster-tree-sitter-rust)
 
 Rust grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), forked from
@@ -13,6 +13,13 @@ Rust grammar for [tree-sitter](https://github.com/tree-sitter/tree-sitter), fork
 to its authors and contributors. This is not an official release of that project.
 
 This fork fixes parsing bugs and raises conformance with [The Rust Reference](https://doc.rust-lang.org/reference/).
+
+## Support Scope
+
+This fork maintains only full parsing: valid input yields a correct tree, and invalid input yields `ERROR` or `MISSING`
+nodes without crashing, hanging, or taking more than linear time. Incremental parsing works as in upstream tree-sitter
+but is not tested here, and no queries (highlights, locals, injections, tags) are shipped. Node types, field names, and
+the trees that error recovery produces may change; such changes are released as new major versions.
 
 ## Usage
 
@@ -59,13 +66,7 @@ const parser = new Parser();
 parser.setLanguage(await Language.load(rust));
 ```
 
-The package also ships the queries in `queries/` and the node types in `src/node-types.json`.
-
-Documentation-comment injections require a host with Markdown parsing and fenced-language injections.
-Line documentation is combined across the syntax tree; an unclosed fence can affect later comments.
-Each block comment is a separate Markdown document. Its content is passed through unchanged, including
-leading `*` gutters, which remain Markdown text and can prevent fence recognition. Use unguttered block
-documentation or line documentation for fenced examples with these queries.
+The package also ships the node types in `src/node-types.json`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
@@ -110,7 +111,7 @@ For a joint token, an optional lifetime and mutability describe the inner refere
 
 An attribute in an expression position can produce an `attributed_expression` node with a `value` field.
 For example, in `let x = #[allow(unused)] 1 + 2;`, that field contains `1`; the enclosing binary expression
-still contains `+ 2`. Consecutive attributes share one wrapper. Queries matching `_expression` include
+still contains `+ 2`. Consecutive attributes share one wrapper. The `_expression` supertype includes
 these wrappers, including attributed block statements. The `value` field identifies the operand.
 
 Outer declaration attributes belong to an `attributed_declaration` node whose `declaration` field identifies
@@ -127,8 +128,8 @@ errors may return larger `ERROR` subtrees. Ordinary line comments are leaf nodes
 than an anonymous `//` child.
 
 Parameter and list attributes retain their sibling nodes. Attributes inside parentheses also precede
-the operand as siblings. List and parenthesized operands remain queryable through
-`_expression`. Compiler feature gates and attribute-placement diagnostics remain the compiler's responsibility.
+the operand as siblings. List and parenthesized operands remain in the
+`_expression` supertype. Compiler feature gates and attribute-placement diagnostics remain the compiler's responsibility.
 
 ## Development
 
