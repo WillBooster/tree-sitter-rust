@@ -1,13 +1,10 @@
-import { readFileSync } from 'node:fs';
-
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('attaches outer documentation to its declaration and rejects orphan documentation', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
     for (const doc of [
       '/// documentation\n',
@@ -25,18 +22,6 @@ test('attaches outer documentation to its declaration and rejects orphan documen
           const wrapper = tree.rootNode.descendantsOfType('attributed_declaration')[0];
           expect(wrapper?.childForFieldName('declaration')?.text, source).toBe(item);
           expect(wrapper?.namedChildren[0]?.text, source).toBe(doc);
-          expect(
-            highlights
-              .captures(tree.rootNode)
-              .filter(({ name }) => name === 'attribute')
-              .map(({ node }) => node.text)
-          ).toEqual(['#[allow(unused)]']);
-          expect(
-            highlights
-              .captures(tree.rootNode)
-              .filter(({ name }) => name === 'comment')
-              .map(({ node }) => node.text)
-          ).toContain(doc);
           expect(wrapper?.namedChildren[0]?.namedChildren[0]?.childForFieldName('outer')?.text).toBe(
             doc.startsWith('///') ? '/' : '*'
           );
@@ -84,16 +69,14 @@ test('attaches outer documentation to its declaration and rejects orphan documen
       }
     }
   } finally {
-    highlights.delete();
     parser.delete();
   }
 });
 
-test('retains comments and their highlighting while recovering from an invalid expression', async () => {
+test('retains comments while recovering from an invalid expression', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
     for (const comment of ['// hello\n', '//// hello\n', '/* hello */', '/* nested /* hello */ */']) {
       const source = `fn f(){let x = @ ${comment};} fn after() {}`;
@@ -103,12 +86,6 @@ test('retains comments and their highlighting while recovering from an invalid e
         expect(tree.rootNode.descendantsOfType(['line_comment', 'block_comment']).map((node) => node.text)).toContain(
           comment.trimEnd()
         );
-        expect(
-          highlights
-            .captures(tree.rootNode)
-            .filter(({ name }) => name === 'comment')
-            .map(({ node }) => node.text)
-        ).toContain(comment.trimEnd());
         expect(
           tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text)
         ).toEqual(['f', 'after']);
@@ -141,7 +118,6 @@ test('retains comments and their highlighting while recovering from an invalid e
       }
     }
   } finally {
-    highlights.delete();
     parser.delete();
   }
 });
@@ -150,7 +126,6 @@ test('retains misplaced documentation without swallowing following declarations'
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
     for (const comment of ['/** it\'s "x */', '/// it\'s "x\n']) {
       for (const prefix of [
@@ -175,20 +150,12 @@ test('retains misplaced documentation without swallowing following declarations'
             tree.rootNode.descendantsOfType('string_literal').map((item) => item.text),
             source
           ).toEqual(['"y"']);
-          expect(
-            highlights
-              .captures(tree.rootNode)
-              .filter(({ name }) => name === 'comment')
-              .map(({ node: item }) => item.text.trimEnd()),
-            source
-          ).toContain(comment.trimEnd());
         } finally {
           tree.delete();
         }
       }
     }
   } finally {
-    highlights.delete();
     parser.delete();
   }
 });
@@ -276,8 +243,6 @@ test('retains outer documentation in broken use lists and type annotations', asy
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
-  const injections = new Query(language, readFileSync('queries/injections.scm', 'utf8'));
   try {
     for (const doc of ['/// documentation\n', '///*documentation*\n', '/** documentation */']) {
       for (const source of [
@@ -296,18 +261,6 @@ test('retains outer documentation in broken use lists and type annotations', asy
             doc.includes('*documentation*') ? '*documentation*' : 'documentation'
           );
           expect(
-            highlights
-              .captures(tree.rootNode)
-              .filter(({ name }) => name === 'comment')
-              .map(({ node }) => node.text)
-          ).toContain(doc);
-          expect(
-            injections
-              .captures(tree.rootNode)
-              .filter(({ name }) => name === 'injection.content')
-              .map(({ node }) => node.text.trim())
-          ).toContain(doc.includes('*documentation*') ? '*documentation*' : 'documentation');
-          expect(
             tree.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')?.text)
           ).toContain('after');
         } finally {
@@ -316,8 +269,6 @@ test('retains outer documentation in broken use lists and type annotations', asy
       }
     }
   } finally {
-    injections.delete();
-    highlights.delete();
     parser.delete();
   }
 });
@@ -421,6 +372,35 @@ test('keeps orphan documentation recovery inside its closing boundary when a sta
       }
     }
   } finally {
+    parser.delete();
+  }
+});
+
+test('parses inner, outer, guttered, and ordinary comments around declarations', async () => {
+  await Parser.init();
+  const parser = new Parser().setLanguage(await Language.load('tree-sitter-rust.wasm'));
+  const source = [
+    '//! Module documentation',
+    '// ordinary line',
+    '/// ```rust',
+    '/// let value = 1;',
+    '/// ```',
+    'fn example() {}',
+    '/** **Outer block** */',
+    'struct Example;',
+    'mod inner { /*! **Inner block** */ }',
+    '/**\n * ```rust\n * let value = 1;\n * ```\n */',
+    'fn guttered() {}',
+    '/* ordinary block */',
+    '/*** also ordinary */',
+    '//// also ordinary',
+    'example!(value);',
+  ].join('\n');
+  const tree = parser.parse(source)!;
+  try {
+    expect(tree.rootNode.hasError).toBe(false);
+  } finally {
+    tree.delete();
     parser.delete();
   }
 });

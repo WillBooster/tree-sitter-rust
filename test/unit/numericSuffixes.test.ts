@@ -3,6 +3,15 @@ import { readFileSync } from 'node:fs';
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
+const LiteralTypes = [
+  'boolean_literal',
+  'char_literal',
+  'float_literal',
+  'integer_literal',
+  'raw_string_literal',
+  'string_literal',
+];
+
 test('preserves numeric suffixes and following string boundaries in macro tokens', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
@@ -10,10 +19,9 @@ test('preserves numeric suffixes and following string boundaries in macro tokens
   parser.setLanguage(language);
   const source = readFileSync(new URL('../fixtures/numericSuffixes.rs', import.meta.url), 'utf8');
   const tree = parser.parse(source);
-  const query = new Query(language, '(_literal) @literal');
   try {
     expect(tree?.rootNode.hasError).toBe(false);
-    expect(query.captures(tree!.rootNode).map(({ node }) => [node.type, node.text])).toEqual([
+    expect(tree!.rootNode.descendantsOfType(LiteralTypes).map((node) => [node.type, node.text])).toEqual([
       ['integer_literal', '123c'],
       ['string_literal', '"foo"'],
       ['integer_literal', '123b'],
@@ -65,7 +73,6 @@ test('preserves numeric suffixes and following string boundaries in macro tokens
       ['integer_literal', '0o__7unit'],
     ]);
   } finally {
-    query.delete();
     tree?.delete();
     parser.delete();
   }
@@ -76,7 +83,6 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
-  const query = new Query(language, '(_literal) @literal');
   try {
     for (const literal of [
       '1e',
@@ -114,7 +120,7 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
       try {
         expect(expression.rootNode.hasError, literal).toBe(true);
         expect(
-          query.captures(macro.rootNode).map(({ node }) => node.text),
+          macro.rootNode.descendantsOfType(LiteralTypes).map((node) => node.text),
           literal
         ).not.toContain(literal);
       } finally {
@@ -142,12 +148,11 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
 
-test('keeps tuple fields suffixless while preserving public integer captures', async () => {
+test('keeps tuple fields suffixless while preserving integer literals', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
@@ -156,7 +161,6 @@ test('keeps tuple fields suffixless while preserving public integer captures', a
     language,
     '(field_expression field: (integer_literal) @field) (field_initializer field: (integer_literal) @field)'
   );
-  const literalQuery = new Query(language, '(_literal) @literal');
   try {
     for (const source of [
       'fn main() { let _ = 0x1f.0foo; }',
@@ -179,13 +183,17 @@ test('keeps tuple fields suffixless while preserving public integer captures', a
         ['integer_literal', '0'],
         ['integer_literal', '0'],
       ]);
-      expect(literalQuery.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(['1u32', '1']);
+      expect(
+        tree.rootNode
+          .descendantsOfType(LiteralTypes)
+          .filter((node) => !node.parent?.childForFieldName('field')?.equals(node))
+          .map((node) => node.text)
+      ).toEqual(['1u32', '1']);
     } finally {
       tree.delete();
     }
   } finally {
     fieldQuery.delete();
-    literalQuery.delete();
     parser.delete();
   }
 });

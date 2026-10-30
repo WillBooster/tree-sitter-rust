@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-
 import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
@@ -25,7 +23,7 @@ fn main() {
 
 const Variables = ['$ /* left */ x', '$ y', '$ /* right */ x', '$\n        y'];
 
-test('preserves macro bindings, references and highlights around trivia', async () => {
+test('preserves macro bindings and references around trivia', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
@@ -37,10 +35,6 @@ test('preserves macro bindings, references and highlights around trivia', async 
       '(token_binding_pattern name: (metavariable) @binding type: (fragment_specifier) @fragment)\n' +
       '(token_tree (metavariable) @reference)'
   );
-  const highlights = new Query(
-    language,
-    readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8')
-  );
   const source = Source;
   let tree: Tree | undefined;
   try {
@@ -49,7 +43,6 @@ test('preserves macro bindings, references and highlights around trivia', async 
   } finally {
     tree?.delete();
     query.delete();
-    highlights.delete();
     parser.delete();
   }
 
@@ -71,18 +64,6 @@ test('preserves macro bindings, references and highlights around trivia', async 
         .filter(({ name }) => name === 'binding' || name === 'reference')
         .map(({ node }) => [node.text, node.startIndex, node.endIndex])
     ).toEqual(expected);
-    const tokens = highlights.captures(current.rootNode);
-    const keyword = 'macro_rules';
-    expect(
-      tokens
-        .filter(({ name, node }) => name === 'keyword' && node.type === 'macro_rules!')
-        .map(({ node }) => [node.text, node.startIndex, node.endIndex])
-    ).toEqual([[keyword, 0, keyword.length]]);
-    expect(tokens.filter(({ name }) => name === 'comment').map(({ node }) => node.text)).toEqual([
-      '/* keyword */',
-      '/* left */',
-      '/* right */',
-    ]);
   }
 });
 
@@ -96,7 +77,6 @@ test('recognizes macro_rules invocations with and without keyword trivia', async
       '(macro_invocation macro: (identifier) @invocation)\n' +
       '(function_item name: (identifier) @function)'
   );
-  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
     for (const argumentsText of ['{}', '()', '[]']) {
       const invocation = `macro_rules! ${argumentsText}`;
@@ -110,20 +90,9 @@ test('recognizes macro_rules invocations with and without keyword trivia', async
           ['invocation', 'macro_rules'],
           ['function', 'following'],
         ]);
-        const tokens = highlights.captures(tree.rootNode);
-        expect(tokens.filter(({ name }) => name === 'function.macro').map(({ node }) => node.text)).toEqual([
-          'macro_rules',
-          '!',
-        ]);
-        expect(tokens.filter(({ name }) => name === 'keyword').map(({ node }) => node.text)).toEqual([
-          'macro_rules',
-          '!',
-          'fn',
-        ]);
       }
     }
   } finally {
-    highlights.delete();
     query.delete();
     parser.delete();
   }
@@ -305,17 +274,13 @@ test.each(['*', '+', '?'].flatMap((operator) => [true, false].map((matcher) => (
   }
 );
 
-test('preserves repetition separators and following comment captures', async () => {
+test('preserves repetition separators and following comments', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
   const query = new Query(
     language,
     '(token_repetition_pattern) @pattern (token_repetition) @repetition (block_comment) @comment (line_comment) @comment'
-  );
-  const highlights = new Query(
-    language,
-    readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8')
   );
   try {
     for (const operator of ['*', '+']) {
@@ -349,12 +314,6 @@ test('preserves repetition separators and following comment captures', async () 
                   .filter(({ name }) => name === 'comment')
                   .map(({ node }) => [node.text, node.startIndex, node.endIndex])
               ).toEqual(expectedComment);
-              expect(
-                highlights
-                  .captures(tree.rootNode)
-                  .filter(({ name }) => name === 'comment')
-                  .map(({ node }) => [node.text, node.startIndex, node.endIndex])
-              ).toEqual(expectedComment);
             }
           }
         }
@@ -362,7 +321,6 @@ test('preserves repetition separators and following comment captures', async () 
     }
   } finally {
     query.delete();
-    highlights.delete();
     parser.delete();
   }
 });

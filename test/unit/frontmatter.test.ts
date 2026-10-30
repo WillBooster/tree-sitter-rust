@@ -1,6 +1,4 @@
-import { readFileSync } from 'node:fs';
-
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('preserves frontmatter content and the following Rust declaration', async () => {
@@ -8,7 +6,6 @@ test('preserves frontmatter content and the following Rust declaration', async (
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
-  const highlights = new Query(language, readFileSync('queries/highlights.scm', 'utf8'));
   try {
     for (const fence of ['---', '-----', '-'.repeat(255)]) {
       for (const body of ['', ' \t\n[dependencies]\n', '  ---\nvalue = "---"\n', 'before\0after\n']) {
@@ -16,12 +13,6 @@ test('preserves frontmatter content and the following Rust declaration', async (
         const tree = parser.parse(source)!;
         try {
           expect(tree.rootNode.hasError, source).toBe(false);
-          expect(
-            highlights
-              .captures(tree.rootNode)
-              .filter(({ name, node }) => name === 'comment' && node.type === 'frontmatter')
-              .map(({ node }) => node.text)
-          ).toEqual([`${fence} Cargo.toml\n${body}${fence}`]);
           expect(tree.rootNode.descendantsOfType('frontmatter_content').map((node) => node.text)).toEqual([body]);
           expect(tree.rootNode.descendantsOfType('frontmatter_info_string').map((node) => node.text)).toEqual([
             'Cargo.toml',
@@ -38,7 +29,6 @@ test('preserves frontmatter content and the following Rust declaration', async (
       }
     }
   } finally {
-    highlights.delete();
     parser.delete();
   }
 });

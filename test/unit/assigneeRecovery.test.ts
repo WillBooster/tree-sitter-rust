@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-
 import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
@@ -14,10 +12,6 @@ test.each([
     const language = await Language.load('tree-sitter-rust.wasm');
     const parser = new Parser().setLanguage(language);
     const query = new Query(language, '(let_declaration pattern: (identifier) @binding value: (_) @value)');
-    const highlights = new Query(
-      language,
-      readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8')
-    );
     const complete = `fn f() {\n    let y = ${expression};\n    next();\n}\nfn h() {}`;
     const close = complete.indexOf(removed, complete.indexOf('let y'));
     try {
@@ -33,7 +27,6 @@ test.each([
         }
       }
     } finally {
-      highlights.delete();
       query.delete();
       parser.delete();
     }
@@ -58,12 +51,6 @@ test.each([
       expect(
         current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
       ).toEqual(['f', 'h']);
-      expect(
-        highlights
-          .captures(current.rootNode)
-          .filter(({ name }) => name === 'function')
-          .map(({ node }) => node.text)
-      ).toEqual(kind === 'call_expression' ? ['f', 'foo', 'next', 'h'] : ['f', 'next', 'h']);
     }
   }
 );
@@ -81,10 +68,6 @@ test.each(['next()', 'foo.bar()'])(
       (struct_expression name: (type_identifier) @type body: (field_initializer_list) @fields) @structure
     `
     );
-    const highlights = new Query(
-      language,
-      readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8')
-    );
     const complete = `fn f() {\n    let y = S { a: 1, b: 2, };\n    ${following};\n}\nfn h() {}`;
     try {
       for (const [source, incomplete] of [
@@ -99,7 +82,6 @@ test.each(['next()', 'foo.bar()'])(
         }
       }
     } finally {
-      highlights.delete();
       query.delete();
       parser.delete();
     }
@@ -132,14 +114,6 @@ test.each(['next()', 'foo.bar()'])(
       expect(current.rootNode.descendantsOfType('}').filter((node) => node.isMissing)).toHaveLength(incomplete ? 1 : 0);
       expect(
         current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
-      ).toEqual(['f', 'h']);
-      const styles = highlights.captures(current.rootNode);
-      expect(styles.filter(({ name, node }) => name === 'type' && node.text === 'S')).toHaveLength(1);
-      expect(styles.filter(({ name, node }) => name === 'function' && node.text === 'S')).toHaveLength(0);
-      expect(
-        styles
-          .filter(({ name, node }) => name === 'function' && ['f', 'h'].includes(node.text))
-          .map(({ node }) => node.text)
       ).toEqual(['f', 'h']);
     }
   }

@@ -1,12 +1,20 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+const LiteralTypes = [
+  'boolean_literal',
+  'char_literal',
+  'float_literal',
+  'integer_literal',
+  'raw_string_literal',
+  'string_literal',
+];
 
 test('keeps non-numeric suffixes in literal tokens without consuming separated identifiers', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
-  const query = new Query(language, '(_literal) @literal');
   const literals = [
     '"text"custom',
     'r#"raw"#custom',
@@ -24,7 +32,7 @@ test('keeps non-numeric suffixes in literal tokens without consuming separated i
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([
+    expect(tree.rootNode.descendantsOfType(LiteralTypes).map((node) => node.text)).toEqual([
       ...literals.slice(0, -1),
       'r##"raw"##r',
       '"separate"',
@@ -58,7 +66,6 @@ test('keeps non-numeric suffixes in literal tokens without consuming separated i
     ]);
   } finally {
     tree.delete();
-    query.delete();
     parser.delete();
   }
 });
@@ -68,7 +75,6 @@ test('keeps raw-string prefixes in adjacent suffixes', async () => {
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
-  const query = new Query(language, '(_literal) @literal');
   try {
     for (const first of ['"a"', 'b"a"', 'c"a"', 'r#"a"#', 'br#"a"#', 'cr#"a"#']) {
       for (const prefix of ['r', 'br', 'cr']) {
@@ -77,7 +83,10 @@ test('keeps raw-string prefixes in adjacent suffixes', async () => {
           const tree = parser.parse(source)!;
           try {
             expect(tree.rootNode.hasError, source).toBe(false);
-            expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([first + prefix, '"b"']);
+            expect(tree.rootNode.descendantsOfType(LiteralTypes).map((node) => node.text)).toEqual([
+              first + prefix,
+              '"b"',
+            ]);
           } finally {
             tree.delete();
           }
@@ -85,7 +94,6 @@ test('keeps raw-string prefixes in adjacent suffixes', async () => {
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
