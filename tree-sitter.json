@@ -7,9 +7,6 @@
       "scope": "source.rust",
       "path": ".",
       "file-types": ["rs"],
-      "highlights": ["queries/highlights.scm"],
-      "injections": ["queries/injections.scm"],
-      "tags": ["queries/tags.scm"],
       "injection-regex": "rust",
       "external-files": ["src/frontmatter.h"]
     }
