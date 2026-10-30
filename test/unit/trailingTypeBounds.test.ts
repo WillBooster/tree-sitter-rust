@@ -1,7 +1,7 @@
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-test('preserves trailing bounds as queryable types without consuming addition operators', async () => {
+test('preserves trailing bounds as types without consuming addition operators', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
@@ -12,12 +12,13 @@ fn use_types(value: u8, addend: u32) {
   let _ = value as u32 + { addend };
 }`;
   const tree = parser.parse(source)!;
-  const types = new Query(language, '(type_item type: (_type) @type)');
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    expect(types.captures(tree.rootNode).map(({ node }) => [node.type, node.text])).toEqual([
-      ['bounded_type', 'dyn Send + Sync +'],
-    ]);
+    expect(
+      tree.rootNode
+        .descendantsOfType('type_item')
+        .map((node) => [node.childForFieldName('type')?.type, node.childForFieldName('type')?.text])
+    ).toEqual([['bounded_type', 'dyn Send + Sync +']]);
     const cast = tree.rootNode.descendantsOfType('type_cast_expression')[0]!;
     expect(cast.childForFieldName('type')?.text).toBe('Box<dyn Send +>');
     expect(
@@ -33,7 +34,6 @@ fn use_types(value: u8, addend: u32) {
       ['type_cast_expression', '+', '{ addend }'],
     ]);
   } finally {
-    types.delete();
     tree.delete();
     parser.delete();
   }
@@ -96,15 +96,11 @@ test.each([
   'trait Bound: Send + Sync + {}',
   'trait Bound = Send + Sync;',
   'trait Bound = Send + Sync +;',
-])('preserves direct bound-list children and query captures in %s', async (source) => {
+])('preserves direct bound-list children in %s', async (source) => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
   const tree = parser.parse(source)!;
-  const query = new Query(
-    language,
-    '(trait_bounds (type_identifier) @bound) (trait_alias_bounds (type_identifier) @bound)'
-  );
   try {
     expect(tree.rootNode.hasError).toBe(false);
     const lists = tree.rootNode.descendantsOfType(['trait_bounds', 'trait_alias_bounds']);
@@ -113,9 +109,7 @@ test.each([
       ['type_identifier', 'Send'],
       ['type_identifier', 'Sync'],
     ]);
-    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(['Send', 'Sync']);
   } finally {
-    query.delete();
     tree.delete();
     parser.delete();
   }

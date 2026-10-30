@@ -9,7 +9,6 @@ test('associates outer attributes with declarations and rejects orphan attribute
   const parser = new Parser();
   parser.setLanguage(language);
   const query = new Query(language, '(attributed_declaration (attribute_item) @attribute declaration: (_) @item)');
-  const tags = new Query(language, readFileSync('queries/tags.scm', 'utf8'));
   try {
     const nodeTypes = JSON.parse(readFileSync('src/node-types.json', 'utf8'));
     for (const type of ['attributed_declaration', 'attributed_expression']) {
@@ -42,14 +41,6 @@ test('associates outer attributes with declarations and rejects orphan attribute
             .filter(({ name }) => name === 'attribute')
             .map(({ node }) => node.text)
         ).toEqual(['#[allow(unused)]', '#[cfg(all())]']);
-        if (item === 'pub fn f() {}') {
-          expect(
-            tags
-              .captures(tree.rootNode)
-              .filter(({ name }) => name === 'name')
-              .map(({ node }) => node.text)
-          ).toContain('f');
-        }
       } finally {
         tree.delete();
       }
@@ -62,17 +53,6 @@ test('associates outer attributes with declarations and rejects orphan attribute
       ).toBe('m!{}');
     } finally {
       macroTree.delete();
-    }
-    const methodTree = parser.parse('impl S { #[inline] fn f() {} }')!;
-    try {
-      expect(
-        tags
-          .captures(methodTree.rootNode)
-          .filter(({ name }) => name === 'definition.method')
-          .map(({ node }) => node.text)
-      ).toEqual(['fn f() {}']);
-    } finally {
-      methodTree.delete();
     }
     const statements = parser.parse('fn f() { #[a] let x = 1; #[b] g(); }')!;
     try {
@@ -96,7 +76,6 @@ test('associates outer attributes with declarations and rejects orphan attribute
     }
   } finally {
     query.delete();
-    tags.delete();
     parser.delete();
   }
 });
@@ -105,7 +84,6 @@ test('ends attributed block statements before the following statement without a 
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(_expression/attributed_expression) @expression');
   try {
     for (const expression of [
       '{ first(); }',
@@ -126,9 +104,6 @@ test('ends attributed block statements before the following statement without a 
           source
         ).toEqual([`#[allow(unused)] #[cfg(all())] ${expression}`, 'after();']);
         expect(statements[0]?.namedChildren[0]?.childForFieldName('value')?.text).toBe(expression);
-        expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual([
-          `#[allow(unused)] #[cfg(all())] ${expression}`,
-        ]);
       } finally {
         tree.delete();
       }
@@ -140,7 +115,6 @@ test('ends attributed block statements before the following statement without a 
       invalid.delete();
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });

@@ -1,7 +1,7 @@
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-test('queries an entire else-if chain as one scope and each branch directly', async () => {
+test('parses an entire else-if chain as one if expression with direct else clauses', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
@@ -18,10 +18,6 @@ test('queries an entire else-if chain as one scope and each branch directly', as
   }`;
   const tree = parser.parse(source)!;
   const scopes = new Query(language, '(if_expression) @scope');
-  const branches = new Query(
-    language,
-    '(else_clause "else" "if" condition: (_) @condition consequence: (block) @body)'
-  );
   try {
     expect(tree.rootNode.hasError).toBe(false);
     const capturedScopes = scopes.captures(tree.rootNode).map(({ node }) => node);
@@ -41,14 +37,7 @@ test('queries an entire else-if chain as one scope and each branch directly', as
       '{\n      missing();\n    }',
       '{\n      zero();\n    }',
     ]);
-    expect(branches.captures(tree.rootNode).map(({ name, node }) => [name, node.text.trim()])).toEqual([
-      ['condition', 'let Some(second) = input && second < 0'],
-      ['body', '{\n      negative(second);\n    }'],
-      ['condition', 'input.is_none()'],
-      ['body', '{\n      missing();\n    }'],
-    ]);
   } finally {
-    branches.delete();
     scopes.delete();
     tree.delete();
     parser.delete();

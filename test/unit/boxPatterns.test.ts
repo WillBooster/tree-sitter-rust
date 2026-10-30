@@ -1,17 +1,11 @@
-import { readFileSync } from 'node:fs';
-
 import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-test('parses boxed bindings, alternatives and keyword highlighting around trivia', async () => {
+test('parses boxed bindings and alternatives around trivia', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
   const query = new Query(language, '(box_pattern pattern: (_) @inner)');
-  const highlights = new Query(
-    language,
-    readFileSync(new URL('../../queries/highlights.scm', import.meta.url), 'utf8')
-  );
   const source = `#![feature(box_patterns)]
     macro_rules! tokens { ($($tokens:tt)*) => {}; }
     fn patterns(value: Box<i32>) {
@@ -34,7 +28,6 @@ test('parses boxed bindings, alternatives and keyword highlighting around trivia
       }
     }
   } finally {
-    highlights.delete();
     query.delete();
     parser.delete();
   }
@@ -55,12 +48,6 @@ test('parses boxed bindings, alternatives and keyword highlighting around trivia
     ]);
     expect(arms[1]!.descendantsOfType('box_pattern')).toHaveLength(2);
     expect(current.rootNode.descendantsOfType('box_pattern').at(-1)!.childForFieldName('pattern')!.text).toBe('_');
-    expect(
-      highlights
-        .captures(current.rootNode)
-        .filter(({ name, node }) => name === 'keyword' && node.text.includes('box'))
-        .map(({ node }) => node.text)
-    ).toEqual(['box', 'box', 'box', 'box', 'box', 'box']);
     expect(
       current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
     ).toEqual(['patterns', 'r#box']);

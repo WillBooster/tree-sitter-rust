@@ -1,7 +1,7 @@
 import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
-test('preserves expression supertype captures for unary range endpoints', async () => {
+test('parses unary range endpoints', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
@@ -9,12 +9,15 @@ test('preserves expression supertype captures for unary range endpoints', async 
   const tree = parser.parse(
     'fn ranges(written: &usize, signed: i32) { let _ = ..*written; let _ = ..&written; let _ = ..-signed; }'
   );
-  const query = new Query(language, '(range_expression (_expression) @endpoint)');
   try {
     expect(tree?.rootNode.hasError).toBe(false);
-    expect(query.captures(tree!.rootNode).map(({ node }) => node.text)).toEqual(['*written', '&written', '-signed']);
+    expect(
+      tree!.rootNode
+        .descendantsOfType('range_expression')
+        .flatMap((node) => node.namedChildren)
+        .map((node) => node.text)
+    ).toEqual(['*written', '&written', '-signed']);
   } finally {
-    query.delete();
     tree?.delete();
     parser.delete();
   }
@@ -39,7 +42,7 @@ test('keeps bounded unary endpoints and following loop bodies', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(range_expression (_expression) @endpoint) (for_expression body: (block) @body)');
+  const query = new Query(language, '(for_expression body: (block) @body)');
   let tree: Tree | undefined;
   try {
     tree = parser.parse(BoundedSource)!;
@@ -52,8 +55,12 @@ test('keeps bounded unary endpoints and following loop bodies', async () => {
 
   function checkTree(current: Tree): void {
     expect(current.rootNode.hasError).toBe(false);
-    const nodes = query.captures(current.rootNode);
-    expect(nodes.filter(({ name }) => name === 'endpoint').map(({ node }) => [node.type, node.text])).toEqual([
+    expect(
+      current.rootNode
+        .descendantsOfType('range_expression')
+        .flatMap((node) => node.namedChildren)
+        .map((node) => [node.type, node.text])
+    ).toEqual([
       ['integer_literal', '0'],
       ['binary_expression', '-*ptr+5'],
       ['identifier', 'start'],
@@ -62,6 +69,6 @@ test('keeps bounded unary endpoints and following loop bodies', async () => {
       ['unary_expression', '-*ptr'],
       ['integer_literal', '1'],
     ]);
-    expect(nodes.filter(({ name }) => name === 'body').map(({ node }) => node.text)).toEqual(['{ if i>3 { break; } }']);
+    expect(query.captures(current.rootNode).map(({ node }) => node.text)).toEqual(['{ if i>3 { break; } }']);
   }
 });

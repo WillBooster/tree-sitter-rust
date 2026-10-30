@@ -147,7 +147,7 @@ test('preserves syntax errors at invalid numeric suffix boundaries', async () =>
   }
 });
 
-test('keeps tuple fields suffixless while preserving public integer captures', async () => {
+test('keeps tuple fields suffixless while preserving integer literals', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();

@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises';
-
 import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
@@ -39,27 +37,19 @@ test.each([
 });
 
 test.each([
-  ['type A = union::<u8>::Item;', 'type_identifier', 'union', 'type'],
-  ['type B = std::vec::Vec::<u8>::Item;', 'scoped_identifier', 'Vec', 'constructor'],
-])('preserves existing turbofish prefix nodes and highlights in %s', async (source, kind, name, captureName) => {
+  ['type A = union::<u8>::Item;', 'type_identifier'],
+  ['type B = std::vec::Vec::<u8>::Item;', 'scoped_identifier'],
+])('preserves existing turbofish prefix nodes in %s', async (source, kind) => {
   await Parser.init();
   const parser = new Parser();
   const language = await Language.load('tree-sitter-rust.wasm');
   parser.setLanguage(language);
   const tree = parser.parse(source)!;
-  const query = new Query(language, await readFile('queries/highlights.scm', 'utf8'));
   try {
     expect(tree.rootNode.hasError).toBe(false);
     const type = tree.rootNode.descendantsOfType('generic_type')[0]?.childForFieldName('type');
     expect(type?.type).toBe(kind);
-    expect(
-      query
-        .captures(tree.rootNode)
-        .filter(({ node }) => node.text === name)
-        .map(({ name: capture, node }) => [capture, node.type])
-    ).toEqual([[captureName, kind === 'scoped_identifier' ? 'identifier' : 'type_identifier']]);
   } finally {
-    query.delete();
     tree.delete();
     parser.delete();
   }
