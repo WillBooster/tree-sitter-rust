@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 await Parser.init();
@@ -8,7 +8,6 @@ const language = await Language.load(path.join(import.meta.dirname, '../../tree-
 
 test('retains attributed initializers and compiler expression binding', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(_expression/attributed_expression value: (_) @value) @expression');
   try {
     for (const [expression, value] of [
       ['1 + 2', '1'],
@@ -30,9 +29,8 @@ test('retains attributed initializers and compiler expression binding', () => {
       const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError, source).toBe(false);
-        const values = query.captures(tree.rootNode).filter((capture) => capture.name === 'value');
         expect(
-          values.map((capture) => capture.node.text),
+          tree.rootNode.descendantsOfType('attributed_expression').map((node) => node.childForFieldName('value')?.text),
           source
         ).toEqual([value]);
         expect(tree.rootNode.descendantsOfType('call_expression').at(-1)?.text).toBe('after()');
@@ -41,7 +39,6 @@ test('retains attributed initializers and compiler expression binding', () => {
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
