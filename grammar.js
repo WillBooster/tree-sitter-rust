@@ -313,7 +313,8 @@ module.exports = grammar({
       attributableDeclaration(
         $,
         alias($._associated_const_item, $.const_item),
-        alias($._associated_type_item, $.type_item)
+        alias($._associated_type_item, $.type_item),
+        alias($._associated_type_declaration, $.associated_type)
       ),
 
     _associated_attributed_declaration: ($) =>
@@ -779,16 +780,9 @@ module.exports = grammar({
     trait_alias_bounds: ($) =>
       seq(sepBy1('+', choice($._type, $.lifetime, $.higher_ranked_trait_bound)), optional('+')),
 
-    associated_type: ($) =>
-      seq(
-        optional($.visibility_modifier),
-        'type',
-        field('name', $._type_identifier),
-        field('type_parameters', optional($.type_parameters)),
-        field('bounds', optional($.trait_bounds)),
-        optional($.where_clause),
-        ';'
-      ),
+    associated_type: ($) => associatedType($),
+
+    _associated_type_declaration: ($) => associatedType($, [optional('default')]),
 
     trait_bounds: ($) =>
       prec.right(
@@ -1998,8 +1992,9 @@ module.exports = grammar({
  * @param {import('@willbooster/web-tree-sitter/dsl').GrammarSymbols<'empty_statement' | 'inner_attribute_item' | 'macro_invocation' | 'macro_definition' | 'decl_macro' | 'mod_item' | 'foreign_mod_item' | 'struct_item' | 'union_item' | 'enum_item' | 'type_item' | 'function_item' | 'function_signature_item' | 'impl_item' | 'trait_item' | 'trait_alias' | 'associated_type' | 'let_declaration' | 'use_declaration' | 'extern_crate_declaration' | 'static_item' | '_safe_function_signature_item' | '_qualified_static_item'>} $
  * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} constant
  * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} [typeAlias]
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral} [typeDeclaration]
  */
-function attributableDeclaration($, constant, typeAlias = $.type_item) {
+function attributableDeclaration($, constant, typeAlias = $.type_item, typeDeclaration = $.associated_type) {
   return choice(
     constant,
     $.macro_invocation,
@@ -2016,13 +2011,30 @@ function attributableDeclaration($, constant, typeAlias = $.type_item) {
     $.impl_item,
     $.trait_item,
     $.trait_alias,
-    $.associated_type,
+    typeDeclaration,
     $.let_declaration,
     $.use_declaration,
     $.extern_crate_declaration,
     $.static_item,
     alias($._safe_function_signature_item, $.function_signature_item),
     alias($._qualified_static_item, $.static_item)
+  );
+}
+
+/**
+ * @param {import('@willbooster/web-tree-sitter/dsl').GrammarSymbols<'visibility_modifier' | '_type_identifier' | 'type_parameters' | 'trait_bounds' | 'where_clause'>} $
+ * @param {import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral[]} [modifier]
+ */
+function associatedType($, modifier = []) {
+  return seq(
+    optional($.visibility_modifier),
+    ...modifier,
+    'type',
+    field('name', $._type_identifier),
+    field('type_parameters', optional($.type_parameters)),
+    field('bounds', optional($.trait_bounds)),
+    optional($.where_clause),
+    ';'
   );
 }
 
