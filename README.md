@@ -25,7 +25,7 @@ the trees that error recovery produces may change; such changes are released as 
 
 The npm package ships `tree-sitter-rust.wasm` for
 [@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter), which runs in Node.js, Bun,
-browsers, and Cloudflare Workers. The parser requires version 15.0.0 or later within major versions 15 and 16 of that runtime.
+browsers, and Cloudflare Workers. The parser requires version 17.0.1 or later within major version 17 of that runtime.
 It carries the WillBooster ABI number, which upstream's `web-tree-sitter` rejects.
 
 In Node.js and Bun, load the grammar from its path:
@@ -70,11 +70,11 @@ The package also ships the node types in `src/node-types.json`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
-fuzzed with. The parser requires version 15.0.0 or later within major versions 15 and 16 of that runtime; upstream's
+fuzzed with. The parser requires version 17.0.1 or later within major version 17 of that runtime; upstream's
 `tree-sitter` crate rejects it:
 
 ```sh
-cargo add willbooster-tree-sitter@16.0.0 --rename tree-sitter
+cargo add willbooster-tree-sitter@17.0.1 --rename tree-sitter
 cargo add willbooster-tree-sitter-rust --rename tree-sitter-rust
 ```
 
