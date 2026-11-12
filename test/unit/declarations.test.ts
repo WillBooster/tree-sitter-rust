@@ -1,6 +1,7 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
+import { fieldNodes } from '../helpers/ast.js';
 import { position } from '../helpers/position.js';
 
 test('parses concrete declarations', async () => {
@@ -64,26 +65,28 @@ test('parses attributed struct pattern fields and turbofish', async () => {
   const parser = new Parser();
   parser.setLanguage(language);
   let tree: Tree | undefined;
-  let query: Query | undefined;
   const source =
     'enum Record<T> { Item { key: T, value: T } } fn read(value: Record<i32>) { let Record::Item::<i32> { #[allow(unused)] key, value: result } = value; }';
   try {
     tree = parser.parse(source)!;
     expect(tree.rootNode.hasError).toBe(false);
-    query = new Query(
-      language,
-      '(struct_pattern type: (generic_type) @type) (field_pattern (attribute_item) @attribute name: (shorthand_field_identifier) @name)'
-    );
-    const captures = query.captures(tree.rootNode);
-    expect(captures.filter(({ name }) => name === 'type').map(({ node }) => node.text)).toEqual([
+    expect(fieldNodes(tree.rootNode, 'struct_pattern', 'type', 'generic_type').map((node) => node.text)).toEqual([
       'Record::Item::<i32>',
     ]);
-    expect(captures.filter(({ name }) => name === 'attribute').map(({ node }) => node.text)).toEqual([
-      '#[allow(unused)]',
-    ]);
-    expect(captures.filter(({ name }) => name === 'name').map(({ node }) => node.text)).toEqual(['key']);
+    const attributedFields = tree.rootNode
+      .descendantsOfType('field_pattern')
+      .filter(
+        (node) =>
+          node.childForFieldName('name')?.type === 'shorthand_field_identifier' &&
+          node.children.some((child) => child.type === 'attribute_item')
+      );
+    expect(
+      attributedFields.flatMap((node) =>
+        node.children.filter((child) => child.type === 'attribute_item').map((child) => child.text)
+      )
+    ).toEqual(['#[allow(unused)]']);
+    expect(attributedFields.map((node) => node.childForFieldName('name')!.text)).toEqual(['key']);
   } finally {
-    query?.delete();
     tree?.delete();
     parser.delete();
   }
@@ -108,12 +111,15 @@ trait T {
 fn following() {}
 `;
   const tree = parser.parse(source)!;
-  const query = new Query(language, '(const_item name: (identifier) @name type: (_) @type)');
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const captures = query.captures(tree.rootNode);
-    const names = captures.filter(({ name }) => name === 'name');
-    expect(names.map(({ node }) => node.text)).toEqual(['_', '_', 'VALUE', '_', '_', 'REQUIRED', 'r#type', '_', '_']);
+    const constItems = tree.rootNode
+      .descendantsOfType('const_item')
+      .filter(
+        (node) => node.childForFieldName('name')?.type === 'identifier' && node.childForFieldName('type')?.isNamed
+      );
+    const names = constItems.map((node) => node.childForFieldName('name')!);
+    expect(names.map((node) => node.text)).toEqual(['_', '_', 'VALUE', '_', '_', 'REQUIRED', 'r#type', '_', '_']);
     const expected = [...source.matchAll(/\bconst ([A-Za-z_][A-Za-z_0-9#]*):/g)].map((match) => {
       const start = match.index + 'const '.length;
       return [
@@ -125,9 +131,9 @@ fn following() {}
       ];
     });
     expect(
-      names.map(({ node }) => [node.text, node.startIndex, node.endIndex, node.startPosition, node.endPosition])
+      names.map((node) => [node.text, node.startIndex, node.endIndex, node.startPosition, node.endPosition])
     ).toEqual(expected);
-    expect(captures.filter(({ name }) => name === 'type').map(({ node }) => node.text)).toEqual(
+    expect(constItems.map((node) => node.childForFieldName('type')!.text)).toEqual(
       Array.from({ length: 9 }, () => 'u8')
     );
     const associated = tree.rootNode
@@ -139,7 +145,6 @@ fn following() {}
       .map((node) => node.childForFieldName('body'));
     expect(lists.map((node) => node?.type)).toEqual(['declaration_list', 'declaration_list']);
   } finally {
-    query.delete();
     tree.delete();
     parser.delete();
   }
@@ -161,10 +166,6 @@ test.each(associatedConstantSources.flatMap((source) => ['VALUE', '_', 'r#_'].ma
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
     const parser = new Parser().setLanguage(language);
-    const query = new Query(
-      language,
-      '(const_item name: (identifier) @constant) (function_item name: (identifier) @function)'
-    );
     const start = declaration.lastIndexOf('VALUE');
     const source =
       declaration.slice(0, start) + name + declaration.slice(start + 'VALUE'.length) + '\nfn following() {}\n';
@@ -172,28 +173,25 @@ test.each(associatedConstantSources.flatMap((source) => ['VALUE', '_', 'r#_'].ma
     const tree = parser.parse(source)!;
     try {
       expect(tree.rootNode.hasError, source).toBe(invalid);
-      const functions = query.captures(tree.rootNode).filter(({ name: captureName }) => captureName === 'function');
+      const functions = fieldNodes(tree.rootNode, 'function_item', 'name', 'identifier');
       for (const expected of ['retained', 'following']) {
         const nameStart = source.lastIndexOf(expected);
         expect(
           functions.some(
-            ({ node }) =>
+            (node) =>
               node.text === expected && node.startIndex === nameStart && node.endIndex === nameStart + expected.length
           )
         ).toBe(true);
       }
-      if (!invalid)
+      if (!invalid) {
         expect(
-          query
-            .captures(tree.rootNode)
-            .some(
-              ({ name: captureName, node }) =>
-                captureName === 'constant' && node.text === 'VALUE' && node.startIndex === start
-            )
+          fieldNodes(tree.rootNode, 'const_item', 'name', 'identifier').some(
+            (node) => node.text === 'VALUE' && node.startIndex === start
+          )
         ).toBe(true);
+      }
     } finally {
       tree.delete();
-      query.delete();
       parser.delete();
     }
   }

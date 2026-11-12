@@ -1,5 +1,7 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { directChildren } from '../helpers/ast.js';
 
 for (const prefix of ['r', 'br', 'cr']) {
   test(`preserves the complete content and range of ${prefix} raw strings`, async () => {
@@ -7,7 +9,6 @@ for (const prefix of ['r', 'br', 'cr']) {
     const language = await Language.load('tree-sitter-rust.wasm');
     const parser = new Parser();
     parser.setLanguage(language);
-    const query = new Query(language, '(raw_string_literal (string_content) @content)');
     try {
       for (const hashes of ['', '#', '##']) {
         const contents = ['', '   ', '\n\t SELECT * FROM users\n    ', '\r\n body\t'];
@@ -18,7 +19,6 @@ for (const prefix of ['r', 'br', 'cr']) {
       }
       checkContent(`macro_rules! tokens { ($($t:tt)*) => {} } tokens!(${prefix}#"`, '  a', '"###);');
     } finally {
-      query.delete();
       parser.delete();
     }
 
@@ -26,11 +26,11 @@ for (const prefix of ['r', 'br', 'cr']) {
       const tree = parser.parse(`${before}${content}${after}`)!;
       try {
         expect(tree.rootNode.hasError).toBe(false);
-        const captures = query.captures(tree.rootNode);
+        const captures = directChildren(tree.rootNode, 'raw_string_literal', 'string_content');
         expect(captures).toHaveLength(1);
-        expect(captures[0]?.node.text).toBe(content);
-        expect(captures[0]?.node.startIndex).toBe(before.length);
-        expect(captures[0]?.node.endIndex).toBe(before.length + content.length);
+        expect(captures[0]?.text).toBe(content);
+        expect(captures[0]?.startIndex).toBe(before.length);
+        expect(captures[0]?.endIndex).toBe(before.length + content.length);
       } finally {
         tree.delete();
       }

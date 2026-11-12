@@ -1,6 +1,7 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
+import { directChildren, fieldNodes, sortNodes } from '../helpers/ast.js';
 import { position } from '../helpers/position.js';
 
 await Parser.init();
@@ -18,14 +19,6 @@ test.each(cases)(
   'retains the import target in $declaration with and without a raw path prefix',
   ({ declaration, kind }) => {
     const parser = new Parser().setLanguage(language);
-    const query = new Query(
-      language,
-      `
-    (scoped_identifier name: (identifier) @target (#eq? @target "self"))
-    (use_list (self) @target)
-    (use_as_clause path: (self) @target)
-  `
-    );
     const initial = `${declaration}\nfn after() {}`;
     const pathStart = initial.includes('std') ? initial.indexOf('std') : initial.lastIndexOf('foo');
     try {
@@ -38,15 +31,20 @@ test.each(cases)(
         }
       }
     } finally {
-      query.delete();
       parser.delete();
     }
 
     function checkTree(current: Tree, source: string): void {
       expect(current.rootNode.hasError, source).toBe(false);
-      const captures = query.captures(current.rootNode);
+      const captures = sortNodes([
+        ...fieldNodes(current.rootNode, 'scoped_identifier', 'name', 'identifier').filter(
+          (node) => node.text === 'self'
+        ),
+        ...directChildren(current.rootNode, 'use_list', 'self'),
+        ...fieldNodes(current.rootNode, 'use_as_clause', 'path', 'self'),
+      ]);
       expect(captures).toHaveLength(1);
-      const target = captures[0]!.node;
+      const target = captures[0]!;
       expect(target.type).toBe(kind);
       expect(target.text).toBe('self');
       expect(target.startIndex).toBe(source.indexOf('self'));

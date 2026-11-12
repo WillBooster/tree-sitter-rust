@@ -1,5 +1,7 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { fieldNodes } from '../helpers/ast.js';
 
 test('parses unary range endpoints', async () => {
   await Parser.init();
@@ -42,33 +44,33 @@ test('keeps bounded unary endpoints and following loop bodies', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(for_expression body: (block) @body)');
   let tree: Tree | undefined;
   try {
     tree = parser.parse(BoundedSource)!;
     checkTree(tree);
   } finally {
     tree?.delete();
-    query.delete();
     parser.delete();
   }
-
-  function checkTree(current: Tree): void {
-    expect(current.rootNode.hasError).toBe(false);
-    expect(
-      current.rootNode
-        .descendantsOfType('range_expression')
-        .flatMap((node) => node.namedChildren)
-        .map((node) => [node.type, node.text])
-    ).toEqual([
-      ['integer_literal', '0'],
-      ['binary_expression', '-*ptr+5'],
-      ['identifier', 'start'],
-      ['reference_expression', '&n'],
-      ['integer_literal', '0'],
-      ['unary_expression', '-*ptr'],
-      ['integer_literal', '1'],
-    ]);
-    expect(query.captures(current.rootNode).map(({ node }) => node.text)).toEqual(['{ if i>3 { break; } }']);
-  }
 });
+
+function checkTree(current: Tree): void {
+  expect(current.rootNode.hasError).toBe(false);
+  expect(
+    current.rootNode
+      .descendantsOfType('range_expression')
+      .flatMap((node) => node.namedChildren)
+      .map((node) => [node.type, node.text])
+  ).toEqual([
+    ['integer_literal', '0'],
+    ['binary_expression', '-*ptr+5'],
+    ['identifier', 'start'],
+    ['reference_expression', '&n'],
+    ['integer_literal', '0'],
+    ['unary_expression', '-*ptr'],
+    ['integer_literal', '1'],
+  ]);
+  expect(fieldNodes(current.rootNode, 'for_expression', 'body', 'block').map((node) => node.text)).toEqual([
+    '{ if i>3 { break; } }',
+  ]);
+}

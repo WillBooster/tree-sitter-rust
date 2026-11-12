@@ -1,4 +1,4 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test.each([
@@ -21,16 +21,22 @@ test.each([
   const language = await Language.load('tree-sitter-rust.wasm');
   parser.setLanguage(language);
   const tree = parser.parse(source)!;
-  const query = new Query(language, '(generic_type type: (_) @type type_arguments: (type_arguments) @arguments)');
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const match = query.matches(tree.rootNode)[0]!;
-    expect(match.captures.map(({ name: capture, node }) => [capture, node.text])).toEqual([
+    const genericType = tree.rootNode
+      .descendantsOfType('generic_type')
+      .find(
+        (node) =>
+          node.childForFieldName('type')?.isNamed && node.childForFieldName('type_arguments')?.type === 'type_arguments'
+      )!;
+    expect([
+      ['type', genericType.childForFieldName('type')!.text],
+      ['arguments', genericType.childForFieldName('type_arguments')!.text],
+    ]).toEqual([
       ['type', name],
       ['arguments', argumentsText],
     ]);
   } finally {
-    query.delete();
     tree.delete();
     parser.delete();
   }

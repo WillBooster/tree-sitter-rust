@@ -1,6 +1,7 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
+import { directChildren, fieldNodes, sortNodes } from '../helpers/ast.js';
 import { position } from '../helpers/position.js';
 
 await Parser.init();
@@ -22,10 +23,6 @@ test.each(["'slot", "'static", "'_", "'r#static", "'r#_"])(
   'parses lifetime declaration %s while retaining following items',
   (name) => {
     const parser = new Parser().setLanguage(language);
-    const query = new Query(
-      language,
-      '(lifetime_parameter name: (lifetime) @declaration) (for_lifetimes (lifetime) @declaration) (function_item name: (identifier) @function)'
-    );
     const invalid = name !== "'slot";
     try {
       for (const declaration of declarationSources) {
@@ -35,25 +32,25 @@ test.each(["'slot", "'static", "'_", "'r#static", "'r#_"])(
         const tree = parser.parse(source)!;
         try {
           expect(tree.rootNode.hasError, source).toBe(invalid);
-          const after = query
-            .captures(tree.rootNode)
-            .find(({ name: captureName, node }) => captureName === 'function' && node.text === 'after')!.node;
+          const after = fieldNodes(tree.rootNode, 'function_item', 'name', 'identifier').find(
+            (node) => node.text === 'after'
+          )!;
           expect([after.startIndex, after.endIndex]).toEqual([
             source.lastIndexOf('after'),
             source.lastIndexOf('after') + 5,
           ]);
-          if (!invalid)
-            expect(
-              query
-                .captures(tree.rootNode)
-                .some(({ name: captureName, node }) => captureName === 'declaration' && node.text === "'slot")
-            ).toBe(true);
+          if (!invalid) {
+            const declarations = [
+              ...fieldNodes(tree.rootNode, 'lifetime_parameter', 'name', 'lifetime'),
+              ...directChildren(tree.rootNode, 'for_lifetimes', 'lifetime'),
+            ];
+            expect(declarations.some((node) => node.text === "'slot")).toBe(true);
+          }
         } finally {
           tree.delete();
         }
       }
     } finally {
-      query.delete();
       parser.delete();
     }
   }
@@ -67,39 +64,22 @@ fn named<'r#if>(value: &'r#if str) -> &'r#if str { value }
 fn after() {}
 `;
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(function_item name: (identifier) @function) (lifetime (identifier) @lifetime) (token_tree (identifier) @token)'
-  );
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const captures = query.captures(tree.rootNode);
-    expect(captures.filter(({ name }) => name === 'function').map(({ node }) => node.text)).toEqual([
-      'r#static',
-      'named',
-      'after',
-    ]);
-    expect(captures.filter(({ name }) => name === 'token').map(({ node }) => node.text)).toEqual([
-      'r#static',
-      'r#type',
-      'r#if',
-    ]);
-    expect(captures.filter(({ name }) => name === 'lifetime').map(({ node }) => node.text)).toEqual([
-      'r#static',
-      '_',
-      'r#if',
-      'r#if',
-      'r#if',
-    ]);
-    for (const { node } of captures) {
+    const functions = fieldNodes(tree.rootNode, 'function_item', 'name', 'identifier');
+    const tokens = directChildren(tree.rootNode, 'token_tree', 'identifier');
+    const lifetimes = directChildren(tree.rootNode, 'lifetime', 'identifier');
+    expect(functions.map((node) => node.text)).toEqual(['r#static', 'named', 'after']);
+    expect(tokens.map((node) => node.text)).toEqual(['r#static', 'r#type', 'r#if']);
+    expect(lifetimes.map((node) => node.text)).toEqual(['r#static', '_', 'r#if', 'r#if', 'r#if']);
+    for (const node of sortNodes([...functions, ...tokens, ...lifetimes])) {
       expect(source.slice(node.startIndex, node.endIndex)).toBe(node.text);
       expect(node.startPosition).toEqual(position(source, node.startIndex));
       expect(node.endPosition).toEqual(position(source, node.endIndex));
     }
   } finally {
     tree.delete();
-    query.delete();
     parser.delete();
   }
 });

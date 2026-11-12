@@ -17,15 +17,5 @@
       "matchPackageNames": ["willbooster-tree-sitter"],
       "minimumReleaseAge": "0 days",
     },
-    // 19.0.2: Version 19 removes Query, which existing grammar tests import and execute; retaining the update requires rewriting those tests. The newer 19.1.0 release does not restore it. https://github.com/WillBooster/tree-sitter/pull/350
-    {
-      "matchPackageNames": ["@willbooster/web-tree-sitter"],
-      "allowedVersions": "!/^19\\.0\\.2$/",
-    },
-    // 19.0.0: The v19 generator removes metadata needed by the v17 web runtime query engine, causing 111 existing tests to fail; v19 also removes that engine. https://github.com/WillBooster/tree-sitter-rust/actions/runs/43274013476/job/131377657429 https://github.com/WillBooster/tree-sitter/pull/350
-    {
-      "matchPackageNames": ["tree-sitter"],
-      "allowedVersions": "!/^19\\.0\\.0$/",
-    },
   ],
 }

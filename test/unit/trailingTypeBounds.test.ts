@@ -1,5 +1,7 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { directChildren } from '../helpers/ast.js';
 
 test('preserves trailing bounds as types without consuming addition operators', async () => {
   await Parser.init();
@@ -51,12 +53,12 @@ test.each([
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
   const tree = parser.parse(source)!;
-  const query = new Query(language, '(bounded_type (scoped_type_identifier) @trait)');
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(['::core::marker::Sync']);
+    expect(directChildren(tree.rootNode, 'bounded_type', 'scoped_type_identifier').map((node) => node.text)).toEqual([
+      '::core::marker::Sync',
+    ]);
   } finally {
-    query.delete();
     tree.delete();
     parser.delete();
   }
