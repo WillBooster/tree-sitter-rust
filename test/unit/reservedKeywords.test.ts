@@ -1,5 +1,7 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { directChildren, fieldNodes } from '../helpers/ast.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
@@ -56,10 +58,6 @@ const allEditionKeywords = [
 
 test('rejects keyword declarations while retaining following declarations', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(function_item name: (identifier) @function) (struct_item name: (type_identifier) @type)'
-  );
   try {
     for (const keyword of allEditionKeywords) {
       for (const declaration of [`fn ${keyword}() {}`, `struct ${keyword};`]) {
@@ -67,12 +65,13 @@ test('rejects keyword declarations while retaining following declarations', () =
         const tree = parser.parse(source)!;
         try {
           expect(tree.rootNode.hasError, source).toBe(true);
-          const captures = query.captures(tree.rootNode);
+          const functions = fieldNodes(tree.rootNode, 'function_item', 'name', 'identifier');
+          const types = fieldNodes(tree.rootNode, 'struct_item', 'name', 'type_identifier');
           expect(
-            captures.some(({ node }) => node.text === keyword),
+            [...functions, ...types].some((node) => node.text === keyword),
             source
           ).toBe(false);
-          const after = captures.find(({ name, node }) => name === 'function' && node.text === 'after')!.node;
+          const after = functions.find((node) => node.text === 'after')!;
           expect(after.startIndex, source).toBe(source.lastIndexOf('after'));
           expect(after.endIndex).toBe(after.startIndex + 'after'.length);
         } finally {
@@ -81,14 +80,12 @@ test('rejects keyword declarations while retaining following declarations', () =
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
 
 test('retains valid raw identifiers and contextual names at declaration boundaries', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(function_item name: (identifier) @name)');
   const rawNames = allEditionKeywords
     .filter((name) => !['_', 'self', 'Self', 'crate', 'super'].includes(name))
     .map((name) => `r#${name}`);
@@ -111,7 +108,13 @@ test('retains valid raw identifiers and contextual names at declaration boundari
       const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError, source).toBe(false);
-        expect(query.captures(tree.rootNode).map(({ node }) => [node.text, node.startIndex, node.endIndex])).toEqual([
+        expect(
+          fieldNodes(tree.rootNode, 'function_item', 'name', 'identifier').map((node) => [
+            node.text,
+            node.startIndex,
+            node.endIndex,
+          ])
+        ).toEqual([
           [name, 3, 3 + name.length],
           ['after', source.lastIndexOf('after'), source.lastIndexOf('after') + 5],
         ]);
@@ -120,17 +123,12 @@ test('retains valid raw identifiers and contextual names at declaration boundari
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
 
 test('retains keyword macro tokens, special paths and lifetime placeholders', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(struct_expression name: (_) @constructor) (lifetime (identifier) @lifetime) (macro_invocation macro: (identifier) @macro)'
-  );
   const source = `macro_rules! words { ($($word:tt)*) => {}; }
 words!(${allEditionKeywords.join(' ')});
 struct S;
@@ -144,10 +142,11 @@ fn after() {}`;
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const captures = query.captures(tree.rootNode);
-    expect(captures.filter(({ name }) => name === 'constructor').map(({ node }) => node.text)).toEqual(['Self']);
-    expect(captures.filter(({ name }) => name === 'lifetime').map(({ node }) => node.text)).toEqual(['static', '_']);
-    expect(captures.filter(({ name }) => name === 'macro').map(({ node }) => node.text)).toEqual(['words']);
+    expect(fieldNodes(tree.rootNode, 'struct_expression', 'name').map((node) => node.text)).toEqual(['Self']);
+    expect(directChildren(tree.rootNode, 'lifetime', 'identifier').map((node) => node.text)).toEqual(['static', '_']);
+    expect(fieldNodes(tree.rootNode, 'macro_invocation', 'macro', 'identifier').map((node) => node.text)).toEqual([
+      'words',
+    ]);
     const tokens = tree.rootNode.descendantsOfType('macro_invocation')[0]!.descendantsOfType('token_tree')[0]!;
     expect(tokens.text).toBe(`(${allEditionKeywords.join(' ')})`);
     expect(tokens.startIndex).toBe(source.indexOf('words!(') + 'words!'.length);
@@ -155,7 +154,6 @@ fn after() {}`;
     expect(tree.rootNode.descendantsOfType('function_item').at(-1)!.childForFieldName('name')!.text).toBe('after');
   } finally {
     tree.delete();
-    query.delete();
     parser.delete();
   }
 });

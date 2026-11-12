@@ -1,4 +1,4 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test.each([
@@ -11,7 +11,6 @@ test.each([
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
     const parser = new Parser().setLanguage(language);
-    const query = new Query(language, '(let_declaration pattern: (identifier) @binding value: (_) @value)');
     const complete = `fn f() {\n    let y = ${expression};\n    next();\n}\nfn h() {}`;
     const close = complete.indexOf(removed, complete.indexOf('let y'));
     try {
@@ -27,15 +26,18 @@ test.each([
         }
       }
     } finally {
-      query.delete();
       parser.delete();
     }
 
     function checkTree(current: Tree, source: string, incomplete: boolean): void {
       expect(current.rootNode.hasError).toBe(incomplete);
-      const captures = query.captures(current.rootNode);
-      expect(captures.filter(({ name }) => name === 'binding').map(({ node }) => node.text)).toEqual(['y']);
-      const values = captures.filter(({ name }) => name === 'value').map(({ node }) => node);
+      const matchedLets = current.rootNode
+        .descendantsOfType('let_declaration')
+        .filter(
+          (node) => node.childForFieldName('pattern')?.type === 'identifier' && node.childForFieldName('value')?.isNamed
+        );
+      expect(matchedLets.map((node) => node.childForFieldName('pattern')!.text)).toEqual(['y']);
+      const values = matchedLets.map((node) => node.childForFieldName('value')!);
       expect(values).toHaveLength(1);
       const value = values[0]!;
       expect(value.type).toBe(kind);
@@ -61,13 +63,6 @@ test.each(['next()', 'foo.bar()'])(
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
     const parser = new Parser().setLanguage(language);
-    const query = new Query(
-      language,
-      `
-      (let_declaration pattern: (identifier) @binding value: (_) @value)
-      (struct_expression name: (type_identifier) @type body: (field_initializer_list) @fields) @structure
-    `
-    );
     const complete = `fn f() {\n    let y = S { a: 1, b: 2, };\n    ${following};\n}\nfn h() {}`;
     try {
       for (const [source, incomplete] of [
@@ -76,45 +71,54 @@ test.each(['next()', 'foo.bar()'])(
       ] as const) {
         const tree = parser.parse(source)!;
         try {
-          checkTree(tree, source, incomplete);
+          checkStructTree(tree, source, incomplete);
         } finally {
           tree.delete();
         }
       }
     } finally {
-      query.delete();
       parser.delete();
-    }
-
-    function checkTree(current: Tree, source: string, incomplete: boolean): void {
-      expect(current.rootNode.hasError).toBe(incomplete);
-      const captures = query.captures(current.rootNode);
-      expect(captures.filter(({ name }) => name === 'binding').map(({ node }) => node.text)).toEqual(['y']);
-      const types = captures.filter(({ name }) => name === 'type').map(({ node }) => node);
-      expect(types.map((node) => node.text)).toEqual(['S']);
-      const structures = captures.filter(({ name }) => name === 'structure').map(({ node }) => node);
-      expect(structures).toHaveLength(1);
-      const structure = structures[0]!;
-      const value = captures.find(({ name }) => name === 'value')!.node;
-      expect(structure.startIndex).toBe(source.indexOf('S {'));
-      expect(types[0]!.startIndex).toBe(structure.startIndex);
-      expect(types[0]!.endIndex).toBe(structure.startIndex + 1);
-      const fields = captures.find(({ name }) => name === 'fields')!.node;
-      expect(fields.startIndex).toBe(source.indexOf('{', structure.startIndex));
-      expect(fields.endIndex).toBe(structure.endIndex);
-      expect(structure.endIndex).toBeLessThanOrEqual(value.endIndex);
-      expect(
-        structure
-          .descendantsOfType('field_initializer')
-          .map((node) => [node.childForFieldName('field')!.text, node.childForFieldName('value')!.text])
-      ).toEqual([
-        ['a', '1'],
-        ['b', '2'],
-      ]);
-      expect(current.rootNode.descendantsOfType('}').filter((node) => node.isMissing)).toHaveLength(incomplete ? 1 : 0);
-      expect(
-        current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
-      ).toEqual(['f', 'h']);
     }
   }
 );
+
+function checkStructTree(current: Tree, source: string, incomplete: boolean): void {
+  expect(current.rootNode.hasError).toBe(incomplete);
+  const matchedLets = current.rootNode
+    .descendantsOfType('let_declaration')
+    .filter(
+      (node) => node.childForFieldName('pattern')?.type === 'identifier' && node.childForFieldName('value')?.isNamed
+    );
+  expect(matchedLets.map((node) => node.childForFieldName('pattern')!.text)).toEqual(['y']);
+  const structures = current.rootNode
+    .descendantsOfType('struct_expression')
+    .filter(
+      (node) =>
+        node.childForFieldName('name')?.type === 'type_identifier' &&
+        node.childForFieldName('body')?.type === 'field_initializer_list'
+    );
+  const types = structures.map((node) => node.childForFieldName('name')!);
+  expect(types.map((node) => node.text)).toEqual(['S']);
+  expect(structures).toHaveLength(1);
+  const structure = structures[0]!;
+  const value = matchedLets[0]!.childForFieldName('value')!;
+  expect(structure.startIndex).toBe(source.indexOf('S {'));
+  expect(types[0]!.startIndex).toBe(structure.startIndex);
+  expect(types[0]!.endIndex).toBe(structure.startIndex + 1);
+  const fields = structure.childForFieldName('body')!;
+  expect(fields.startIndex).toBe(source.indexOf('{', structure.startIndex));
+  expect(fields.endIndex).toBe(structure.endIndex);
+  expect(structure.endIndex).toBeLessThanOrEqual(value.endIndex);
+  expect(
+    structure
+      .descendantsOfType('field_initializer')
+      .map((node) => [node.childForFieldName('field')!.text, node.childForFieldName('value')!.text])
+  ).toEqual([
+    ['a', '1'],
+    ['b', '2'],
+  ]);
+  expect(current.rootNode.descendantsOfType('}').filter((node) => node.isMissing)).toHaveLength(incomplete ? 1 : 0);
+  expect(
+    current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
+  ).toEqual(['f', 'h']);
+}

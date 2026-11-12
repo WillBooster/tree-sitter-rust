@@ -1,5 +1,7 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { directChildren, fieldNodes, sortNodes, sortTaggedNodes } from '../helpers/ast.js';
 
 const Source = `macro_rules /* keyword */ ! add {
     ($ /* left */ x:expr, $ y:expr) => { $ /* right */ x + $
@@ -27,14 +29,6 @@ test('preserves macro bindings and references around trivia', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(macro_definition name: (identifier) @macro)\n' +
-      '(call_expression function: (identifier) @function)\n' +
-      '(function_item return_type: (type_identifier) @returnType)\n' +
-      '(token_binding_pattern name: (metavariable) @binding type: (fragment_specifier) @fragment)\n' +
-      '(token_tree (metavariable) @reference)'
-  );
   const source = Source;
   let tree: Tree | undefined;
   try {
@@ -42,28 +36,37 @@ test('preserves macro bindings and references around trivia', async () => {
     checkTree(tree);
   } finally {
     tree?.delete();
-    query.delete();
     parser.delete();
   }
 
   function checkTree(current: Tree): void {
     expect(current.rootNode.hasError).toBe(false);
-    const captures = query.captures(current.rootNode);
-    expect(captures.filter(({ name }) => name === 'returnType').map(({ node }) => node.text)).toEqual(['macro_rules']);
-    expect(captures.filter(({ name }) => name === 'function').map(({ node }) => node.text)).toEqual(['macro_rules']);
-    expect(captures.filter(({ name }) => name === 'macro').map(({ node }) => node.text)).toEqual(['add']);
-    expect(captures.filter(({ name }) => name === 'fragment').map(({ node }) => node.text)).toEqual(['expr', 'expr']);
+    expect(fieldNodes(current.rootNode, 'function_item', 'return_type', 'type_identifier').map((n) => n.text)).toEqual([
+      'macro_rules',
+    ]);
+    expect(fieldNodes(current.rootNode, 'call_expression', 'function', 'identifier').map((n) => n.text)).toEqual([
+      'macro_rules',
+    ]);
+    expect(fieldNodes(current.rootNode, 'macro_definition', 'name', 'identifier').map((n) => n.text)).toEqual(['add']);
+    const bindingPatterns = current.rootNode
+      .descendantsOfType('token_binding_pattern')
+      .filter(
+        (node) =>
+          node.childForFieldName('name')?.type === 'metavariable' &&
+          node.childForFieldName('type')?.type === 'fragment_specifier'
+      );
+    expect(bindingPatterns.map((node) => node.childForFieldName('type')!.text)).toEqual(['expr', 'expr']);
     let offset = 0;
     const expected = Variables.map((text) => {
       const start = source.indexOf(text, offset);
       offset = start + text.length;
       return [text, start, offset];
     });
-    expect(
-      captures
-        .filter(({ name }) => name === 'binding' || name === 'reference')
-        .map(({ node }) => [node.text, node.startIndex, node.endIndex])
-    ).toEqual(expected);
+    const variables = sortNodes([
+      ...bindingPatterns.map((node) => node.childForFieldName('name')!),
+      ...directChildren(current.rootNode, 'token_tree', 'metavariable'),
+    ]);
+    expect(variables.map((node) => [node.text, node.startIndex, node.endIndex])).toEqual(expected);
   }
 });
 
@@ -71,29 +74,15 @@ test('recognizes macro_rules invocations with and without keyword trivia', async
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(macro_definition name: (identifier) @definition)\n' +
-      '(macro_invocation macro: (identifier) @invocation)\n' +
-      '(function_item name: (identifier) @function)'
-  );
   try {
     for (const argumentsText of ['{}', '()', '[]']) {
       const invocation = `macro_rules! ${argumentsText}`;
       const terminator = argumentsText === '{}' ? '' : ';';
       const source = `macro_rules! macro_rules { () => {}; }\n${invocation}${terminator}\nfn following() {}`;
       for (const text of [source, replaceFirst(source, invocation, `macro_rules /* gap */ ! ${argumentsText}`)])
-        checkParse(parser, text, check);
-      function check(_source: string, tree: Tree): void {
-        expect(query.captures(tree.rootNode).map(({ name, node }) => [name, node.text])).toEqual([
-          ['definition', 'macro_rules'],
-          ['invocation', 'macro_rules'],
-          ['function', 'following'],
-        ]);
-      }
+        checkParse(parser, text, checkMacroRulesInvocations);
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
@@ -102,7 +91,6 @@ test('keeps literal dollars separate from metavariables through error recovery',
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(metavariable) @variable');
   try {
     for (const [source, invalid] of [
       [LiteralSource, false],
@@ -111,15 +99,14 @@ test('keeps literal dollars separate from metavariables through error recovery',
       const tree = parser.parse(source)!;
       try {
         expect(tree.rootNode.hasError).toBe(invalid);
-        const variables = query.captures(tree.rootNode);
-        expect(variables.map(({ node }) => node.text)).toEqual(['$x', '$x', '$ /* name */ fn', '$ /* reference */ fn']);
-        expect(variables.every(({ node }) => !node.hasError)).toBe(true);
+        const variables = tree.rootNode.descendantsOfType('metavariable');
+        expect(variables.map((node) => node.text)).toEqual(['$x', '$x', '$ /* name */ fn', '$ /* reference */ fn']);
+        expect(variables.every((node) => !node.hasError)).toBe(true);
       } finally {
         tree.delete();
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
@@ -128,10 +115,6 @@ test('retains complete Unicode and raw macro names around dollar trivia', async 
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(token_binding_pattern name: (metavariable) @binding) (token_tree (metavariable) @reference)'
-  );
   try {
     for (const name of ['é', '_é', 'α', '東京', 'Москва', 'a\u0301', 'a1é', 'r#foo', 'r#fn', 'r#é']) {
       for (const gap of ['', ' ', '/* c */', '\n']) {
@@ -144,9 +127,17 @@ test('retains complete Unicode and raw macro names around dollar trivia', async 
           const bindingStart = text.indexOf('(') + 1;
           const bindingEnd = text.indexOf(':expr');
           const referenceStart = text.indexOf('=> { ') + 5;
-          expect(
-            query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
-          ).toEqual([
+          const captures = sortTaggedNodes([
+            ...fieldNodes(tree.rootNode, 'token_binding_pattern', 'name', 'metavariable').map((node) => ({
+              name: 'binding',
+              node,
+            })),
+            ...directChildren(tree.rootNode, 'token_tree', 'metavariable').map((node) => ({
+              name: 'reference',
+              node,
+            })),
+          ]);
+          expect(captures.map(({ name: kind, node }) => [kind, node.text, node.startIndex, node.endIndex])).toEqual([
             ['binding', text.slice(bindingStart, bindingEnd), bindingStart, bindingEnd],
             ['reference', variable, referenceStart, referenceStart + variable.length],
           ]);
@@ -154,7 +145,6 @@ test('retains complete Unicode and raw macro names around dollar trivia', async 
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
@@ -163,10 +153,6 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(metavariable) @variable (string_literal) @literal (raw_string_literal) @literal (char_literal) @literal (float_literal) @literal'
-  );
   try {
     for (const literal of [
       'r"abc"',
@@ -191,20 +177,22 @@ test('keeps prefixed literal tokens separate from dollars in opaque macro trees'
 
         function check(text: string, tree: Tree): void {
           const currentLiteral = text === source ? literal : '"plain"';
-          const captures = query.captures(tree.rootNode);
-          expect(
-            captures
-              .filter(({ name }) => name === 'literal')
-              .map(({ node }) => [node.text, node.startIndex, node.endIndex])
-          ).toEqual([[currentLiteral, start, start + currentLiteral.length]]);
-          expect(captures.filter(({ name }) => name === 'variable').map(({ node }) => node.text)).toEqual(
+          const literals = tree.rootNode.descendantsOfType([
+            'string_literal',
+            'raw_string_literal',
+            'char_literal',
+            'float_literal',
+          ]);
+          expect(literals.map((node) => [node.text, node.startIndex, node.endIndex])).toEqual([
+            [currentLiteral, start, start + currentLiteral.length],
+          ]);
+          expect(tree.rootNode.descendantsOfType('metavariable').map((node) => node.text)).toEqual(
             source.includes('$d:tt') ? ['$d', '$l'] : []
           );
         }
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
@@ -215,7 +203,6 @@ test.each(['*', '+', '?'].flatMap((operator) => [true, false].map((matcher) => (
     await Parser.init();
     const language = await Language.load('tree-sitter-rust.wasm');
     const parser = new Parser().setLanguage(language);
-    const query = new Query(language, '(token_repetition_pattern) @pattern (token_repetition) @repetition');
     try {
       for (const separator of operator === '?'
         ? ['']
@@ -254,7 +241,14 @@ test.each(['*', '+', '?'].flatMap((operator) => [true, false].map((matcher) => (
             if (!matcher) expected.push(['repetition', '/* reference end */']);
             let start = 0;
             expect(
-              query.captures(tree.rootNode).map(({ name, node }) => [name, node.text, node.startIndex, node.endIndex])
+              tree.rootNode
+                .descendantsOfType(['token_repetition_pattern', 'token_repetition'])
+                .map((node) => [
+                  node.type === 'token_repetition_pattern' ? 'pattern' : 'repetition',
+                  node.text,
+                  node.startIndex,
+                  node.endIndex,
+                ])
             ).toEqual(
               expected.map(([name, marker]) => {
                 start = text.indexOf('$(', start);
@@ -268,7 +262,6 @@ test.each(['*', '+', '?'].flatMap((operator) => [true, false].map((matcher) => (
         }
       }
     } finally {
-      query.delete();
       parser.delete();
     }
   }
@@ -278,10 +271,6 @@ test('preserves repetition separators and following comments', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(token_repetition_pattern) @pattern (token_repetition) @repetition (block_comment) @comment (line_comment) @comment'
-  );
   try {
     for (const operator of ['*', '+']) {
       for (const separator of [',', 'foo', ';', '=>', '::', '$', '/', '/=']) {
@@ -300,19 +289,18 @@ test('preserves repetition separators and following comments', async () => {
                 const start = text.indexOf(current);
                 return [current, start, start + current.length];
               });
-              const captures = query.captures(tree.rootNode);
               expect(
-                captures
-                  .filter(({ name }) => name !== 'comment')
-                  .map(({ node }) => [node.text, node.startIndex, node.endIndex])
+                tree.rootNode
+                  .descendantsOfType(['token_repetition_pattern', 'token_repetition'])
+                  .map((node) => [node.text, node.startIndex, node.endIndex])
               ).toEqual(expected);
               const currentComment = text.includes(edited) ? '/* edited */' : comment.trim();
               const start = text.indexOf(currentComment);
               const expectedComment = [[currentComment, start, start + currentComment.length]];
               expect(
-                captures
-                  .filter(({ name }) => name === 'comment')
-                  .map(({ node }) => [node.text, node.startIndex, node.endIndex])
+                tree.rootNode
+                  .descendantsOfType(['block_comment', 'line_comment'])
+                  .map((node) => [node.text, node.startIndex, node.endIndex])
               ).toEqual(expectedComment);
             }
           }
@@ -320,10 +308,31 @@ test('preserves repetition separators and following comments', async () => {
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
+
+function checkMacroRulesInvocations(_source: string, tree: Tree): void {
+  const captures = sortTaggedNodes([
+    ...fieldNodes(tree.rootNode, 'macro_definition', 'name', 'identifier').map((node) => ({
+      name: 'definition',
+      node,
+    })),
+    ...fieldNodes(tree.rootNode, 'macro_invocation', 'macro', 'identifier').map((node) => ({
+      name: 'invocation',
+      node,
+    })),
+    ...fieldNodes(tree.rootNode, 'function_item', 'name', 'identifier').map((node) => ({
+      name: 'function',
+      node,
+    })),
+  ]);
+  expect(captures.map(({ name, node }) => [name, node.text])).toEqual([
+    ['definition', 'macro_rules'],
+    ['invocation', 'macro_rules'],
+    ['function', 'following'],
+  ]);
+}
 
 function checkParse(parser: Parser, source: string, check: (source: string, tree: Tree) => void): void {
   const tree = parser.parse(source)!;

@@ -25,8 +25,9 @@ the trees that error recovery produces may change; such changes are released as 
 
 The npm package ships `tree-sitter-rust.wasm` for
 [@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter), which runs in Node.js, Bun,
-browsers, and Cloudflare Workers. The parser requires version 17.0.1 or later within major version 17 of that runtime.
-It carries the WillBooster ABI number, which upstream's `web-tree-sitter` rejects.
+browsers, and Cloudflare Workers. The parser requires `@willbooster/web-tree-sitter` 19.1.1 or later within major
+version 19. Its ABI (`0x5742000c`) rejects upstream Tree-sitter runtimes. Earlier `17.x` and `18.x` WillBooster runtimes
+share ABI `0x5742000c` and pass the ABI check, but dereference unused `TSLanguage` tables that `19.1.0` and later omit.
 
 In Node.js and Bun, load the grammar from its path:
 
@@ -70,11 +71,12 @@ The package also ships the node types in `src/node-types.json`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
 [willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter), the runtime this package is tested and
-fuzzed with. The parser requires version 17.0.1 or later within major version 17 of that runtime; upstream's
-`tree-sitter` crate rejects it:
+fuzzed with. The parser requires `willbooster-tree-sitter` 19.1.1 or later within major version 19. Upstream's
+`tree-sitter` crate rejects its ABI (`0x5742000c`), and earlier `17.x` and `18.x` `willbooster-tree-sitter` releases
+share ABI `0x5742000c` and pass that check, but dereference unused `TSLanguage` tables that `19.1.0` and later omit:
 
 ```sh
-cargo add willbooster-tree-sitter@17.0.1 --rename tree-sitter
+cargo add willbooster-tree-sitter@19.1.1 --rename tree-sitter
 cargo add willbooster-tree-sitter-rust --rename tree-sitter-rust
 ```
 

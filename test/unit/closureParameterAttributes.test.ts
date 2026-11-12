@@ -1,5 +1,7 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { directChildren } from '../helpers/ast.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
@@ -26,12 +28,9 @@ test.each([
       expect(children.filter((node) => node.type !== 'attribute_item').map((node) => node.toString())).toEqual(
         controlTree.rootNode.descendantsOfType('closure_parameters')[0]!.namedChildren.map((node) => node.toString())
       );
-      const query = new Query(language, '(closure_parameters (attribute_item) @attribute)');
-      try {
-        expect(query.captures(tree.rootNode).map(({ node }) => node.text)).toEqual(attributes);
-      } finally {
-        query.delete();
-      }
+      expect(directChildren(tree.rootNode, 'closure_parameters', 'attribute_item').map((node) => node.text)).toEqual(
+        attributes
+      );
     } finally {
       controlTree.delete();
       tree.delete();

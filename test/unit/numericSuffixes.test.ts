@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { fieldNodes } from '../helpers/ast.js';
 
 const LiteralTypes = [
   'boolean_literal',
@@ -157,10 +159,6 @@ test('keeps tuple fields suffixless while preserving integer literals', async ()
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
-  const fieldQuery = new Query(
-    language,
-    '(field_expression field: (integer_literal) @field) (field_initializer field: (integer_literal) @field)'
-  );
   try {
     for (const source of [
       'fn main() { let _ = 0x1f.0foo; }',
@@ -179,7 +177,8 @@ test('keeps tuple fields suffixless while preserving integer literals', async ()
     const tree = parser.parse('struct Tuple(u32); fn main() { let t=(1u32,); let _=t.0; let _=Tuple { 0: 1 }; }')!;
     try {
       expect(tree.rootNode.hasError).toBe(false);
-      expect(fieldQuery.captures(tree.rootNode).map(({ node }) => [node.type, node.text])).toEqual([
+      const fields = fieldNodes(tree.rootNode, ['field_expression', 'field_initializer'], 'field', 'integer_literal');
+      expect(fields.map((node) => [node.type, node.text])).toEqual([
         ['integer_literal', '0'],
         ['integer_literal', '0'],
       ]);
@@ -193,7 +192,6 @@ test('keeps tuple fields suffixless while preserving integer literals', async ()
       tree.delete();
     }
   } finally {
-    fieldQuery.delete();
     parser.delete();
   }
 });

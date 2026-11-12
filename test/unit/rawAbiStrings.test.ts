@@ -1,4 +1,4 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test.each([
@@ -13,19 +13,28 @@ test.each([
   const language = await Language.load('tree-sitter-rust.wasm');
   parser.setLanguage(language);
   const tree = parser.parse(source)!;
-  let query: Query | undefined;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    query = new Query(language, '(extern_modifier (raw_string_literal (string_content) @abi) @literal) @modifier');
-    const matches = query.matches(tree.rootNode);
+    const matches = tree.rootNode.descendantsOfType('extern_modifier').flatMap((modifier) =>
+      modifier.children
+        .filter((child) => child.type === 'raw_string_literal')
+        .flatMap((rawLiteral) =>
+          rawLiteral.children
+            .filter((abi) => abi.type === 'string_content')
+            .map((abi) => [
+              ['modifier', modifier.text],
+              ['literal', rawLiteral.text],
+              ['abi', abi.text],
+            ])
+        )
+    );
     expect(matches).toHaveLength(1);
-    expect(matches[0]?.captures.map(({ name, node }) => [name, node.text])).toEqual([
+    expect(matches[0]).toEqual([
       ['modifier', `extern ${literal}`],
       ['literal', literal],
       ['abi', 'C'],
     ]);
   } finally {
-    query?.delete();
     tree.delete();
     parser.delete();
   }

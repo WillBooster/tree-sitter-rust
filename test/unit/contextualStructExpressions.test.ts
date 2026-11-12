@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 await Parser.init();
@@ -8,10 +8,6 @@ const language = await Language.load(path.join(import.meta.dirname, '../../tree-
 
 test('preserves contextual struct construction names and initializer fields', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(struct_expression name: (_) @name body: (field_initializer_list) @body) @expression'
-  );
   try {
     for (const field of ['default', 'union', 'raw', 'gen', 'auto', 'u8']) {
       const source = `fn f() { let value = gen { ${field}: 1 }; let other = Self { ${field} }; }`;
@@ -42,13 +38,19 @@ test('preserves contextual struct construction names and initializer fields', ()
           const tree = parser.parse(source)!;
           try {
             expect(tree.rootNode.hasError, source).toBe(false);
-            const captures = query.captures(tree.rootNode);
+            const expressions = tree.rootNode
+              .descendantsOfType('struct_expression')
+              .filter(
+                (node) =>
+                  node.childForFieldName('name')?.isNamed &&
+                  node.childForFieldName('body')?.type === 'field_initializer_list'
+              );
             expect(
-              captures.filter((c) => c.name === 'name').map((c) => c.node.text),
+              expressions.map((node) => node.childForFieldName('name')!.text),
               source
             ).toEqual([type]);
             expect(
-              captures.filter((c) => c.name === 'body').map((c) => c.node.text),
+              expressions.map((node) => node.childForFieldName('body')!.text),
               source
             ).toEqual([body]);
             expect(tree.rootNode.descendantsOfType('call_expression').at(-1)?.text).toBe('after()');
@@ -82,7 +84,6 @@ test('preserves contextual struct construction names and initializer fields', ()
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });

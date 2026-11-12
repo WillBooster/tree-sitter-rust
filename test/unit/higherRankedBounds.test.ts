@@ -1,4 +1,4 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 await Parser.init();
@@ -12,20 +12,27 @@ test.each([
 ])('exposes a higher-ranked bound after another trait: %s', (source, binder, trait) => {
   const parser = new Parser().setLanguage(language);
   const tree = parser.parse(source)!;
-  const query = new Query(
-    language,
-    '(higher_ranked_trait_bound type_parameters: (type_parameters) @binder type: (_) @trait)'
-  );
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const bound = tree.rootNode.descendantsOfType('higher_ranked_trait_bound')[0]!;
+    const bounds = tree.rootNode
+      .descendantsOfType('higher_ranked_trait_bound')
+      .filter(
+        (node) =>
+          node.childForFieldName('type_parameters')?.type === 'type_parameters' &&
+          node.childForFieldName('type')?.isNamed
+      );
+    const bound = bounds[0]!;
     expect(bound.parent?.type).toBe('bounded_type');
-    expect(query.captures(tree.rootNode).map(({ name, node }) => [name, node.text])).toEqual([
+    expect(
+      bounds.flatMap((node) => [
+        ['binder', node.childForFieldName('type_parameters')!.text],
+        ['trait', node.childForFieldName('type')!.text],
+      ])
+    ).toEqual([
       ['binder', binder],
       ['trait', trait],
     ]);
   } finally {
-    query.delete();
     tree.delete();
     parser.delete();
   }

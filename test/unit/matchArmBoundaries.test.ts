@@ -1,11 +1,10 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('preserves borrowed match arms with and without a block-body comma', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(match_arm pattern: (match_pattern) @pattern value: (_) @body)');
   const source = `fn example(value: &&Option<i32>) {
     match value { &&Some(0) => {}, &&Some(_) => {}, &&None => {} }
   }
@@ -14,28 +13,13 @@ test('preserves borrowed match arms with and without a block-body comma', async 
     for (const text of [source, source.replace('{}, &&Some(_)', '{} &&Some(_)')]) {
       const tree = parser.parse(text)!;
       try {
-        checkTree(tree);
+        checkBorrowedArms(tree);
       } finally {
         tree.delete();
       }
     }
   } finally {
-    query.delete();
     parser.delete();
-  }
-
-  function checkTree(current: Tree): void {
-    expect(current.rootNode.hasError).toBe(false);
-    const captures = query.captures(current.rootNode);
-    expect(captures.filter(({ name }) => name === 'pattern').map(({ node }) => node.text)).toEqual([
-      '&&Some(0)',
-      '&&Some(_)',
-      '&&None',
-    ]);
-    expect(captures.filter(({ name }) => name === 'body').map(({ node }) => node.text)).toEqual(['{}', '{}', '{}']);
-    expect(
-      current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
-    ).toEqual(['example', 'following']);
   }
 });
 
@@ -118,3 +102,17 @@ test('keeps joint reference-pattern tokens distinct from nested patterns and boo
     parser.delete();
   }
 });
+
+function checkBorrowedArms(current: Tree): void {
+  expect(current.rootNode.hasError).toBe(false);
+  const arms = current.rootNode
+    .descendantsOfType('match_arm')
+    .filter(
+      (node) => node.childForFieldName('pattern')?.type === 'match_pattern' && node.childForFieldName('value')?.isNamed
+    );
+  expect(arms.map((node) => node.childForFieldName('pattern')!.text)).toEqual(['&&Some(0)', '&&Some(_)', '&&None']);
+  expect(arms.map((node) => node.childForFieldName('value')!.text)).toEqual(['{}', '{}', '{}']);
+  expect(
+    current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
+  ).toEqual(['example', 'following']);
+}

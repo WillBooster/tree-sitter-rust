@@ -1,14 +1,12 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { fieldNodes } from '../helpers/ast.js';
 
 test('preserves struct rest assignees and functional update bases', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(assignment_expression left: (struct_expression body: (field_initializer_list (remaining_field_pattern) @rest)))'
-  );
   const source = `struct S { a: i32, b: i32 }
     fn assignment() {
       let mut a = 0;
@@ -22,25 +20,10 @@ test('preserves struct rest assignees and functional update bases', async () => 
   let tree: Tree | undefined;
   try {
     tree = parser.parse(source)!;
-    checkTree(tree);
+    checkRestAssignees(tree);
   } finally {
     tree?.delete();
-    query.delete();
     parser.delete();
-  }
-
-  function checkTree(current: Tree): void {
-    expect(current.rootNode.hasError).toBe(false);
-    expect(query.captures(current.rootNode).map(({ node }) => node.text)).toEqual(['..', '..', '..', '..']);
-    expect(current.rootNode.descendantsOfType('base_field_initializer').map((node) => node.text)).toEqual([
-      '..S { a: 10, b: 11 }',
-    ]);
-    expect(
-      current.rootNode.descendantsOfType('assignment_expression').map((node) => node.childForFieldName('left')!.text)
-    ).toEqual(['S { a, .. }', 'S { a: a, .. }', 'S { .. }', 'S { a: _, .. }']);
-    expect(
-      current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
-    ).toEqual(['assignment', 'following']);
   }
 });
 
@@ -110,7 +93,6 @@ test('retains tuple assignee boundaries', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(assignment_expression left: (_) @left)');
   const source = `struct S { a: i32 }
     fn assignment() {
       let mut a = 0;
@@ -136,13 +118,34 @@ test('retains tuple assignee boundaries', async () => {
     checkValidTree(tree);
   } finally {
     tree?.delete();
-    query.delete();
     parser.delete();
   }
 
   function checkValidTree(current: Tree): void {
     expect(current.rootNode.hasError).toBe(false);
-    expect(query.captures(current.rootNode).map(({ node }) => [node.type, node.text])).toEqual(assignees);
+    expect(fieldNodes(current.rootNode, 'assignment_expression', 'left').map((node) => [node.type, node.text])).toEqual(
+      assignees
+    );
     expect(current.rootNode.descendantsOfType('remaining_field_pattern')).toHaveLength(3);
   }
 });
+
+function checkRestAssignees(current: Tree): void {
+  expect(current.rootNode.hasError).toBe(false);
+  const rests = fieldNodes(current.rootNode, 'assignment_expression', 'left', 'struct_expression').flatMap((struct) =>
+    struct
+      .childrenForFieldName('body')
+      .filter((body) => body.type === 'field_initializer_list')
+      .flatMap((body) => body.children.filter((child) => child.type === 'remaining_field_pattern'))
+  );
+  expect(rests.map((node) => node.text)).toEqual(['..', '..', '..', '..']);
+  expect(current.rootNode.descendantsOfType('base_field_initializer').map((node) => node.text)).toEqual([
+    '..S { a: 10, b: 11 }',
+  ]);
+  expect(
+    current.rootNode.descendantsOfType('assignment_expression').map((node) => node.childForFieldName('left')!.text)
+  ).toEqual(['S { a, .. }', 'S { a: a, .. }', 'S { .. }', 'S { a: _, .. }']);
+  expect(
+    current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
+  ).toEqual(['assignment', 'following']);
+}

@@ -1,4 +1,4 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('parses an entire else-if chain as one if expression with direct else clauses', async () => {
@@ -17,10 +17,9 @@ test('parses an entire else-if chain as one if expression with direct else claus
     }
   }`;
   const tree = parser.parse(source)!;
-  const scopes = new Query(language, '(if_expression) @scope');
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const capturedScopes = scopes.captures(tree.rootNode).map(({ node }) => node);
+    const capturedScopes = tree.rootNode.descendantsOfType('if_expression');
     expect(capturedScopes).toHaveLength(2);
     const chain = capturedScopes[0]!;
     expect(capturedScopes[1]!.text).toBe('if first == 1 {}');
@@ -38,7 +37,6 @@ test('parses an entire else-if chain as one if expression with direct else claus
       '{\n      zero();\n    }',
     ]);
   } finally {
-    scopes.delete();
     tree.delete();
     parser.delete();
   }

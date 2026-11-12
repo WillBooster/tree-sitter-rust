@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 test('associates outer attributes with declarations and rejects orphan attributes', async () => {
@@ -8,7 +8,6 @@ test('associates outer attributes with declarations and rejects orphan attribute
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser();
   parser.setLanguage(language);
-  const query = new Query(language, '(attributed_declaration (attribute_item) @attribute declaration: (_) @item)');
   try {
     const nodeTypes = JSON.parse(readFileSync('src/node-types.json', 'utf8'));
     for (const type of ['attributed_declaration', 'attributed_expression']) {
@@ -35,12 +34,11 @@ test('associates outer attributes with declarations and rejects orphan attribute
         expect(tree.rootNode.hasError, source).toBe(false);
         const wrapper = tree.rootNode.descendantsOfType('attributed_declaration')[0];
         expect(wrapper?.childForFieldName('declaration')?.text, source).toBe(item);
-        expect(
-          query
-            .captures(tree.rootNode)
-            .filter(({ name }) => name === 'attribute')
-            .map(({ node }) => node.text)
-        ).toEqual(['#[allow(unused)]', '#[cfg(all())]']);
+        const attributes = tree.rootNode
+          .descendantsOfType('attributed_declaration')
+          .filter((node) => node.childForFieldName('declaration')?.isNamed)
+          .flatMap((node) => node.children.filter((child) => child.type === 'attribute_item'));
+        expect(attributes.map((node) => node.text)).toEqual(['#[allow(unused)]', '#[cfg(all())]']);
       } finally {
         tree.delete();
       }
@@ -75,7 +73,6 @@ test('associates outer attributes with declarations and rejects orphan attribute
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });

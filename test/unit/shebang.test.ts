@@ -1,12 +1,13 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { fieldNodes } from '../helpers/ast.js';
 
 await Parser.init();
 const language = await Language.load('tree-sitter-rust.wasm');
 
 test('preserves shebang ranges at EOF and before Rust declarations', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(shebang) @command (function_item name: (identifier) @function)');
   try {
     for (const command of ['#!', '#! ', '#!/usr/bin/env rusti', '#!/* unterminated', '#!// comment']) {
       for (const bom of ['', '\uFEFF']) {
@@ -15,12 +16,11 @@ test('preserves shebang ranges at EOF and before Rust declarations', () => {
           const tree = parser.parse(source)!;
           try {
             expect(tree.rootNode.hasError, source).toBe(false);
-            const captures = query.captures(tree.rootNode);
-            const shebang = captures.find(({ name }) => name === 'command')!.node;
+            const shebang = tree.rootNode.descendantsOfType('shebang')[0]!;
             expect(shebang.text).toBe(command + (ending.startsWith('\r') ? '\r\n' : ending.slice(0, 1)));
             expect(shebang.startIndex).toBe(bom.length);
             expect(shebang.endIndex).toBe(bom.length + shebang.text.length);
-            expect(captures.filter(({ name }) => name === 'function').map(({ node }) => node.text)).toEqual(
+            expect(fieldNodes(tree.rootNode, 'function_item', 'name', 'identifier').map((node) => node.text)).toEqual(
               ending ? ['f'] : []
             );
             expect(tree.rootNode.descendantsOfType('inner_attribute_item')).toHaveLength(0);
@@ -31,14 +31,12 @@ test('preserves shebang ranges at EOF and before Rust declarations', () => {
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
 
 test('retains inner attributes across whitespace and ordinary nested comments', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(inner_attribute_item (attribute (identifier) @name)) @attribute');
   try {
     for (const trivia of [
       '',
@@ -57,9 +55,17 @@ test('retains inner attributes across whitespace and ordinary nested comments', 
       try {
         expect(tree.rootNode.hasError, source).toBe(false);
         expect(tree.rootNode.descendantsOfType('shebang')).toHaveLength(0);
-        const captures = query.captures(tree.rootNode);
-        expect(captures.filter(({ name }) => name === 'name').map(({ node }) => node.text)).toEqual(['allow']);
-        const attribute = captures.find(({ name }) => name === 'attribute')!.node;
+        const matches = tree.rootNode
+          .descendantsOfType('inner_attribute_item')
+          .flatMap((attribute) =>
+            attribute.children
+              .filter((child) => child.type === 'attribute')
+              .flatMap((inner) =>
+                inner.children.filter((name) => name.type === 'identifier').map((name) => ({ attribute, name }))
+              )
+          );
+        expect(matches.map(({ name }) => name.text)).toEqual(['allow']);
+        const attribute = matches[0]!.attribute;
         expect(attribute.startIndex).toBe(0);
         expect(attribute.endIndex).toBe(source.indexOf('\nfn'));
         expect(attribute.text).toBe(source.slice(0, attribute.endIndex));
@@ -69,7 +75,6 @@ test('retains inner attributes across whitespace and ordinary nested comments', 
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });

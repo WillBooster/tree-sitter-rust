@@ -1,4 +1,4 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 await Parser.init();
@@ -15,15 +15,20 @@ test.each([
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const query = new Query(language, '(dynamic_type (lifetime) @bound trait: (_) @trait)');
-    try {
-      expect(query.captures(tree.rootNode).map(({ name, node }) => [name, node.type, node.text])).toEqual([
-        ['bound', 'lifetime', lifetime],
-        ['trait', traitType, traitText],
-      ]);
-    } finally {
-      query.delete();
-    }
+    const captures = tree.rootNode.descendantsOfType('dynamic_type').flatMap((node) => {
+      const trait = node.childForFieldName('trait');
+      if (!trait?.isNamed) return [];
+      return node.children
+        .filter((child) => child.type === 'lifetime')
+        .flatMap((bound) => [
+          ['bound', bound.type, bound.text],
+          ['trait', trait.type, trait.text],
+        ]);
+    });
+    expect(captures).toEqual([
+      ['bound', 'lifetime', lifetime],
+      ['trait', traitType, traitText],
+    ]);
   } finally {
     tree.delete();
     parser.delete();

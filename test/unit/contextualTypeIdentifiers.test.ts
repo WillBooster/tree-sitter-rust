@@ -1,4 +1,4 @@
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 await Parser.init();
@@ -7,7 +7,6 @@ const contextualNames = ['default', 'union', 'raw', 'gen'];
 
 test.each(contextualNames)('preserves %s as a type identifier across type positions', (name) => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(type_identifier) @type');
   const source = `
     type Alias = ${name};
     struct Holder { value: ${name} }
@@ -18,8 +17,8 @@ test.each(contextualNames)('preserves %s as a type identifier across type positi
   const tree = parser.parse(source)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const captures = query.captures(tree.rootNode).filter(({ node }) => node.text === name);
-    expect(captures.map(({ node }) => node.parent?.type)).toEqual([
+    const captures = tree.rootNode.descendantsOfType('type_identifier').filter((node) => node.text === name);
+    expect(captures.map((node) => node.parent?.type)).toEqual([
       'type_item',
       'field_declaration',
       'parameter',
@@ -29,14 +28,12 @@ test.each(contextualNames)('preserves %s as a type identifier across type positi
     ]);
   } finally {
     tree.delete();
-    query.delete();
     parser.delete();
   }
 });
 
 test.each(contextualNames)('preserves %s in bounds and trait type positions', (name) => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(type_identifier) @type');
   const tree = parser.parse(`
     fn f<T>() where ${name}: Trait {}
     impl ${name} for Holder {}
@@ -47,8 +44,8 @@ test.each(contextualNames)('preserves %s in bounds and trait type positions', (n
   `)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
-    const captures = query.captures(tree.rootNode).filter(({ node }) => node.text === name);
-    expect(captures.map(({ node }) => node.parent?.type)).toEqual([
+    const captures = tree.rootNode.descendantsOfType('type_identifier').filter((node) => node.text === name);
+    expect(captures.map((node) => node.parent?.type)).toEqual([
       'where_predicate',
       'impl_item',
       'dynamic_type',
@@ -58,7 +55,6 @@ test.each(contextualNames)('preserves %s in bounds and trait type positions', (n
     ]);
   } finally {
     tree.delete();
-    query.delete();
     parser.delete();
   }
 });

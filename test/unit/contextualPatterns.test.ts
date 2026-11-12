@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { Language, Parser, Query } from '@willbooster/web-tree-sitter';
+import { Language, Parser } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
 
 await Parser.init();
@@ -8,10 +8,6 @@ const language = await Language.load(path.join(import.meta.dirname, '../../tree-
 
 test('preserves contextual constructor names in generic tuple patterns', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(
-    language,
-    '(tuple_struct_pattern type: (generic_type type: (_) @constructor type_arguments: (type_arguments) @arguments)) @pattern'
-  );
   try {
     for (const name of ['default', 'union', 'raw', 'gen', 'auto', 'Ordinary', 'r#gen']) {
       for (const statement of [`let ${name}::<u8>(n) = value;`, `match value { ${name}::<u8>(n) => n };`]) {
@@ -19,17 +15,24 @@ test('preserves contextual constructor names in generic tuple patterns', () => {
         const tree = parser.parse(source)!;
         try {
           expect(tree.rootNode.hasError, source).toBe(false);
-          const captures = query.captures(tree.rootNode);
+          const patterns = tree.rootNode.descendantsOfType('tuple_struct_pattern').filter((node) => {
+            const genericType = node.childForFieldName('type');
+            return (
+              genericType?.type === 'generic_type' &&
+              genericType.childForFieldName('type')?.isNamed &&
+              genericType.childForFieldName('type_arguments')?.type === 'type_arguments'
+            );
+          });
           expect(
-            captures.filter((c) => c.name === 'constructor').map((c) => c.node.text),
+            patterns.map((node) => node.childForFieldName('type')!.childForFieldName('type')!.text),
             source
           ).toEqual([name]);
           expect(
-            captures.filter((c) => c.name === 'arguments').map((c) => c.node.text),
+            patterns.map((node) => node.childForFieldName('type')!.childForFieldName('type_arguments')!.text),
             source
           ).toEqual(['<u8>']);
           expect(
-            captures.filter((c) => c.name === 'pattern').map((c) => c.node.text),
+            patterns.map((node) => node.text),
             source
           ).toEqual([`${name}::<u8>(n)`]);
           expect(
@@ -42,14 +45,12 @@ test('preserves contextual constructor names in generic tuple patterns', () => {
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });
 
 test('preserves contextual names and fields in plain and generic struct patterns', () => {
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(struct_pattern type: (_) @type (field_pattern name: (_) @field)) @pattern');
   try {
     for (const name of ['default', 'union', 'raw', 'gen', 'auto', 'Ordinary', 'r#gen']) {
       for (const type of [name, `${name}::<u8>`]) {
@@ -58,17 +59,27 @@ test('preserves contextual names and fields in plain and generic struct patterns
           const tree = parser.parse(source)!;
           try {
             expect(tree.rootNode.hasError, source).toBe(false);
-            const captures = query.captures(tree.rootNode);
+            const matches = tree.rootNode.descendantsOfType('struct_pattern').flatMap((pattern) => {
+              const typeNode = pattern.childForFieldName('type');
+              if (!typeNode?.isNamed) return [];
+              return pattern.children
+                .filter((child) => child.type === 'field_pattern' && child.childForFieldName('name')?.isNamed)
+                .map((fieldNode) => ({
+                  pattern,
+                  typeNode,
+                  fieldName: fieldNode.childForFieldName('name')!,
+                }));
+            });
             expect(
-              captures.filter((c) => c.name === 'type').map((c) => c.node.text),
+              matches.map((m) => m.typeNode.text),
               source
             ).toEqual([type]);
             expect(
-              captures.filter((c) => c.name === 'field').map((c) => c.node.text),
+              matches.map((m) => m.fieldName.text),
               source
             ).toEqual(['a']);
             expect(
-              captures.filter((c) => c.name === 'pattern').map((c) => c.node.text),
+              matches.map((m) => m.pattern.text),
               source
             ).toEqual([`${type} { a }`]);
             expect(
@@ -82,7 +93,6 @@ test('preserves contextual names and fields in plain and generic struct patterns
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
 });

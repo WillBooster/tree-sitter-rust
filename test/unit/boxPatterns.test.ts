@@ -1,11 +1,12 @@
-import { Language, Parser, Query, type Tree } from '@willbooster/web-tree-sitter';
+import { Language, Parser, type Tree } from '@willbooster/web-tree-sitter';
 import { expect, test } from 'vitest';
+
+import { fieldNodes } from '../helpers/ast.js';
 
 test('parses boxed bindings and alternatives around trivia', async () => {
   await Parser.init();
   const language = await Language.load('tree-sitter-rust.wasm');
   const parser = new Parser().setLanguage(language);
-  const query = new Query(language, '(box_pattern pattern: (_) @inner)');
   const source = `#![feature(box_patterns)]
     macro_rules! tokens { ($($tokens:tt)*) => {}; }
     fn patterns(value: Box<i32>) {
@@ -28,28 +29,27 @@ test('parses boxed bindings and alternatives around trivia', async () => {
       }
     }
   } finally {
-    query.delete();
     parser.delete();
   }
-
-  function checkTree(current: Tree): void {
-    expect(current.rootNode.hasError).toBe(false);
-    expect(query.captures(current.rootNode).map(({ node }) => [node.type, node.text])).toEqual([
-      ['identifier', 'scalar'],
-      ['captured_pattern', 'captured @ 0..=5'],
-      ['integer_literal', '6'],
-      ['integer_literal', '7'],
-    ]);
-    const arms = current.rootNode.descendantsOfType('match_arm');
-    expect(arms.map((node) => node.childForFieldName('pattern')!.firstNamedChild!.type)).toEqual([
-      'box_pattern',
-      'or_pattern',
-      'box_pattern',
-    ]);
-    expect(arms[1]!.descendantsOfType('box_pattern')).toHaveLength(2);
-    expect(current.rootNode.descendantsOfType('box_pattern').at(-1)!.childForFieldName('pattern')!.text).toBe('_');
-    expect(
-      current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
-    ).toEqual(['patterns', 'r#box']);
-  }
 });
+
+function checkTree(current: Tree): void {
+  expect(current.rootNode.hasError).toBe(false);
+  expect(fieldNodes(current.rootNode, 'box_pattern', 'pattern').map((node) => [node.type, node.text])).toEqual([
+    ['identifier', 'scalar'],
+    ['captured_pattern', 'captured @ 0..=5'],
+    ['integer_literal', '6'],
+    ['integer_literal', '7'],
+  ]);
+  const arms = current.rootNode.descendantsOfType('match_arm');
+  expect(arms.map((node) => node.childForFieldName('pattern')!.firstNamedChild!.type)).toEqual([
+    'box_pattern',
+    'or_pattern',
+    'box_pattern',
+  ]);
+  expect(arms[1]!.descendantsOfType('box_pattern')).toHaveLength(2);
+  expect(current.rootNode.descendantsOfType('box_pattern').at(-1)!.childForFieldName('pattern')!.text).toBe('_');
+  expect(
+    current.rootNode.descendantsOfType('function_item').map((node) => node.childForFieldName('name')!.text)
+  ).toEqual(['patterns', 'r#box']);
+}
