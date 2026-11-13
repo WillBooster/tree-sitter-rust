@@ -10,16 +10,16 @@
 //! parser
 //!     .set_language(&language.into())
 //!     .expect("Error loading Rust parser");
-//! let tree = parser.parse(code, None).unwrap();
+//! let tree = parser.parse(code).unwrap();
 //! assert!(!tree.root_node().has_error());
 //! ```
 //!
-//! The parser requires [willbooster-tree-sitter] 19.1.1 or later within major version 19.
-//! Upstream's `tree-sitter` crate rejects its ABI (`0x5742000c`). Earlier `17.x` and `18.x`
-//! `willbooster-tree-sitter` releases share ABI `0x5742000c` and pass that check, but dereference
-//! unused `TSLanguage` tables that `19.1.0` and later omit.
+//! Use [willbooster-tree-sitter] `20.0.0` or later within major version 20, the runtime this
+//! crate is tested and fuzzed with. Upstream's `tree-sitter` crate rejects its ABI (`0x5742000c`).
+//! Earlier `17.x` and `18.x` `willbooster-tree-sitter` releases share ABI `0x5742000c` and pass
+//! that check, but dereference unused `TSLanguage` tables omitted since `19.1.0`.
 //!
-//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/19.1.1/tree_sitter/struct.Parser.html
+//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/20.0.0/tree_sitter/struct.Parser.html
 //! [willbooster-tree-sitter]: https://crates.io/crates/willbooster-tree-sitter
 //! [tree-sitter]: https://tree-sitter.github.io/
 
@@ -45,5 +45,7 @@ mod tests {
         parser
             .set_language(&super::LANGUAGE.into())
             .expect("Error loading Rust parser");
+        let tree = parser.parse("fn main() {}\n").unwrap();
+        assert!(!tree.root_node().has_error());
     }
 }
