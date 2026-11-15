@@ -14,12 +14,11 @@
 //! assert!(!tree.root_node().has_error());
 //! ```
 //!
-//! Use [willbooster-tree-sitter] `20.0.0` or later within major version 20, the runtime this
-//! crate is tested and fuzzed with. Upstream's `tree-sitter` crate rejects its ABI (`0x5742000c`).
-//! Earlier `17.x` and `18.x` `willbooster-tree-sitter` releases share ABI `0x5742000c` and pass
-//! that check, but dereference unused `TSLanguage` tables omitted since `19.1.0`.
+//! Use [willbooster-tree-sitter] `23.0.0` or later within major version 23, the runtime this
+//! crate is tested and fuzzed with. Upstream's `tree-sitter` crate and `willbooster-tree-sitter`
+//! releases prior to `22.0.0` reject its ABI (`0x5742000d`).
 //!
-//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/20.0.0/tree_sitter/struct.Parser.html
+//! [`Parser`]: https://docs.rs/willbooster-tree-sitter/23.0.0/tree_sitter/struct.Parser.html
 //! [willbooster-tree-sitter]: https://crates.io/crates/willbooster-tree-sitter
 //! [tree-sitter]: https://tree-sitter.github.io/
 

@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 typedef struct {
-    uint32_t fence_length;
+    uint8_t fence_length;
     bool allowed;
     bool shebang_allowed;
 } Frontmatter;
@@ -149,7 +149,7 @@ static void frontmatter_shebang_advance(ShebangProbe *probe, TSLexer *lexer) {
 
 static bool scan_frontmatter_start(Frontmatter *state, TSLexer *lexer) {
     if (!state->allowed || lexer->get_column(lexer) != 0) return false;
-    uint32_t length = 0;
+    uint8_t length = 0;
     while (lexer->lookahead == '-') {
         if (length == 255) return false;
         length++;

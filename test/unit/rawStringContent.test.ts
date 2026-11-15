@@ -10,7 +10,7 @@ for (const prefix of ['r', 'br', 'cr']) {
     const parser = new Parser();
     parser.setLanguage(language);
     try {
-      for (const hashes of ['', '#', '##']) {
+      for (const hashes of ['', '#', '##', '#'.repeat(255)]) {
         const contents = ['', '   ', '\n\t SELECT * FROM users\n    ', '\r\n body\t'];
         if (hashes) contents.push(` "partial"${hashes.slice(1)} \t`);
         for (const content of contents) {
@@ -18,6 +18,20 @@ for (const prefix of ['r', 'br', 'cr']) {
         }
       }
       checkContent(`macro_rules! tokens { ($($t:tt)*) => {} } tokens!(${prefix}#"`, '  a', '"###);');
+      for (const count of [256, 257]) {
+        const hashes = '#'.repeat(count);
+        const exprTree = parser.parse(`fn main() { let _ = ${prefix}${hashes}"a"${hashes}; }`)!;
+        const macroTree = parser.parse(
+          `macro_rules! tokens { ($($t:tt)*) => {} } tokens!(${prefix}${hashes}"a"${hashes});`
+        )!;
+        try {
+          expect(exprTree.rootNode.hasError).toBe(true);
+          expect(directChildren(macroTree.rootNode, 'raw_string_literal', 'string_content')).toHaveLength(0);
+        } finally {
+          exprTree.delete();
+          macroTree.delete();
+        }
+      }
     } finally {
       parser.delete();
     }
