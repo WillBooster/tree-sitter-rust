@@ -48,7 +48,7 @@ typedef struct {
     uint8_t literal_suffix_pending;
 } Scanner;
 
-void *tree_sitter_rust_external_scanner_create() { return ts_calloc(1, sizeof(Scanner)); }
+void *tree_sitter_rust_external_scanner_create(void) { return ts_calloc(1, sizeof(Scanner)); }
 
 void tree_sitter_rust_external_scanner_destroy(void *payload) { ts_free((Scanner *)payload); }
 
@@ -62,24 +62,22 @@ unsigned tree_sitter_rust_external_scanner_serialize(void *payload, char *buffer
     }
     buffer[0] = (char)scanner->opening_hash_count;
     buffer[1] = (char)scanner->literal_suffix_pending;
-    for (unsigned i = 0; i < 4; i++) buffer[2 + i] = (char)(scanner->frontmatter.fence_length >> (8 * i));
-    buffer[6] = scanner->frontmatter.allowed;
-    buffer[7] = scanner->frontmatter.shebang_allowed;
-    return 8;
+    buffer[2] = (char)scanner->frontmatter.fence_length;
+    buffer[3] = scanner->frontmatter.allowed;
+    buffer[4] = scanner->frontmatter.shebang_allowed;
+    return 5;
 }
 
 void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *scanner = (Scanner *)payload;
-    scanner->frontmatter.fence_length = 0;
-    scanner->frontmatter.allowed = false;
-    scanner->frontmatter.shebang_allowed = length >= 8 && buffer[7];
-    scanner->opening_hash_count = 0;
-    scanner->literal_suffix_pending = 0;
-    if (length >= 7) scanner->frontmatter.allowed = buffer[6];
-    if (length > 0) scanner->opening_hash_count = (uint8_t)buffer[0];
-    if (length > 1) scanner->literal_suffix_pending = (uint8_t)buffer[1];
-    if (length >= 6) {
-        for (unsigned i = 0; i < 4; i++) scanner->frontmatter.fence_length |= (uint32_t)(uint8_t)buffer[2 + i] << (8 * i);
+    *scanner = (Scanner){0};
+    if (length == 0) return;
+    scanner->opening_hash_count = (uint8_t)buffer[0];
+    if (length >= 2) scanner->literal_suffix_pending = (uint8_t)buffer[1];
+    if (length >= 5) {
+        scanner->frontmatter.fence_length = (uint8_t)buffer[2];
+        scanner->frontmatter.allowed = buffer[3] != 0;
+        scanner->frontmatter.shebang_allowed = buffer[4] != 0;
     }
 }
 
@@ -134,6 +132,7 @@ static inline bool scan_raw_string_start(Scanner *scanner, TSLexer *lexer) {
 static inline bool scan_raw_string_start_rest(Scanner *scanner, TSLexer *lexer) {
     uint8_t opening_hash_count = 0;
     while (lexer->lookahead == '#') {
+        if (opening_hash_count == 255) return false;
         advance(lexer);
         opening_hash_count++;
     }
