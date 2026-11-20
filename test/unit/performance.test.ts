@@ -36,6 +36,8 @@ test.each([
   ['documentation during recovery', 'fn f() { @ ', '/// docs\n', '}', true],
   ['line errors', '', '$ a\n', '', true],
   ['malformed foreign visibility', 'extern "C" { ', 'pub(in x fn f;\n', ' }', true],
+  ['break operands after block comments', 'fn f() { loop { break ', '/* comment */ ', '42; } }', false],
+  ['break operands after line comments', 'fn f() { loop { break ', '// comment\n', '42; } }', false],
   ['macro dollar groups', 'macro_rules! m { (', '$( a )', '*) => {}; }', false],
   ['macro dollar groups with literal gaps', 'macro_rules! m { (', '$( a ) foo ', '*) => {}; }', false],
 ] as const)('parses %s with bounded CPU growth', { timeout: 60_000 }, (_, prefix, line, suffix, expectedError) => {

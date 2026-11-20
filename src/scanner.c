@@ -1,7 +1,8 @@
-// code-gauge-allow-file fileNcss 587 -- tree-sitter compiles src/scanner.c as a single external scanner unit
+// code-gauge-allow-file fileNcss 614 -- tree-sitter compiles src/scanner.c as a single external scanner unit
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
+#include <string.h>
 #include <wctype.h>
 
 enum TokenType {
@@ -45,6 +46,7 @@ enum TokenType {
 
 typedef struct {
     Frontmatter frontmatter;
+    uint32_t skip_break_lookahead_until;
     uint8_t opening_hash_count;
     uint8_t literal_suffix_pending;
 } Scanner;
@@ -55,18 +57,19 @@ void tree_sitter_rust_external_scanner_destroy(void *payload) { ts_free((Scanner
 
 unsigned tree_sitter_rust_external_scanner_serialize(void *payload, char *buffer) {
     Scanner *scanner = (Scanner *)payload;
-    if (!scanner->frontmatter.fence_length && !scanner->frontmatter.allowed && !scanner->frontmatter.shebang_allowed) {
-        if (!scanner->opening_hash_count && !scanner->literal_suffix_pending) return 0;
-        buffer[0] = (char)scanner->opening_hash_count;
-        buffer[1] = (char)scanner->literal_suffix_pending;
-        return 2;
-    }
+    const bool frontmatter = scanner->frontmatter.fence_length || scanner->frontmatter.allowed ||
+        scanner->frontmatter.shebang_allowed;
+    if (!scanner->skip_break_lookahead_until && !frontmatter &&
+        !scanner->opening_hash_count && !scanner->literal_suffix_pending) return 0;
     buffer[0] = (char)scanner->opening_hash_count;
     buffer[1] = (char)scanner->literal_suffix_pending;
+    if (!scanner->skip_break_lookahead_until && !frontmatter) return 2;
     buffer[2] = (char)scanner->frontmatter.fence_length;
     buffer[3] = scanner->frontmatter.allowed;
     buffer[4] = scanner->frontmatter.shebang_allowed;
-    return 5;
+    if (!scanner->skip_break_lookahead_until) return 5;
+    memcpy(buffer + 5, &scanner->skip_break_lookahead_until, sizeof scanner->skip_break_lookahead_until);
+    return 5 + sizeof scanner->skip_break_lookahead_until;
 }
 
 void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
@@ -79,6 +82,9 @@ void tree_sitter_rust_external_scanner_deserialize(void *payload, const char *bu
         scanner->frontmatter.fence_length = (uint8_t)buffer[2];
         scanner->frontmatter.allowed = buffer[3] != 0;
         scanner->frontmatter.shebang_allowed = buffer[4] != 0;
+    }
+    if (length == 5 + sizeof scanner->skip_break_lookahead_until) {
+        memcpy(&scanner->skip_break_lookahead_until, buffer + 5, sizeof scanner->skip_break_lookahead_until);
     }
 }
 
@@ -371,9 +377,12 @@ static bool skip_trivia_comment(TSLexer *lexer, bool stop_at_outer_doc);
 static bool skip_trivia_line_comment(TSLexer *lexer, bool stop_at_outer_doc);
 static bool skip_block_comment_body(TSLexer *lexer);
 static inline bool scanner_whitespace(int32_t c);
-static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols, const TSLexerCheckpoint *break_boundary);
+static bool scan_comment_start(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, const TSLexerCheckpoint *break_boundary);
+static bool can_look_past_break(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols);
 static bool mark_break_before_brace(TSLexer *lexer, const TSLexerCheckpoint *boundary);
 static bool skip_break_comment(TSLexer *lexer, bool line, bool third_star);
+static bool look_past_break_comment(Scanner *scanner, TSLexer *lexer, const TSLexerCheckpoint *boundary,
+                                    bool line, bool third_star);
 static inline bool is_outer_comment_prefix(TSLexer *lexer, bool line);
 static enum TokenType outer_comment_token(TSLexer *lexer, const bool *valid_symbols, bool line);
 static bool outer_comment_has_following_token(TSLexer *lexer, bool line);
@@ -388,7 +397,7 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     // Recovery enables every external token; only comment starts are safe without parser context.
     if (valid_symbols[ERROR_SENTINEL]) {
         skip_token_whitespace(lexer, false);
-        return lexer->lookahead == '/' && scan_comment_start(lexer, valid_symbols, NULL);
+        return lexer->lookahead == '/' && scan_comment_start(scanner, lexer, valid_symbols, NULL);
     }
 
     if (valid_symbols[FRONTMATTER_CONTEXT] || valid_symbols[FRONTMATTER_CONTENT] ||
@@ -419,13 +428,13 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
     }
 
     TSLexerCheckpoint checkpoint;
-    const TSLexerCheckpoint *break_boundary = valid_symbols[BREAK_BEFORE_BRACE] ? &checkpoint : NULL;
+    const TSLexerCheckpoint *break_boundary = can_look_past_break(scanner, lexer, valid_symbols) ? &checkpoint : NULL;
     if (break_boundary) lexer->get_checkpoint(lexer, &checkpoint);
     skip_token_whitespace(lexer, valid_symbols[FRONTMATTER_START]);
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
         return scan_frontmatter_start(&scanner->frontmatter, lexer);
     }
-    if (lexer->lookahead == '/') return scan_comment_start(lexer, valid_symbols, break_boundary);
+    if (lexer->lookahead == '/') return scan_comment_start(scanner, lexer, valid_symbols, break_boundary);
     if (break_boundary && mark_break_before_brace(lexer, break_boundary)) return true;
     if (valid_symbols[FOREIGN_DECLARATION_CONTEXT] && valid_symbols[FOREIGN_DECLARATION_START]) {
         return scan_foreign_declaration_start(lexer);
@@ -643,6 +652,16 @@ static inline bool scanner_whitespace(int32_t c) {
     return rust_whitespace(c) || iswspace((wint_t)c);
 }
 
+static bool can_look_past_break(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
+    if (!valid_symbols[BREAK_BEFORE_BRACE]) return false;
+    if (!scanner->skip_break_lookahead_until) return true;
+    TSLexerPosition current;
+    lexer->get_position(lexer, &current);
+    if (current.bytes < scanner->skip_break_lookahead_until) return false;
+    scanner->skip_break_lookahead_until = 0;
+    return true;
+}
+
 static bool mark_break_before_brace(TSLexer *lexer, const TSLexerCheckpoint *boundary) {
     if (lexer->lookahead != '{') return false;
     lexer->mark_start(lexer, boundary);
@@ -651,9 +670,8 @@ static bool mark_break_before_brace(TSLexer *lexer, const TSLexerCheckpoint *bou
     return true;
 }
 
-// code-gauge-allow functionCognitiveComplexity 16 -- Comment tokens retain their fallback when break lookahead misses.
-
-static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols, const TSLexerCheckpoint *break_boundary) {
+// code-gauge-allow functionCognitiveComplexity 16 -- Keeps the comment token when break lookahead fails.
+static bool scan_comment_start(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, const TSLexerCheckpoint *break_boundary) {
     advance(lexer);
     bool line = lexer->lookahead == '/';
     if (!line && lexer->lookahead != '*') return false;
@@ -673,12 +691,19 @@ static bool scan_comment_start(TSLexer *lexer, const bool *valid_symbols, const 
         while (lexer->lookahead != '\n' && !at_eof(lexer)) advance(lexer);
         lexer->mark_end(lexer);
     }
-    if (break_boundary && !doc && skip_break_comment(lexer, line, third_star) &&
-        scan_trivia(lexer, true) && mark_break_before_brace(lexer, break_boundary)) {
-        return true;
-    }
+    if (break_boundary && !doc && look_past_break_comment(scanner, lexer, break_boundary, line, third_star)) return true;
     lexer->result_symbol = token;
     return true;
+}
+
+static bool look_past_break_comment(Scanner *scanner, TSLexer *lexer, const TSLexerCheckpoint *boundary,
+                                    bool line, bool third_star) {
+    if (!skip_break_comment(lexer, line, third_star)) return false;
+    if (scan_trivia(lexer, true) && mark_break_before_brace(lexer, boundary)) return true;
+    TSLexerPosition scanned;
+    lexer->get_position(lexer, &scanned);
+    scanner->skip_break_lookahead_until = scanned.bytes;
+    return false;
 }
 
 static bool skip_break_comment(TSLexer *lexer, bool line, bool third_star) {
