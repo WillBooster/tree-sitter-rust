@@ -6,7 +6,7 @@ import { expect, test } from 'vitest';
 await Parser.init();
 const language = await Language.load(path.join(import.meta.dirname, '../../tree-sitter-rust.wasm'));
 
-test('ends bare break nodes before the body whitespace', () => {
+test('ends bare break nodes before the body trivia', () => {
   const parser = new Parser().setLanguage(language);
   const tree = parser.parse(`fn f(flag: bool) {
     'outer: loop {
@@ -16,11 +16,18 @@ test('ends bare break nodes before the body whitespace', () => {
         { next(); }
         while break 'outer     { first(); }
         { next(); }
+        if break 'outer /* block */ { first(); }
+        { next(); }
+        while break 'outer // line
+        { first(); }
+        { next(); }
     }
 }`)!;
   try {
     expect(tree.rootNode.hasError).toBe(false);
     expect(tree.rootNode.descendantsOfType('break_expression').map((node) => node.text)).toEqual([
+      "break 'outer",
+      "break 'outer",
       "break 'outer",
       "break 'outer",
     ]);

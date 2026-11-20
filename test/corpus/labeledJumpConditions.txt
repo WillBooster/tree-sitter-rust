@@ -187,8 +187,8 @@ fn examples(flag: bool) {
                   (identifier)
                   (break_expression
                     (label
-                      (identifier))
-                    (block_comment)))
+                      (identifier))))
+                (block_comment)
                 (block
                   (expression_statement
                     (call_expression
