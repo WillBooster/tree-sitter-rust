@@ -237,19 +237,17 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$.break_expression],
-    [$._expression, $.break_expression],
-    [$._expression_except_range, $.break_expression],
+    [$._bare_break_in_header, $.break_expression],
     [$.array_expression, $._array_assignee_expression],
     [$.tuple_expression, $._tuple_assignee_expression],
     [$.arguments, $._assignee_arguments],
     [$._attributed_block_statement, $._expression_except_range],
-    [$._attributed_block_statement, $._expression_except_range_or_block],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
     [$._token_pattern, $.token_repetition_pattern],
     [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
-    [$._expression_except_range_or_block, $.shorthand_field_initializer],
+    [$._expression_except_range, $.shorthand_field_initializer],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
@@ -1131,9 +1129,7 @@ module.exports = grammar({
 
     mutable_specifier: () => 'mut',
 
-    _expression_except_range: ($) => choice($._expression_except_range_or_block, $.block),
-
-    _expression_except_range_or_block: ($) =>
+    _expression_except_range: ($) =>
       choice(
         $.unary_expression,
         $.reference_expression,
@@ -1167,7 +1163,7 @@ module.exports = grammar({
         $.closure_expression,
         $.parenthesized_expression,
         $.struct_expression,
-        $._expression_ending_with_non_bare_block
+        $._expression_ending_with_block
       ),
 
     _expression: ($) => choice($._expression_except_range, $.range_expression, $.attributed_expression),
@@ -1175,14 +1171,13 @@ module.exports = grammar({
     attributed_expression: ($) =>
       prec.dynamic(-1, seq($._outer_attributes, prec.right(PREC.unary, field('value', $._expression)))),
 
-    _expression_ending_with_block: ($) => choice($.block, $._expression_ending_with_non_bare_block),
-
-    _expression_ending_with_non_bare_block: ($) =>
+    _expression_ending_with_block: ($) =>
       choice(
         $.unsafe_block,
         $.async_block,
         $.gen_block,
         $.try_block,
+        $.block,
         $.if_expression,
         $.match_expression,
         $.while_expression,
@@ -1524,7 +1519,7 @@ module.exports = grammar({
         'let',
         field('pattern', $._pattern),
         '=',
-        field('value', prec.left(PREC.and, $._expression))
+        field('value', choice(prec.left(PREC.and, $._expression), alias($._bare_break_in_header, $.break_expression)))
       ),
 
     _let_chain: ($) =>
@@ -1539,13 +1534,17 @@ module.exports = grammar({
         )
       ),
 
-    _condition: ($) => choice($._expression, $.let_condition, alias($._let_chain, sym('let_chain'))),
+    _brace_header_value: ($) => choice($._expression, alias($._bare_break_in_header, $.break_expression)),
+
+    _bare_break_in_header: ($) => prec.dynamic(2, $._break_expression_head),
+
+    _condition: ($) => choice($._brace_header_value, $.let_condition, alias($._let_chain, sym('let_chain'))),
 
     _else_if_clause: ($) => seq('else', 'if', field('condition', $._condition), field('consequence', $.block)),
 
     else_clause: ($) => seq('else', field('consequence', $.block)),
 
-    match_expression: ($) => seq('match', field('value', $._expression), field('body', $.match_block)),
+    match_expression: ($) => seq('match', field('value', $._brace_header_value), field('body', $.match_block)),
 
     match_block: ($) => seq('{', optional(seq(repeat($.match_arm), alias($.last_match_arm, $.match_arm))), '}'),
 
@@ -1581,7 +1580,7 @@ module.exports = grammar({
         'for',
         field('pattern', $._pattern),
         'in',
-        field('value', $._expression),
+        field('value', $._brace_header_value),
         field('body', $.block)
       ),
 
@@ -1615,19 +1614,7 @@ module.exports = grammar({
     label: ($) => seq("'", $.identifier),
 
     break_expression: ($) =>
-      choice(
-        prec.dynamic(
-          2,
-          prec.left(
-            seq(
-              $._break_expression_head,
-              choice($._expression_except_range_or_block, $.range_expression, $.attributed_expression)
-            )
-          )
-        ),
-        prec.dynamic(1, $._break_expression_head),
-        prec.left(seq($._break_expression_head, $.block))
-      ),
+      choice(prec.dynamic(1, prec.left(seq($._break_expression_head, $._expression))), $._break_expression_head),
 
     _break_expression_head: ($) => prec.right(seq('break', optional($.label))),
 

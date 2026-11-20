@@ -909,6 +909,10 @@ loop { break (&n); }
 loop { break &&n; }
 loop { break || n; }
 loop { break { n }; }
+loop { break n + 1; }
+loop { break f(n); }
+loop { break n.foo(); }
+loop { break { 1u32 }.count_ones(); }
 'outer: loop { break 'outer -n; }
 
 --------------------------------------------------------------------------------
@@ -966,6 +970,44 @@ loop { break { n }; }
           (break_expression
             (block
               (identifier)))))))
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (binary_expression
+              (identifier)
+              (integer_literal)))))))
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (call_expression
+              (identifier)
+              (arguments
+                (identifier))))))))
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (call_expression
+              (field_expression
+                (identifier)
+                (field_identifier))
+              (arguments)))))))
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (call_expression
+              (field_expression
+                (block
+                  (integer_literal))
+                (field_identifier))
+              (arguments)))))))
   (expression_statement
     (loop_expression
       (label
