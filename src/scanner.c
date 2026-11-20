@@ -1,4 +1,4 @@
-// code-gauge-allow-file fileNcss 565 -- tree-sitter compiles src/scanner.c as a single external scanner unit
+// code-gauge-allow-file fileNcss 568 -- tree-sitter compiles src/scanner.c as a single external scanner unit
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
@@ -379,8 +379,8 @@ static inline void skip_token_whitespace(TSLexer *lexer, bool rust_only);
 static bool scan_trailing_type_bound_plus(TSLexer *lexer);
 static bool scan_literal_start_or_end(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols);
 
-// code-gauge-allow functionCognitiveComplexity 26 -- flat external-token dispatch entrypoint
-// code-gauge-allow functionNcss 35 -- flat external-token dispatch entrypoint
+// code-gauge-allow functionCognitiveComplexity 27 -- flat external-token dispatch entrypoint
+// code-gauge-allow functionNcss 39 -- flat external-token dispatch entrypoint
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
     // Recovery enables every external token; only comment starts are safe without parser context.
@@ -416,13 +416,16 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_trailing_type_bound_plus(lexer);
     }
 
+    TSLexerCheckpoint break_boundary;
+    if (valid_symbols[BREAK_BEFORE_BRACE]) lexer->get_checkpoint(lexer, &break_boundary);
     skip_token_whitespace(lexer, valid_symbols[FRONTMATTER_START]);
     if (valid_symbols[FRONTMATTER_START] && lexer->lookahead == '-') {
         return scan_frontmatter_start(&scanner->frontmatter, lexer);
     }
     if (lexer->lookahead == '/') return scan_comment_start(lexer, valid_symbols);
     if (valid_symbols[BREAK_BEFORE_BRACE] && lexer->lookahead == '{') {
-        lexer->mark_end(lexer);
+        lexer->mark_start(lexer, &break_boundary);
+        lexer->mark_end_at(lexer, &break_boundary);
         lexer->result_symbol = BREAK_BEFORE_BRACE;
         return true;
     }
