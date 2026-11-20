@@ -206,6 +206,7 @@ module.exports = grammar({
     sym('_orphan_doc_missing_owner'),
     sym('_trailing_type_bound_plus'),
     sym('shebang'),
+    sym('_break_before_brace'),
   ],
 
   supertypes: ($) => [
@@ -237,7 +238,6 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$.break_expression],
-    [$._bare_break_in_header, $.break_expression],
     [$.array_expression, $._array_assignee_expression],
     [$.tuple_expression, $._tuple_assignee_expression],
     [$.arguments, $._assignee_arguments],
@@ -1519,7 +1519,7 @@ module.exports = grammar({
         'let',
         field('pattern', $._pattern),
         '=',
-        field('value', choice(prec.left(PREC.and, $._expression), alias($._bare_break_in_header, $.break_expression)))
+        field('value', prec.left(PREC.and, $._expression))
       ),
 
     _let_chain: ($) =>
@@ -1534,17 +1534,13 @@ module.exports = grammar({
         )
       ),
 
-    _brace_header_value: ($) => choice($._expression, alias($._bare_break_in_header, $.break_expression)),
-
-    _bare_break_in_header: ($) => prec.dynamic(2, $._break_expression_head),
-
-    _condition: ($) => choice($._brace_header_value, $.let_condition, alias($._let_chain, sym('let_chain'))),
+    _condition: ($) => choice($._expression, $.let_condition, alias($._let_chain, sym('let_chain'))),
 
     _else_if_clause: ($) => seq('else', 'if', field('condition', $._condition), field('consequence', $.block)),
 
     else_clause: ($) => seq('else', field('consequence', $.block)),
 
-    match_expression: ($) => seq('match', field('value', $._brace_header_value), field('body', $.match_block)),
+    match_expression: ($) => seq('match', field('value', $._expression), field('body', $.match_block)),
 
     match_block: ($) => seq('{', optional(seq(repeat($.match_arm), alias($.last_match_arm, $.match_arm))), '}'),
 
@@ -1580,7 +1576,7 @@ module.exports = grammar({
         'for',
         field('pattern', $._pattern),
         'in',
-        field('value', $._brace_header_value),
+        field('value', $._expression),
         field('body', $.block)
       ),
 
@@ -1614,7 +1610,12 @@ module.exports = grammar({
     label: ($) => seq("'", $.identifier),
 
     break_expression: ($) =>
-      choice(prec.dynamic(1, prec.left(seq($._break_expression_head, $._expression))), $._break_expression_head),
+      choice(
+        prec.dynamic(1, prec.left(seq($._break_expression_head, $._expression))),
+        // A brace can open the body of an enclosing header, even after a nested operand.
+        seq($._break_expression_head, sym('_break_before_brace'), optional(prec.dynamic(-1, prec.left($._expression)))),
+        $._break_expression_head
+      ),
 
     _break_expression_head: ($) => prec.right(seq('break', optional($.label))),
 

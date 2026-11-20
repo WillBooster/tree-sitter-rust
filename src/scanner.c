@@ -1,4 +1,4 @@
-// code-gauge-allow-file fileNcss 560 -- tree-sitter compiles src/scanner.c as a single external scanner unit
+// code-gauge-allow-file fileNcss 565 -- tree-sitter compiles src/scanner.c as a single external scanner unit
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
@@ -37,7 +37,8 @@ enum TokenType {
     ORPHAN_BLOCK_DOC_COMMENT_START,
     ORPHAN_DOC_MISSING_OWNER,
     TRAILING_TYPE_BOUND_PLUS,
-    SHEBANG
+    SHEBANG,
+    BREAK_BEFORE_BRACE
 };
 
 #include "frontmatter.h"
@@ -376,8 +377,9 @@ static enum TokenType outer_comment_token(TSLexer *lexer, const bool *valid_symb
 static bool outer_comment_has_following_token(TSLexer *lexer, bool line);
 static inline void skip_token_whitespace(TSLexer *lexer, bool rust_only);
 static bool scan_trailing_type_bound_plus(TSLexer *lexer);
+static bool scan_literal_start_or_end(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols);
 
-// code-gauge-allow functionCognitiveComplexity 30 -- flat external-token dispatch entrypoint
+// code-gauge-allow functionCognitiveComplexity 26 -- flat external-token dispatch entrypoint
 // code-gauge-allow functionNcss 35 -- flat external-token dispatch entrypoint
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
@@ -419,6 +421,11 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_frontmatter_start(&scanner->frontmatter, lexer);
     }
     if (lexer->lookahead == '/') return scan_comment_start(lexer, valid_symbols);
+    if (valid_symbols[BREAK_BEFORE_BRACE] && lexer->lookahead == '{') {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = BREAK_BEFORE_BRACE;
+        return true;
+    }
     if (valid_symbols[FOREIGN_DECLARATION_CONTEXT] && valid_symbols[FOREIGN_DECLARATION_START]) {
         return scan_foreign_declaration_start(lexer);
     }
@@ -433,6 +440,10 @@ bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const
         return scan_range_unary_endpoint_start(lexer);
     }
 
+    return scan_literal_start_or_end(scanner, lexer, valid_symbols);
+}
+
+static bool scan_literal_start_or_end(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
     if (valid_symbols[RAW_STRING_LITERAL_START] &&
         (lexer->lookahead == 'r' || lexer->lookahead == 'b' || lexer->lookahead == 'c')) {
         return scan_raw_string_start(scanner, lexer);

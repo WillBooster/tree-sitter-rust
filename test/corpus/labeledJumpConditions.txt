@@ -141,3 +141,141 @@ fn values() {
         (call_expression
           (identifier)
           (arguments))))))
+
+==================
+Nested jumps end brace-delimited condition headers
+==================
+fn examples(flag: bool) {
+    'outer: loop {
+        if flag || break 'outer /* body follows */ { body(); }
+        { sibling(); }
+        break;
+    }
+    'outer: loop {
+        while flag || break 'outer { body(); }
+        { sibling(); }
+        break;
+    }
+    'outer: loop {
+        if let Some(true) = Some(flag) && flag && break 'outer { body(); }
+        { sibling(); }
+        break;
+    }
+    'value: loop {
+        if (break 'value /* operand follows */ { 1 }) { body(); }
+    }
+}
+
+---
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type)))
+    (block
+      (expression_statement
+        (loop_expression
+          (label
+            (identifier))
+          (block
+            (expression_statement
+              (if_expression
+                (binary_expression
+                  (identifier)
+                  (break_expression
+                    (label
+                      (identifier))
+                    (block_comment)))
+                (block
+                  (expression_statement
+                    (call_expression
+                      (identifier)
+                      (arguments))))))
+            (expression_statement
+              (block
+                (expression_statement
+                  (call_expression
+                    (identifier)
+                    (arguments)))))
+            (expression_statement
+              (break_expression)))))
+      (expression_statement
+        (loop_expression
+          (label
+            (identifier))
+          (block
+            (expression_statement
+              (while_expression
+                (binary_expression
+                  (identifier)
+                  (break_expression
+                    (label
+                      (identifier))))
+                (block
+                  (expression_statement
+                    (call_expression
+                      (identifier)
+                      (arguments))))))
+            (expression_statement
+              (block
+                (expression_statement
+                  (call_expression
+                    (identifier)
+                    (arguments)))))
+            (expression_statement
+              (break_expression)))))
+      (expression_statement
+        (loop_expression
+          (label
+            (identifier))
+          (block
+            (expression_statement
+              (if_expression
+                (let_chain
+                  (let_condition
+                    (tuple_struct_pattern
+                      (identifier)
+                      (boolean_literal))
+                    (call_expression
+                      (identifier)
+                      (arguments
+                        (identifier))))
+                  (identifier)
+                  (break_expression
+                    (label
+                      (identifier))))
+                (block
+                  (expression_statement
+                    (call_expression
+                      (identifier)
+                      (arguments))))))
+            (expression_statement
+              (block
+                (expression_statement
+                  (call_expression
+                    (identifier)
+                    (arguments)))))
+            (expression_statement
+              (break_expression)))))
+      (expression_statement
+        (loop_expression
+          (label
+            (identifier))
+          (block
+            (expression_statement
+              (if_expression
+                (parenthesized_expression
+                  (break_expression
+                    (label
+                      (identifier))
+                    (block_comment)
+                    (block
+                      (integer_literal))))
+                (block
+                  (expression_statement
+                    (call_expression
+                      (identifier)
+                      (arguments))))))))))))
