@@ -206,6 +206,7 @@ module.exports = grammar({
     sym('_orphan_doc_missing_owner'),
     sym('_trailing_type_bound_plus'),
     sym('shebang'),
+    sym('_break_before_brace'),
   ],
 
   supertypes: ($) => [
@@ -236,6 +237,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.break_expression],
     [$.array_expression, $._array_assignee_expression],
     [$.tuple_expression, $._tuple_assignee_expression],
     [$.arguments, $._assignee_arguments],
@@ -1263,7 +1265,7 @@ module.exports = grammar({
       prec(
         PREC.unary,
         seq(
-          '&',
+          alias(token(prec(1, '&')), '&'),
           choice(seq('raw', choice('const', $.mutable_specifier)), optional($.mutable_specifier)),
           field('value', $._expression)
         )
@@ -1594,15 +1596,24 @@ module.exports = grammar({
       ),
 
     closure_parameters: ($) =>
-      seq(
-        '|',
-        optional(seq(sepBy1(',', seq(repeat($.attribute_item), choice($._pattern, $.parameter))), optional(','))),
-        '|'
+      choice(
+        '||',
+        seq(
+          '|',
+          optional(seq(sepBy1(',', seq(repeat($.attribute_item), choice($._pattern, $.parameter))), optional(','))),
+          '|'
+        )
       ),
 
     label: ($) => seq("'", $.identifier),
 
-    break_expression: ($) => prec.left(seq($._break_expression_head, optional($._expression))),
+    break_expression: ($) =>
+      choice(
+        prec.dynamic(1, prec.left(seq($._break_expression_head, $._expression))),
+        // A brace can open the body of an enclosing header, even after a nested operand.
+        seq($._break_expression_head, sym('_break_before_brace'), optional(prec.dynamic(-1, prec.left($._expression)))),
+        $._break_expression_head
+      ),
 
     _break_expression_head: ($) => prec.right(seq('break', optional($.label))),
 
