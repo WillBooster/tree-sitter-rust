@@ -496,11 +496,6 @@
     ]
   },
   {
-    "type": "&",
-    "named": false,
-    "fields": {}
-  },
-  {
     "type": "abstract_type",
     "named": true,
     "fields": {
@@ -5565,6 +5560,10 @@
   },
   {
     "type": "%=",
+    "named": false
+  },
+  {
+    "type": "&",
     "named": false
   },
   {

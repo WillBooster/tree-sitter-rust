@@ -1265,13 +1265,11 @@ module.exports = grammar({
       prec(
         PREC.unary,
         seq(
-          alias($._reference_operator, '&'),
+          alias(token(prec(1, '&')), '&'),
           choice(seq('raw', choice('const', $.mutable_specifier)), optional($.mutable_specifier)),
           field('value', $._expression)
         )
       ),
-
-    _reference_operator: () => token(prec(1, '&')),
 
     binary_expression: ($) => {
       /** @type {[number, import('@willbooster/web-tree-sitter/dsl').RuleOrLiteral][]} */

@@ -9184,8 +9184,15 @@
           {
             "type": "ALIAS",
             "content": {
-              "type": "SYMBOL",
-              "name": "_reference_operator"
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": 1,
+                "content": {
+                  "type": "STRING",
+                  "value": "&"
+                }
+              }
             },
             "named": false,
             "value": "&"
@@ -9238,17 +9245,6 @@
             }
           }
         ]
-      }
-    },
-    "_reference_operator": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "STRING",
-          "value": "&"
-        }
       }
     },
     "binary_expression": {
