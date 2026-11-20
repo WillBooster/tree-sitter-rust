@@ -4,8 +4,8 @@ Labeled jumps retain condition body boundaries
 const _: () = 'a: while break 'a {};
 fn conditions() {
     'outer: loop {
-        if break 'outer { if_body(); }
-        while break 'outer { while_body(); }
+        if break 'outer { if_body(); } { after_if(); }
+        while break 'outer { while_body(); } { after_while(); }
         while continue 'outer { continue_body(); }
         match break 'outer { _ => {} }
     }
@@ -45,6 +45,12 @@ fn conditions() {
                       (identifier)
                       (arguments))))))
             (expression_statement
+              (block
+                (expression_statement
+                  (call_expression
+                    (identifier)
+                    (arguments)))))
+            (expression_statement
               (while_expression
                 (break_expression
                   (label
@@ -54,6 +60,12 @@ fn conditions() {
                     (call_expression
                       (identifier)
                       (arguments))))))
+            (expression_statement
+              (block
+                (expression_statement
+                  (call_expression
+                    (identifier)
+                    (arguments)))))
             (expression_statement
               (while_expression
                 (continue_expression
