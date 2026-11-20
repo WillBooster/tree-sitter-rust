@@ -236,6 +236,7 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
+    [$.break_expression],
     [$.array_expression, $._array_assignee_expression],
     [$.tuple_expression, $._tuple_assignee_expression],
     [$.arguments, $._assignee_arguments],
@@ -1602,7 +1603,8 @@ module.exports = grammar({
 
     label: ($) => seq("'", $.identifier),
 
-    break_expression: ($) => prec.left(seq($._break_expression_head, optional($._expression))),
+    break_expression: ($) =>
+      choice(prec.dynamic(1, prec.left(seq($._break_expression_head, $._expression))), $._break_expression_head),
 
     _break_expression_head: ($) => prec.right(seq('break', optional($.label))),
 

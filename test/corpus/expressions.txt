@@ -899,6 +899,53 @@ Loop expressions
                   (boolean_literal))))))))))
 
 ================================================================================
+Break operands that start with an operator or parenthesis
+================================================================================
+
+loop { break &n; }
+loop { break -n; }
+loop { break *n; }
+loop { break (&n); }
+'outer: loop { break 'outer -n; }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (reference_expression (identifier)))))))
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (unary_expression (identifier)))))))
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (unary_expression (identifier)))))))
+  (expression_statement
+    (loop_expression
+      (block
+        (expression_statement
+          (break_expression
+            (parenthesized_expression
+              (reference_expression (identifier))))))))
+  (expression_statement
+    (loop_expression
+      (label (identifier))
+      (block
+        (expression_statement
+          (break_expression
+            (label (identifier))
+            (unary_expression (identifier))))))))
+
+================================================================================
 For expressions
 ================================================================================
 
