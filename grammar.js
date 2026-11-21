@@ -1147,6 +1147,7 @@ module.exports = grammar({
 
     _postfix_operand: ($) =>
       choice(
+        alias($._closure_with_return_type, $.closure_expression),
         $.try_expression,
         $.call_expression,
         $._literal,
@@ -1585,17 +1586,13 @@ module.exports = grammar({
     closure_expression: ($) =>
       prec(
         PREC.closure,
-        seq(
-          optional('static'),
-          optional('async'),
-          optional('move'),
-          field('parameters', $.closure_parameters),
-          choice(
-            seq(optional(seq('->', field('return_type', $._type))), field('body', $.block)),
-            field('body', choice($._expression, '_'))
-          )
-        )
+        seq($._closure_head, choice(field('body', $.block), field('body', choice($._expression, '_'))))
       ),
+
+    _closure_with_return_type: ($) => seq($._closure_head, '->', field('return_type', $._type), field('body', $.block)),
+
+    _closure_head: ($) =>
+      seq(optional('static'), optional('async'), optional('move'), field('parameters', $.closure_parameters)),
 
     closure_parameters: ($) =>
       choice(

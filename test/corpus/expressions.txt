@@ -1840,6 +1840,8 @@ fn ranges(n: i32, values: Vec<i32>) -> std::ops::Range<i32> {
     let _ = 0..=(n);
     let _ = match n { 4 => 0..(n), _ => 0..n % 3 };
     let _ = (|x: i32| x)(1);
+    let _ = |x: i32| -> i32 { x }(1);
+    let _ = || -> [i32; 1] { [n] }[0];
     let _ = (0..);
     r.contains(&n);
     return 0..(n + 1);
@@ -2027,6 +2029,29 @@ fn ranges(n: i32, values: Vec<i32>) -> std::ops::Range<i32> {
               (identifier)))
           (arguments
             (integer_literal))))
+      (let_declaration
+        (call_expression
+          (closure_expression
+            (closure_parameters
+              (parameter
+                (identifier)
+                (primitive_type)))
+            (primitive_type)
+            (block
+              (identifier)))
+          (arguments
+            (integer_literal))))
+      (let_declaration
+        (index_expression
+          (closure_expression
+            (closure_parameters)
+            (array_type
+              (primitive_type)
+              (integer_literal))
+            (block
+              (array_expression
+                (identifier))))
+          (integer_literal)))
       (let_declaration
         (parenthesized_expression
           (range_expression

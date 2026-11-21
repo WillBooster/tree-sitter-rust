@@ -1264,6 +1264,10 @@
             "named": true
           },
           {
+            "type": "closure_expression",
+            "named": true
+          },
+          {
             "type": "const_block",
             "named": true
           },
