@@ -8181,10 +8181,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "try_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "binary_expression"
         },
         {
@@ -8201,10 +8197,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "call_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "return_expression"
         },
         {
@@ -8214,6 +8206,31 @@
         {
           "type": "SYMBOL",
           "name": "yield_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "break_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "closure_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_postfix_operand"
+        }
+      ]
+    },
+    "_postfix_operand": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "try_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "call_expression"
         },
         {
           "type": "SYMBOL",
@@ -8381,10 +8398,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "break_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "continue_expression"
         },
         {
@@ -8394,10 +8407,6 @@
         {
           "type": "SYMBOL",
           "name": "metavariable"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "closure_expression"
         },
         {
           "type": "SYMBOL",
@@ -9832,7 +9841,7 @@
             "name": "function",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression_except_range"
+              "name": "_postfix_operand"
             }
           },
           {
@@ -10726,7 +10735,7 @@
             "name": "function",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression_except_range"
+              "name": "_postfix_operand"
             }
           },
           {
@@ -12670,7 +12679,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_expression"
+            "name": "_postfix_operand"
           },
           {
             "type": "STRING",
@@ -15814,7 +15823,7 @@
     ],
     [
       "_attributed_block_statement",
-      "_expression_except_range"
+      "_postfix_operand"
     ],
     [
       "type_parameters",
@@ -15837,7 +15846,7 @@
       "block"
     ],
     [
-      "_expression_except_range",
+      "_postfix_operand",
       "shorthand_field_initializer"
     ],
     [

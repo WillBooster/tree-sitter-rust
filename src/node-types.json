@@ -1248,10 +1248,6 @@
             "named": true
           },
           {
-            "type": "assignment_expression",
-            "named": true
-          },
-          {
             "type": "async_block",
             "named": true
           },
@@ -1260,31 +1256,11 @@
             "named": true
           },
           {
-            "type": "become_expression",
-            "named": true
-          },
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
             "type": "block",
             "named": true
           },
           {
-            "type": "break_expression",
-            "named": true
-          },
-          {
             "type": "call_expression",
-            "named": true
-          },
-          {
-            "type": "closure_expression",
-            "named": true
-          },
-          {
-            "type": "compound_assignment_expr",
             "named": true
           },
           {
@@ -1344,14 +1320,6 @@
             "named": true
           },
           {
-            "type": "reference_expression",
-            "named": true
-          },
-          {
-            "type": "return_expression",
-            "named": true
-          },
-          {
             "type": "scoped_identifier",
             "named": true
           },
@@ -1376,14 +1344,6 @@
             "named": true
           },
           {
-            "type": "type_cast_expression",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          },
-          {
             "type": "unit_expression",
             "named": true
           },
@@ -1393,10 +1353,6 @@
           },
           {
             "type": "while_expression",
-            "named": true
-          },
-          {
-            "type": "yield_expression",
             "named": true
           }
         ]
