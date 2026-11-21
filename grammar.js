@@ -241,13 +241,13 @@ module.exports = grammar({
     [$.array_expression, $._array_assignee_expression],
     [$.tuple_expression, $._tuple_assignee_expression],
     [$.arguments, $._assignee_arguments],
-    [$._attributed_block_statement, $._expression_except_range],
+    [$._attributed_block_statement, $._postfix_operand],
     [$.type_parameters, $.for_lifetimes],
     [$.lifetime_parameter, $.for_lifetimes],
     [$._token_pattern, $.token_repetition_pattern],
     [$.token_tree, $.token_repetition],
     [$.field_initializer_list, $.block],
-    [$._expression_except_range, $.shorthand_field_initializer],
+    [$._postfix_operand, $.shorthand_field_initializer],
     [$.function_modifiers, $.modified_trait_bound],
     [$.function_modifiers, $.impl_item, $.modified_trait_bound],
     [$.const_item, $.function_modifiers],
@@ -1133,15 +1133,23 @@ module.exports = grammar({
       choice(
         $.unary_expression,
         $.reference_expression,
-        $.try_expression,
         $.binary_expression,
         $.assignment_expression,
         $.compound_assignment_expr,
         $.type_cast_expression,
-        $.call_expression,
         $.return_expression,
         $.become_expression,
         $.yield_expression,
+        $.break_expression,
+        $.closure_expression,
+        $._postfix_operand
+      ),
+
+    _postfix_operand: ($) =>
+      choice(
+        alias($._closure_with_return_type, $.closure_expression),
+        $.try_expression,
+        $.call_expression,
         $._literal,
         prec.left($.identifier),
         alias(choice('_', 'Self'), $.identifier),
@@ -1156,11 +1164,9 @@ module.exports = grammar({
         $.tuple_expression,
         prec(1, $.macro_invocation),
         $.unit_expression,
-        $.break_expression,
         $.continue_expression,
         $.index_expression,
         $.metavariable,
-        $.closure_expression,
         $.parenthesized_expression,
         $.struct_expression,
         $._expression_ending_with_block
@@ -1317,7 +1323,7 @@ module.exports = grammar({
     yield_expression: ($) => choice(prec.left(seq('yield', $._expression)), prec(-1, 'yield')),
 
     call_expression: ($) =>
-      prec(PREC.call, seq(field('function', $._expression_except_range), field('arguments', $.arguments))),
+      prec(PREC.call, seq(field('function', $._postfix_operand), field('arguments', $.arguments))),
 
     arguments: ($) =>
       seq('(', sepBy(',', seq(repeat(prec(PREC.call, $.attribute_item)), $._expression)), optional(','), ')'),
@@ -1410,10 +1416,7 @@ module.exports = grammar({
     _call_assignee_expression: ($) =>
       prec(
         PREC.call - 1,
-        seq(
-          field('function', $._expression_except_range),
-          field('arguments', alias($._assignee_arguments, $.arguments))
-        )
+        seq(field('function', $._postfix_operand), field('arguments', alias($._assignee_arguments, $.arguments)))
       ),
 
     _assignee_arguments: ($) =>
@@ -1583,17 +1586,13 @@ module.exports = grammar({
     closure_expression: ($) =>
       prec(
         PREC.closure,
-        seq(
-          optional('static'),
-          optional('async'),
-          optional('move'),
-          field('parameters', $.closure_parameters),
-          choice(
-            seq(optional(seq('->', field('return_type', $._type))), field('body', $.block)),
-            field('body', choice($._expression, '_'))
-          )
-        )
+        seq($._closure_head, choice(field('body', $.block), field('body', choice($._expression, '_'))))
       ),
+
+    _closure_with_return_type: ($) => seq($._closure_head, '->', field('return_type', $._type), field('body', $.block)),
+
+    _closure_head: ($) =>
+      seq(optional('static'), optional('async'), optional('move'), field('parameters', $.closure_parameters)),
 
     closure_parameters: ($) =>
       choice(
@@ -1619,7 +1618,7 @@ module.exports = grammar({
 
     continue_expression: ($) => prec.right(seq('continue', optional($.label))),
 
-    index_expression: ($) => prec(PREC.call, seq($._expression, '[', $._expression, ']')),
+    index_expression: ($) => prec(PREC.call, seq($._postfix_operand, '[', $._expression, ']')),
 
     await_expression: ($) => prec(PREC.field, seq($._expression, '.', 'await')),
 

@@ -1823,6 +1823,257 @@ fn ranges(written: &usize, flag: bool, values: &[usize]) {
             (integer_literal)))))))
 
 ================================================================================
+Parenthesized and bracketed range ends after closures and jumps
+================================================================================
+
+fn ranges(n: i32, values: Vec<i32>) -> std::ops::Range<i32> {
+    let _ = |i: i32| 0..(4 - i);
+    let _ = |i: i32| (n - i)..(n + i);
+    let _ = |i: i32| ..(n - i);
+    let _ = |i: i32| 0..=(n - i);
+    let _ = |i: usize| 0..[i][0];
+    let _ = (1..4).map(|i| 1..(i + 1));
+    let _ = values.iter().flat_map(|&i| 0..(n - i));
+    let _ = loop { break 0..(n + 1); };
+    let mut r = 0..1;
+    r = 0..(n);
+    let _ = 0..=(n);
+    let _ = match n { 4 => 0..(n), _ => 0..n % 3 };
+    let _ = (|x: i32| x)(1);
+    let _ = |x: i32| -> i32 { x }(1);
+    let _ = || -> [i32; 1] { [n] }[0];
+    let _ = (0..);
+    r.contains(&n);
+    return 0..(n + 1);
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (primitive_type))
+      (parameter
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_arguments
+            (primitive_type)))))
+    (generic_type
+      (scoped_type_identifier
+        (scoped_identifier
+          (identifier)
+          (identifier))
+        (type_identifier))
+      (type_arguments
+        (primitive_type)))
+    (block
+      (let_declaration
+        (closure_expression
+          (closure_parameters
+            (parameter
+              (identifier)
+              (primitive_type)))
+          (range_expression
+            (integer_literal)
+            (parenthesized_expression
+              (binary_expression
+                (integer_literal)
+                (identifier))))))
+      (let_declaration
+        (closure_expression
+          (closure_parameters
+            (parameter
+              (identifier)
+              (primitive_type)))
+          (range_expression
+            (parenthesized_expression
+              (binary_expression
+                (identifier)
+                (identifier)))
+            (parenthesized_expression
+              (binary_expression
+                (identifier)
+                (identifier))))))
+      (let_declaration
+        (closure_expression
+          (closure_parameters
+            (parameter
+              (identifier)
+              (primitive_type)))
+          (range_expression
+            (parenthesized_expression
+              (binary_expression
+                (identifier)
+                (identifier))))))
+      (let_declaration
+        (closure_expression
+          (closure_parameters
+            (parameter
+              (identifier)
+              (primitive_type)))
+          (range_expression
+            (integer_literal)
+            (parenthesized_expression
+              (binary_expression
+                (identifier)
+                (identifier))))))
+      (let_declaration
+        (closure_expression
+          (closure_parameters
+            (parameter
+              (identifier)
+              (primitive_type)))
+          (range_expression
+            (integer_literal)
+            (index_expression
+              (array_expression
+                (identifier))
+              (integer_literal)))))
+      (let_declaration
+        (call_expression
+          (field_expression
+            (parenthesized_expression
+              (range_expression
+                (integer_literal)
+                (integer_literal)))
+            (field_identifier))
+          (arguments
+            (closure_expression
+              (closure_parameters
+                (identifier))
+              (range_expression
+                (integer_literal)
+                (parenthesized_expression
+                  (binary_expression
+                    (identifier)
+                    (integer_literal))))))))
+      (let_declaration
+        (call_expression
+          (field_expression
+            (call_expression
+              (field_expression
+                (identifier)
+                (field_identifier))
+              (arguments))
+            (field_identifier))
+          (arguments
+            (closure_expression
+              (closure_parameters
+                (reference_pattern
+                  (identifier)))
+              (range_expression
+                (integer_literal)
+                (parenthesized_expression
+                  (binary_expression
+                    (identifier)
+                    (identifier))))))))
+      (let_declaration
+        (loop_expression
+          (block
+            (expression_statement
+              (break_expression
+                (range_expression
+                  (integer_literal)
+                  (parenthesized_expression
+                    (binary_expression
+                      (identifier)
+                      (integer_literal)))))))))
+      (let_declaration
+        (mutable_specifier)
+        (identifier)
+        (range_expression
+          (integer_literal)
+          (integer_literal)))
+      (expression_statement
+        (assignment_expression
+          (identifier)
+          (range_expression
+            (integer_literal)
+            (parenthesized_expression
+              (identifier)))))
+      (let_declaration
+        (range_expression
+          (integer_literal)
+          (parenthesized_expression
+            (identifier))))
+      (let_declaration
+        (match_expression
+          (identifier)
+          (match_block
+            (match_arm
+              (match_pattern
+                (integer_literal))
+              (range_expression
+                (integer_literal)
+                (parenthesized_expression
+                  (identifier))))
+            (match_arm
+              (match_pattern)
+              (range_expression
+                (integer_literal)
+                (binary_expression
+                  (identifier)
+                  (integer_literal)))))))
+      (let_declaration
+        (call_expression
+          (parenthesized_expression
+            (closure_expression
+              (closure_parameters
+                (parameter
+                  (identifier)
+                  (primitive_type)))
+              (identifier)))
+          (arguments
+            (integer_literal))))
+      (let_declaration
+        (call_expression
+          (closure_expression
+            (closure_parameters
+              (parameter
+                (identifier)
+                (primitive_type)))
+            (primitive_type)
+            (block
+              (identifier)))
+          (arguments
+            (integer_literal))))
+      (let_declaration
+        (index_expression
+          (closure_expression
+            (closure_parameters)
+            (array_type
+              (primitive_type)
+              (integer_literal))
+            (block
+              (array_expression
+                (identifier))))
+          (integer_literal)))
+      (let_declaration
+        (parenthesized_expression
+          (range_expression
+            (integer_literal))))
+      (expression_statement
+        (call_expression
+          (field_expression
+            (identifier)
+            (field_identifier))
+          (arguments
+            (reference_expression
+              (identifier)))))
+      (expression_statement
+        (return_expression
+          (range_expression
+            (integer_literal)
+            (parenthesized_expression
+              (binary_expression
+                (identifier)
+                (integer_literal)))))))))
+
+================================================================================
 Full ranges before control-flow bodies
 ================================================================================
 
