@@ -25,7 +25,7 @@ may change; such changes are released as new major versions.
 
 The npm package ships `tree-sitter-rust.wasm` for
 [@willbooster/web-tree-sitter](https://www.npmjs.com/package/@willbooster/web-tree-sitter), which runs in Node.js, Bun,
-browsers, and Cloudflare Workers. The package requires `@willbooster/web-tree-sitter` `23.0.0` or later within major
+browsers, and Cloudflare Workers. The package requires `@willbooster/web-tree-sitter` `23.0.2` or later within major
 version 23. Its ABI (`0x5742000d`) rejects upstream Tree-sitter runtimes and WillBooster runtimes prior to `22.0.0`.
 
 In Node.js and Bun, load the grammar from its path:
@@ -69,12 +69,12 @@ parser.setLanguage(await Language.load(rust));
 The package also ships the node types in `src/node-types.json`.
 
 In Rust, depend on the [crate](https://crates.io/crates/willbooster-tree-sitter-rust) and on
-[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) `23.0.0` or later within major version 23,
+[willbooster-tree-sitter](https://crates.io/crates/willbooster-tree-sitter) `23.0.2` or later within major version 23,
 the runtime this package is tested and fuzzed with. Upstream's `tree-sitter` crate and `willbooster-tree-sitter` releases
 prior to `22.0.0` reject its ABI (`0x5742000d`):
 
 ```sh
-cargo add willbooster-tree-sitter@23.0.0 --rename tree-sitter
+cargo add willbooster-tree-sitter@23.0.2 --rename tree-sitter
 cargo add willbooster-tree-sitter-rust --rename tree-sitter-rust
 ```
 
