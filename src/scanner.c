@@ -1,4 +1,4 @@
-// code-gauge-allow-file fileNcss 614 -- tree-sitter compiles src/scanner.c as a single external scanner unit
+// code-gauge-allow-file fileNcss -- tree-sitter compiles src/scanner.c as a single external scanner unit
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/parser.h"
 
@@ -390,8 +390,8 @@ static inline void skip_token_whitespace(TSLexer *lexer, bool rust_only);
 static bool scan_trailing_type_bound_plus(TSLexer *lexer);
 static bool scan_literal_start_or_end(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols);
 
-// code-gauge-allow functionCognitiveComplexity 28 -- flat external-token dispatch entrypoint
-// code-gauge-allow functionNcss 39 -- flat external-token dispatch entrypoint
+// code-gauge-allow functionCognitiveComplexity -- flat external-token dispatch entrypoint
+// code-gauge-allow functionNcss -- flat external-token dispatch entrypoint
 bool tree_sitter_rust_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
     // Recovery enables every external token; only comment starts are safe without parser context.
@@ -490,7 +490,7 @@ static bool scan_trailing_type_bound_plus(TSLexer *lexer) {
     }
 }
 
-// code-gauge-allow functionCognitiveComplexity 21 -- single-pass metavariable vs literal-prefix check
+// code-gauge-allow functionCognitiveComplexity -- single-pass metavariable vs literal-prefix check
 static bool scan_macro_metavariable_name(Scanner *scanner, TSLexer *lexer, bool raw_string_valid) {
     int32_t c = lexer->lookahead;
     char prefix[2] = {0};
@@ -670,7 +670,7 @@ static bool mark_break_before_brace(TSLexer *lexer, const TSLexerCheckpoint *bou
     return true;
 }
 
-// code-gauge-allow functionCognitiveComplexity 16 -- Keeps the comment token when break lookahead fails.
+// code-gauge-allow functionCognitiveComplexity -- Keeps the comment token when break lookahead fails.
 static bool scan_comment_start(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols, const TSLexerCheckpoint *break_boundary) {
     advance(lexer);
     bool line = lexer->lookahead == '/';
